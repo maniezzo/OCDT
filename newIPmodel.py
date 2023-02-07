@@ -77,7 +77,7 @@ def AABB2bbox():
       bbox[i, 3] = maxhi[i]
    return bbox
 
-# remove fromlstPoints all those incompoatible with jp along direction dim
+# remove from lstPoints all those incompatible with jp along direction dim
 def pruneLstPoints(jp,dim):
    for lp in lstPoints:  # patch, if I find an incompatible presented too late
       if (X[lp, dim] == X[jp, dim] and X[lp, dim] == minlo[dim]):
@@ -108,13 +108,22 @@ def reduceAABB(jp,dir):
    return True
 
 # enlarges AABB given point of same class. Return false if impossible
-def enlargeAABB(jp):
-   for dim in np.arange(ndim):
-      if X[jp,dim] >= maxhi[dim] or X[jp, dim] <= maxlo[dim]:
-         return False
-      if X[jp, dim] < minlo[dim]: minlo[dim] = X[jp,dim]
-      if X[jp, dim] > minhi[dim]: minhi[dim] = X[jp,dim]
-   return True
+def enlargeAABB(jp,dim):
+   isCompatible = True
+   for ii in np.arange(ndim): # check if compatible with opposite class points
+      if(df.iloc[ind[ii,k],3]!=cls):
+
+         pass
+   if(isCompatible):
+      lstPoints.append(jp)
+      for dim in np.arange(ndim):
+         if X[jp,dim] >= maxhi[dim] or X[jp, dim] <= maxlo[dim]:
+            return False
+         if X[jp, dim] < minlo[dim]: minlo[dim] = X[jp,dim]
+         if X[jp, dim] > minhi[dim]: minhi[dim] = X[jp,dim]
+      return True
+   else:
+      return False # cannot enlarge with given point
 
 # adds (if it is the case) a bbox the the bbox list
 def addBB(bbox):
@@ -186,10 +195,9 @@ if __name__ == "__main__":
                      print(f"point {ind[j,k]} ({X[ind[j,k],0]},{X[ind[j,k],1]}) incompatible. Closing bbox")
                      break
                else:
-                  enlargeAABB(ind[j,k])
-                  lstPoints.append(ind[j,k])
+                  enlargeAABB(ind[j,k],k) # add a point proceding in direction k
                   print(f"adding {ind[j,k]} ({X[ind[j,k],0]},{X[ind[j,k],1]})")
-               print(f"bbox cls:{cls}: idpt {ind[j,k]} class {clspt} x:{maxlo[0]}/{minlo[0]}/{minhi[0]}/{maxhi[0]} y:{maxlo[1]}/{minlo[1]}/{minhi[1]}/{maxhi[1]}")
+               print(f"bbox (cls:{cls}): after idpt {ind[j,k]} class {clspt} x:{maxlo[0]}/{minlo[0]}/{minhi[0]}/{maxhi[0]} y:{maxlo[1]}/{minlo[1]}/{minhi[1]}/{maxhi[1]}")
                j+=1
             bbox = AABB2bbox()
             addBB(bbox)
