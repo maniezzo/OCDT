@@ -1,7 +1,7 @@
 import numpy as np, pandas as pd, os
 import matplotlib.pyplot as plt
 from pulp import *
-import copy
+import copy, Bbox
 
 def MILPmodel():
    n = len(df) # num boundary surfaces
@@ -36,6 +36,22 @@ def MILPmodel():
    for v in probl.variables():
       if (v.varValue > 0):
          print(v.name, "=", v.varValue)
+
+# plots a solution
+def plotSolution():
+   plt.figure(figsize=(9,6))
+   plt.scatter(X[:, 0], X[:, 1], c=df["class"].values)
+   for i in np.arange(n):
+      plt.annotate(df.iloc[i, 0], (X[i, 0], X[i, 1]))
+
+   from matplotlib.patches import Rectangle
+   ax = plt.gca()
+   for b in lstAABB:
+      lx,ly = b[0,1]-0.2,b[1,1]-0.2
+      wx,wy = b[0,2]-b[0,1]+0.4,b[1,2]-b[1,1]+0.4
+      rect = Rectangle((lx, ly), wx, wy, linewidth=1, edgecolor='r', facecolor='none')
+      ax.add_patch(rect)
+   plt.show()
 
 # check wh point j intersects current tight AABB (minhi,minlo)
 def intersect(jp):
@@ -110,10 +126,20 @@ def reduceAABB(jp,dir):
 # enlarges AABB given point of same class. Return false if impossible
 def enlargeAABB(jp,dim):
    isCompatible = True
-   for ii in np.arange(ndim): # check if compatible with opposite class points
+   lo = np.zeros(ndim)
+   hi = np.zeros(ndim)
+   for i in np.arange(ndim): # Bbox including new point
+      lo[i] = minlo[i]
+      if(X[jp,i]<lo[i]): lo[i] = X[jp,i]
+      hi[i] = minhi[i]
+      if(X[jp,i]>hi[i]): hi[i] = X[jp,i]
+   B = Bbox.Bbox(ndim)
+   B.set(lo,hi)
+   for ii in np.arange(n): # check if compatible with all opposite class points
       if(df.iloc[ind[ii,k],3]!=cls):
-
-         pass
+         if(B.intersect(X[ind[ii,k],:])):
+            isCompatible = False
+            break
    if(isCompatible):
       lstPoints.append(jp)
       for dim in np.arange(ndim):
@@ -127,7 +153,8 @@ def enlargeAABB(jp,dim):
 
 # adds (if it is the case) a bbox the the bbox list
 def addBB(bbox):
-   for b in np.arange(len(lstAABB)):
+   b = 0
+   while b < len(lstAABB):
       isContained = True
       fContains   = True
       for d in np.arange(ndim):
@@ -139,7 +166,9 @@ def addBB(bbox):
          print("bbox contained, no appending")
          return
       if fContains:
-         lstAABB[b] = copy.deepcopy(bbox)
+         lstAABB.pop(b)
+         b -= 1
+      b += 1
    lstAABB.append(copy.deepcopy(bbox))
    print(f"New AAB: {bbox}")
 
@@ -174,7 +203,7 @@ if __name__ == "__main__":
    from itertools import permutations
    lstPrmt = list(permutations(np.arange(ndim)))
 
-   for idperm in np.arange(len(lstPrmt)): # per ogni permutazine delle dimensioni
+   for idperm in np.arange(len(lstPrmt)): # per ogni permutazione delle dimensioni
       for k in lstPrmt[idperm]:      # dimensione corrente
          for idp in np.arange(n):    # indice punto corrente
             print(f">>>> new bbox on point {ind[idp,k]} dir {k}")
@@ -183,23 +212,25 @@ if __name__ == "__main__":
             cls = df.iloc[ind[idp,k],3]
             lstPoints = [ind[idp,k]] # points in current cluster
 
-            j = idp + 1
+            #j = idp + 1
+            j = 0
             while j < n:
-               clspt = df.iloc[ind[j,k],3] # class of current point j
+               jp = ind[j,k]
+               clspt = df.iloc[jp,3] # class of current point j
                if(clspt!=cls):
-                  intr = intersect(ind[j,k])  # useless?
-                  if reduceAABB(ind[j,k],k):
-                     print(f"reducing cause of {ind[j,k]} ({X[ind[j,k],0]},{X[ind[j,k],1]})")
+                  if reduceAABB(jp,k):
+                     print(f"reducing cause of {jp} ({X[jp,0]},{X[jp,1]})")
                   else:
-                     maxhi[k] = X[ind[j,k],k]
-                     print(f"point {ind[j,k]} ({X[ind[j,k],0]},{X[ind[j,k],1]}) incompatible. Closing bbox")
+                     maxhi[k] = X[jp,k]
+                     print(f"point {jp} ({X[jp,0]},{[jp,1]}) incompatible. Closing bbox")
                      break
                else:
-                  enlargeAABB(ind[j,k],k) # add a point proceding in direction k
-                  print(f"adding {ind[j,k]} ({X[ind[j,k],0]},{X[ind[j,k],1]})")
-               print(f"bbox (cls:{cls}): after idpt {ind[j,k]} class {clspt} x:{maxlo[0]}/{minlo[0]}/{minhi[0]}/{maxhi[0]} y:{maxlo[1]}/{minlo[1]}/{minhi[1]}/{maxhi[1]}")
+                  enlargeAABB(jp,k) # add a point proceding in direction k
+                  print(f"adding {jp} ({X[jp,0]},{X[jp,1]})")
+               print(f"bbox (cls:{cls}): after idpt {jp} class {clspt} x:{maxlo[0]}/{minlo[0]}/{minhi[0]}/{maxhi[0]} y:{maxlo[1]}/{minlo[1]}/{minhi[1]}/{maxhi[1]}")
                j+=1
             bbox = AABB2bbox()
             addBB(bbox)
+   plotSolution()
    print("... END")
    pass
