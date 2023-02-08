@@ -207,7 +207,10 @@ if __name__ == "__main__":
    eps     = 0.2
    lstAABB = [] # list of all maximal AABBs
    computeAABB()
-
    plotSolution()
+
+   M = MIPmodel.MIPmodel(n,len(lstAABB))
+   M.makeModel(lstAABB,X,ndim,df.iloc[:,3].to_numpy())
+
    print("... END")
    pass
