@@ -81,7 +81,7 @@ def reduceAABB(jp,dir,lstPoints,minlo,minhi,maxlo,maxhi):
          if(fIntersect):
             lstPoints = pruneLstPoints(jp,dir, lstPoints)
             recomputeAABB(lstPoints,minlo,minhi,maxlo,maxhi)
-         return False, lstPoints,minlo,minhi,maxlo,maxhi # cannot reduce, point incompatible
+         return False # cannot reduce, point incompatible
       if dim != dir: # do not reduce on the explored dimension
          if (X[jp,dim] < minlo[dim] and X[jp,dim] > maxlo[dim]): maxlo[dim] = X[jp,dim]
          if (X[jp,dim] > minhi[dim] and X[jp,dim] < maxhi[dim]): maxhi[dim] = X[jp,dim]
@@ -119,8 +119,8 @@ def enlargeAABB(jp,cls,k,ind,minlo,minhi,maxlo,maxhi,lstPoints):
    else:
       return False  # cannot enlarge with given point
 
-# adds (if it is the case) a bbox the the bbox list
-def addBB(bbox):
+# adds (if it is the case) a bbox to the bbox list
+def addBB(bbox,cls):
    b = 0
    while b < len(lstAABB):
       isContained = True
@@ -135,10 +135,12 @@ def addBB(bbox):
          return
       if fContains:
          lstAABB.pop(b)
+         class01.pop(b)
          b -= 1
       b += 1
    lstAABB.append(copy.deepcopy(bbox))
-   print(f"New AAB: {bbox}")
+   class01.append(cls)
+   print(f"New AAB: {bbox} class {cls}")
    return lstAABB
 
 # computes tha maximal AABBs
@@ -188,12 +190,12 @@ def computeAABB():
                print(f"bbox (cls:{cls}): after idpt {jp} class {clspt} x:{maxlo[0]}/{minlo[0]}/{minhi[0]}/{maxhi[0]} y:{maxlo[1]}/{minlo[1]}/{minhi[1]}/{maxhi[1]}")
                j+=1
             bbox = AABB2bbox(minlo,minhi,maxlo,maxhi)
-            lstAABB = addBB(bbox)
+            lstAABB = addBB(bbox,cls)
    return lstAABB
 
 if __name__ == "__main__":
    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-   df = pd.read_csv("test1.csv")
+   df = pd.read_csv("test3.csv")
    df["class"] = df["class"].map({"x":0,"o":1})
 
    n = len(df["class"])       # num of points
@@ -206,11 +208,12 @@ if __name__ == "__main__":
    ndim    = len(df.columns)-2 # id and class
    eps     = 0.2
    lstAABB = [] # list of all maximal AABBs
+   class01 = [] # corresponding class
    computeAABB()
    plotSolution()
 
    M = MIPmodel.MIPmodel(n,len(lstAABB))
-   M.makeModel(lstAABB,X,ndim,df.iloc[:,3].to_numpy())
+   M.makeModel(lstAABB,X,ndim,class01)
 
    print("... END")
    pass

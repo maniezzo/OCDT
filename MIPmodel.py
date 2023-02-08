@@ -4,13 +4,23 @@ from pulp import *
 class MIPmodel:
    def __init__(self,npoints,nbox):
       self.npoints = npoints  # total number of points
-      self.nbox    = nbox # number of AABBs
+      self.nbox    = nbox     # number of AABBs
+      return
+   def colAttributes(self,ncol,ndim,lstAABB):
+      ibox = 0
+      for i in np.arange(ncol):
+         ibox = i // (2*ndim)
+         idim = (i - ibox*2*ndim) // 2
+         hilo = (i - ibox*2*ndim - idim*2)
+         if(hilo==0):
+            xcut = (lstAABB[ibox,1][1].lstAABB[ibox,0][1])/2
       return
    def makeModel(self,lstAABB,Xcoord,ndim,class01):
-      ncol = 2*ndim*self.npoints  # num boundary surfaces
+      ncol = 2*ndim*self.nbox  # num boundary surfaces, each box, each dimension, lo and hi
+      self.colAttributes(ncol,ndim,lstAABB)
       # decision variables
       categ = 'Binary';  # 'Continuous''
-      X = LpVariable.dicts('X_%s', (range(ncol)),
+      X = LpVariable.dicts('X%s', (range(ncol)),
                            cat=categ,
                            lowBound=0,
                            upBound=1)
@@ -22,18 +32,24 @@ class MIPmodel:
 
       # covering constraints
       nrows = 0
-      for ibox in np.arange(self.nbox):
-         for dim in np.arange(ndim):
+      for i in np.arange(self.nbox):
+         for j in np.arange(self.nbox):
+            if (i == j): continue
+            if (class01[i] == class01[j]): continue
+            # check each column whe it separates i from j
             separ = []
-            for i in np.arange(self.npoints):
-               for j in np.arange(self.npoints):
-                  if(i==j): continue
-                  if(class01[i]==class01[j]): continue
-                  mid = (lstAABB[ibox][dim,1]-lstAABB[ibox][dim,0])/2
-                  if(Xcoord[i,dim]<mid and Xcoord[j,dim]>mid):
-                     separ.append(2*ndim*dim+dim)
+            for ibox in np.arange(self.nbox):
+               for dim in np.arange(ndim):     # still lo and hi
+                  icol1 = 2*ndim*ibox + 2*dim    # lo
+                  mid1 = (lstAABB[i][dim,1]-lstAABB[j][dim,1])/2
+                  if((Xcoord[i,dim]-Xcoord[j,dim])>mid1):
+                     separ.append(icol1)
+                  icol2 = 2*ndim*ibox+2*dim+1    # hi
+                  mid2 = (lstAABB[i][dim, ] - lstAABB[j][dim, 2]) / 2
+                  if (Xcoord[i, dim] < mid2 and Xcoord[j, dim] > mid2):
+                     separ.append(icol2)
             if(len(separ)>0):
-               probl += (sum(X[i] for i in separ) >= 1, "Cover %d" % nrows)
+               probl += sum(X[i] for i in separ) >= 1, "Cover %d" % nrows
                nrows += 1
 
       # save the model in a lp file
