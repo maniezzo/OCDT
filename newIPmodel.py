@@ -29,7 +29,7 @@ def intersect(jp,minlo,minhi):
    return fIntersect
 
 # initializes a new AABB with the point with index in argument
-def initializeAABB(ind,idp,k):
+def initializeAABB(ind,seed,k):
    minlo = np.zeros(ndim)  # minimum (tighest) lower extent
    minhi = np.zeros(ndim)  # minimum (tighest) upper extent
    maxlo = np.zeros(ndim)  # maximum (widest)  lower extent
@@ -37,8 +37,8 @@ def initializeAABB(ind,idp,k):
    for i in np.arange(ndim):
       maxlo[i] = np.min(X[:, i]) - 1  # going to infinite
       maxhi[i] = np.max(X[:, i]) + 1
-      minlo[i] = X[ind[idp, k], i]
-      minhi[i] = X[ind[idp, k], i]
+      minlo[i] = X[seed, i]
+      minhi[i] = X[seed, i]
    return minlo,minhi,maxlo,maxhi
 
 # recompute bbox
@@ -48,7 +48,7 @@ def recomputeAABB(lstPoints,minlo,minhi,maxlo,maxhi):
       for lp in lstPoints:
          if (X[lp, dim] > minhi[dim]): minhi[dim] = X[lp,dim]
          if (X[lp, dim] < minlo[dim]): minlo[dim] = X[lp,dim]
-   return minlo,minhi,maxlo,maxhi
+   return
 
 # the bbox given current min values
 def AABB2bbox(minlo,minhi,maxlo,maxhi):
@@ -77,10 +77,10 @@ def pruneLstPoints(jp,dim,lstPoints,minlo,minhi,maxlo,maxhi):
 def reduceAABB(jp,dir,lstPoints,minlo,minhi,maxlo,maxhi):
    for dim in np.arange(ndim):
       if X[jp,dim] > minlo[dim] and X[jp, dim] < minhi[dim]:
-         fIntersect = intersect(jp)
+         fIntersect = intersect(jp,minlo,minhi)
          if(fIntersect):
             lstPoints = pruneLstPoints(jp,dir, lstPoints)
-            minlo,minhi,maxlo,maxhi = recomputeAABB(lstPoints,minlo,minhi,maxlo,maxhi)
+            recomputeAABB(lstPoints,minlo,minhi,maxlo,maxhi)
          return False, lstPoints,minlo,minhi,maxlo,maxhi # cannot reduce, point incompatible
       if dim != dir: # do not reduce on the explored dimension
          if (X[jp,dim] < minlo[dim] and X[jp,dim] > maxlo[dim]): maxlo[dim] = X[jp,dim]
@@ -88,8 +88,8 @@ def reduceAABB(jp,dir,lstPoints,minlo,minhi,maxlo,maxhi):
       else: #dim = dir
          if(intersect(jp,minlo,minhi)):
             lstPoints = pruneLstPoints(jp,dim,lstPoints,minlo,minhi,maxlo,maxhi)
-         minlo,minhi,maxlo,maxhi = recomputeAABB(lstPoints,minlo,minhi,maxlo,maxhi)
-   return True, lstPoints,minlo,minhi,maxlo,maxhi
+         recomputeAABB(lstPoints,minlo,minhi,maxlo,maxhi)
+   return True
 
 # enlarges AABB given point of same class. Return false if impossible
 def enlargeAABB(jp,cls,k,ind,minlo,minhi,maxlo,maxhi,lstPoints):
@@ -109,15 +109,15 @@ def enlargeAABB(jp,cls,k,ind,minlo,minhi,maxlo,maxhi,lstPoints):
             isCompatible = False
             break
    if(isCompatible):
-      C.append(jp)
+      lstPoints.append(jp)
       for dim in np.arange(ndim):
          if X[jp,dim] >= maxhi[dim] or X[jp, dim] <= maxlo[dim]:
             return False
-         if X[jp, dim] < minlo[dim]: minlo[dim] = X[jp,dim]
-         if X[jp, dim] > minhi[dim]: minhi[dim] = X[jp,dim]
-      return True, lstPoints
+         if X[jp,dim] < minlo[dim]: minlo[dim] = X[jp,dim]
+         if X[jp,dim] > minhi[dim]: minhi[dim] = X[jp,dim]
+      return True
    else:
-      return False, lstPoints  # cannot enlarge with given point
+      return False  # cannot enlarge with given point
 
 # adds (if it is the case) a bbox the the bbox list
 def addBB(bbox):
@@ -143,8 +143,6 @@ def addBB(bbox):
 
 # computes tha maximal AABBs
 def computeAABB():
-   lstAABB = []
-
    # ordino i punti secondo ciascuna dimensione
    ind = np.zeros(ndim*n).reshape(n,ndim).astype(int)
    for k in np.arange(ndim):
@@ -163,19 +161,21 @@ def computeAABB():
    for idperm in np.arange(len(lstPrmt)): # per ogni permutazione delle dimensioni
       for k in lstPrmt[idperm]:      # dimensione corrente
          for idp in np.arange(n):    # indice punto corrente
-            print(f">>>> new bbox on point {ind[idp,k]} dir {k}")
-            minlo, minhi, maxlo, maxhi = initializeAABB(ind,ind[idp,k],k)
+            seed = ind[idp,k]        # primo punto del box
+            print(f">>>> new bbox on point {seed} dir {k}")
+            minlo, minhi, maxlo, maxhi = initializeAABB(ind,seed,k)
             # ordinamento sulla dimensione k, bbox con tutte le altre
-            cls = df.iloc[ind[idp,k],3]
-            lstPoints = [ind[idp,k]] # points in current cluster
+            cls = df.iloc[seed,3]
+            lstPoints = [seed]       # points in current cluster
 
             #j = idp + 1
             j = 0
             while j < n:
+               if(j==idp): j+=1; continue
                jp = ind[j,k]
                clspt = df.iloc[jp,3] # class of current point j
                if(clspt!=cls):
-                  fReduced, lstPoints = reduceAABB(jp,k,lstPoints,minlo,minhi,maxlo,maxhi)
+                  fReduced = reduceAABB(jp,k,lstPoints,minlo,minhi,maxlo,maxhi)
                   if fReduced:
                      print(f"reducing cause of {jp} ({X[jp,0]},{X[jp,1]})")
                   else:
@@ -183,11 +183,11 @@ def computeAABB():
                      print(f"point {jp} ({X[jp,0]},{[jp,1]}) incompatible. Closing bbox")
                      break
                else:
-                  _,lstPoints = enlargeAABB(jp,cls,k,ind,minlo,minhi,maxlo,maxhi,lstPoints) # add a point proceding in direction k
-                  print(f"adding {jp} ({X[jp,0]},{X[jp,1]})")
+                  if(enlargeAABB(jp,cls,k,ind,minlo,minhi,maxlo,maxhi,lstPoints)): # add a point proceding in direction k
+                     print(f"adding {jp} ({X[jp,0]},{X[jp,1]})")
                print(f"bbox (cls:{cls}): after idpt {jp} class {clspt} x:{maxlo[0]}/{minlo[0]}/{minhi[0]}/{maxhi[0]} y:{maxlo[1]}/{minlo[1]}/{minhi[1]}/{maxhi[1]}")
                j+=1
-            bbox = AABB2bbox()
+            bbox = AABB2bbox(minlo,minhi,maxlo,maxhi)
             lstAABB = addBB(bbox)
    return lstAABB
 
@@ -205,7 +205,8 @@ if __name__ == "__main__":
 
    ndim    = len(df.columns)-2 # id and class
    eps     = 0.2
-   lstAABB = computeAABB()
+   lstAABB = [] # list of all maximal AABBs
+   computeAABB()
 
    plotSolution()
    print("... END")
