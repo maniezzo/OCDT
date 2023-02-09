@@ -19,11 +19,11 @@ def plotSolution():
       ax.add_patch(rect)
    plt.show()
 
-# check wh point j intersects current tight AABB (minhi,minlo)
-def intersect(jp,minlo,minhi):
+# check wh point j intersects given box (hi,lo)
+def intersect(jp,lo,hi):
    fIntersect = True
    for dim in np.arange(ndim):
-      if X[jp,dim] < minlo[dim] or X[jp, dim] > minhi[dim]:
+      if X[jp,dim] < lo[dim] or X[jp, dim] > hi[dim]:
          fIntersect = False
          break
    return fIntersect
@@ -73,13 +73,23 @@ def pruneLstPoints(jp,dim,lstPoints,minlo,minhi,maxlo,maxhi):
          lstPoints.remove(lp)  # confliting internal point
    return lstPoints
 
-# reduces AABB given point jp of different class. Return false if impossible
+# reduces max boundaries of AABB given point jp of different class. Return false if impossible
 def reduceAABB(jp,dir,lstPoints,minlo,minhi,maxlo,maxhi):
+   fIntersect = intersect(jp,maxlo,maxhi)
+   if (fIntersect):
+      for dim in np.arange(ndim):
+         if X[jp, dim] > maxlo[dim] and X[jp, dim] < minlo[dim]:
+            maxlo[dim] = X[jp, dim]
+         if X[jp, dim] > minhi[dim] and X[jp, dim] < maxhi[dim]:
+            maxhi[dim] = X[jp, dim]
+   if(ndim > 0): return True
+
+   # this to be removed
    for dim in np.arange(ndim):
       if X[jp,dim] > minlo[dim] and X[jp, dim] < minhi[dim]:
          fIntersect = intersect(jp,minlo,minhi)
          if(fIntersect):
-            lstPoints = pruneLstPoints(jp,dir, lstPoints)
+            lstPoints = pruneLstPoints(jp,dir,lstPoints)
             recomputeAABB(lstPoints,minlo,minhi,maxlo,maxhi)
          return False # cannot reduce, point incompatible
       if dim != dir: # do not reduce on the explored dimension
@@ -88,7 +98,7 @@ def reduceAABB(jp,dir,lstPoints,minlo,minhi,maxlo,maxhi):
       else: #dim = dir
          if(intersect(jp,minlo,minhi)):
             lstPoints = pruneLstPoints(jp,dim,lstPoints,minlo,minhi,maxlo,maxhi)
-         recomputeAABB(lstPoints,minlo,minhi,maxlo,maxhi)
+      recomputeAABB(lstPoints,minlo,minhi,maxlo,maxhi)
    return True
 
 # enlarges AABB given point of same class. Return false if impossible
@@ -97,6 +107,7 @@ def enlargeAABB(jp,cls,k,ind,minlo,minhi,maxlo,maxhi,lstPoints):
    lo = np.zeros(ndim)
    hi = np.zeros(ndim)
    for i in np.arange(ndim): # Bbox including new point
+      if(X[jp,i]<maxlo[i] or X[jp,i]>maxhi[i]): isCompatible = False
       lo[i] = minlo[i]
       if(X[jp,i]<lo[i]): lo[i] = X[jp,i]
       hi[i] = minhi[i]
