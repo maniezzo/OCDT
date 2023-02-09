@@ -140,7 +140,7 @@ def addBB(bbox,cls):
       b += 1
    lstAABB.append(copy.deepcopy(bbox))
    class01.append(cls)
-   print(f"New AAB: {bbox} class {cls}")
+   print(f"New AABB: {bbox} class {cls}")
    return lstAABB
 
 # computes tha maximal AABBs
@@ -195,7 +195,7 @@ def computeAABB():
 
 if __name__ == "__main__":
    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-   df = pd.read_csv("test3.csv")
+   df = pd.read_csv("test1.csv")
    df["class"] = df["class"].map({"x":0,"o":1})
 
    n = len(df["class"])       # num of points
