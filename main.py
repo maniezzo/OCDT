@@ -6,8 +6,15 @@ from sklearn.preprocessing import MinMaxScaler
 
 if __name__ == "__main__":
    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-   df = pd.read_csv("..\dataset2_nonan.csv")
 
+   from sklearn.datasets import load_iris
+   from sklearn import tree
+   clf = tree.DecisionTreeClassifier(random_state=0)
+   iris = load_iris()
+   clf = clf.fit(iris.data, iris.target)
+   tree.plot_tree(clf)
+
+   df = pd.read_csv("..\dataset2_nonan.csv")
    # generalità descrittive
    numcol = len(df.columns)
    for i in np.arange(numcol):
