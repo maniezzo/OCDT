@@ -33,10 +33,10 @@ class MIPmodel:
       c = np.ones(ncol)
       probl += sum(c[i] * X[i] for i in range(ncol))
 
-      # covering constraints
+      # covering constraints, on points
       nrows = 0
-      for i in np.arange(self.nbox):
-         for j in np.arange(self.nbox):
+      for i in np.arange(self.npoints):
+         for j in np.arange(self.npoints):
             if (i == j): continue
             if (class01[i] == class01[j]): continue
             # check each column whe it separates i from j
@@ -44,10 +44,10 @@ class MIPmodel:
             for icol in np.arange(ncol): # check if col separates box i from j
                dim  = colattr[icol]['dim']
                xcut = colattr[icol]['xcut']
-               xmin1 = lstAABB[i][0,1]
-               xmax1 = lstAABB[i][0,2]
-               xmin2 = lstAABB[j][0,1]
-               xmax2 = lstAABB[j][0,2]
+               xmin1 = Xcoord[i,dim] #lstAABB[i][dim,1]
+               xmax1 = Xcoord[i,dim] #lstAABB[i][dim,2]
+               xmin2 = Xcoord[j,dim] #lstAABB[j][dim,1]
+               xmax2 = Xcoord[j,dim] #lstAABB[j][dim,2]
                # check wh xcut separates i from j
                if((xmin1>xcut and xmax2<xcut) or (xmin2>xcut and xmax1<xcut)):
                   separ.append(icol)
@@ -64,6 +64,12 @@ class MIPmodel:
       probl.solve()
       print("Status:", LpStatus[probl.status])
       print("Objective: ", value(probl.objective))
+      sol = []
       for v in probl.variables():
          if (v.varValue > 0):
             print(v.name, "=", v.varValue)
+            i = int(v.name[1:])
+            dim  = colattr[i]['dim']
+            xcut = colattr[i]['xcut']
+            sol.append({'dim':dim,'xcut':xcut})
+      return sol

@@ -75,30 +75,25 @@ def pruneLstPoints(jp,dim,lstPoints,minlo,minhi,maxlo,maxhi):
 
 # reduces max boundaries of AABB given point jp of different class. Return false if impossible
 def reduceAABB(jp,dir,lstPoints,minlo,minhi,maxlo,maxhi):
-   fIntersect = intersect(jp,maxlo,maxhi)
-   if (fIntersect):
-      for dim in np.arange(ndim):
-         if X[jp, dim] > maxlo[dim] and X[jp, dim] < minlo[dim]:
-            maxlo[dim] = X[jp, dim]
-         if X[jp, dim] > minhi[dim] and X[jp, dim] < maxhi[dim]:
-            maxhi[dim] = X[jp, dim]
-   if(ndim > 0): return True
+   fIntersect = intersect(jp,minlo,minhi)
+   if (fIntersect): return False # should not happen
 
-   # this to be removed
-   for dim in np.arange(ndim):
-      if X[jp,dim] > minlo[dim] and X[jp, dim] < minhi[dim]:
-         fIntersect = intersect(jp,minlo,minhi)
-         if(fIntersect):
-            lstPoints = pruneLstPoints(jp,dir,lstPoints)
-            recomputeAABB(lstPoints,minlo,minhi,maxlo,maxhi)
-         return False # cannot reduce, point incompatible
-      if dim != dir: # do not reduce on the explored dimension
-         if (X[jp,dim] < minlo[dim] and X[jp,dim] > maxlo[dim]): maxlo[dim] = X[jp,dim]
-         if (X[jp,dim] > minhi[dim] and X[jp,dim] < maxhi[dim]): maxhi[dim] = X[jp,dim]
-      else: #dim = dir
-         if(intersect(jp,minlo,minhi)):
-            lstPoints = pruneLstPoints(jp,dim,lstPoints,minlo,minhi,maxlo,maxhi)
-      recomputeAABB(lstPoints,minlo,minhi,maxlo,maxhi)
+   fIntersect = intersect(jp, maxlo, maxhi)
+   if (fIntersect):
+      fReduced = False
+      for dim in np.arange(ndim): # first try non-expanding directions
+         if dim == dir: continue
+         if (X[jp, dim] > maxlo[dim] and X[jp, dim] < minlo[dim]):
+            maxlo[dim] = X[jp, dim]
+            fReduced   = True
+         if (X[jp, dim] > minhi[dim] and X[jp, dim] < maxhi[dim]):
+            maxhi[dim] = X[jp, dim]
+            fReduced = True
+      if not fReduced: # if nothing else, expanding direction
+         if (X[jp,dir] > maxlo[dir] and X[jp,dir] < minlo[dir]):
+            maxlo[dir] = X[jp, dir]
+         if (X[jp,dir] > minhi[dir] and X[jp,dir] < maxhi[dir]):
+            maxhi[dir] = X[jp, dir]
    return True
 
 # enlarges AABB given point of same class. Return false if impossible
@@ -224,7 +219,26 @@ if __name__ == "__main__":
    plotSolution()
 
    M = MIPmodel.MIPmodel(n,len(lstAABB))
-   M.makeModel(lstAABB,X,ndim,class01)
+   # passing point class, not box class!!
+   cuts = M.makeModel(lstAABB,X,ndim,df.iloc[:,3].to_numpy())
+
+   plt.figure(figsize=(9,6))
+   plt.scatter(X[:, 0], X[:, 1], c=df["class"].values)
+   for i in np.arange(n):
+      plt.annotate(df.iloc[i, 0], (X[i, 0], X[i, 1]))
+   for c in cuts:
+      if(c['dim']==0):
+         x1 = c['xcut']
+         y1 = 0
+         x2 = c['xcut']
+         y2 = 6
+      else:
+         y1 = c['xcut']
+         x1 = 0
+         y2 = c['xcut']
+         x2 = 6
+      plt.plot([x1, x2], [y1, y2], linewidth=2, marker='o')
+   plt.show()
 
    print("... END")
    pass
