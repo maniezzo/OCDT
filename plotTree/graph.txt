@@ -1,0 +1,15 @@
+digraph G {
+0 [shape=box,label="y>2.5\nhorizontal"]
+1 [shape=box,label="x<2.5\nvertical"]
+2 [label="Type 0",color="#00FF00"]
+3 [label="Type 1",color="#0000FF"]
+4 [shape=box,label="x<3.5\nvertical"]
+5 [label="Type 0",color="#00FF00"]
+6 [label="Type 1",color="#0000FF"]
+0 -> 1 [style=bold,label="True"];
+0 -> 2 [style=bold,label="False"];
+1 -> 3 [style=bold,label="True"];
+1 -> 4 [style=bold,label="False"];
+4 -> 5 [style=bold,label="True"];
+4 -> 6 [style=bold,label="False"];
+}
