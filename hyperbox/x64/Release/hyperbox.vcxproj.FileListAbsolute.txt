@@ -1,2 +1,0 @@
-C:\Google Drive\Ongoing\ODT\hyperbox\x64\Release\hyperbox.exe
-C:\git\ODT\hyperbox\x64\Release\hyperbox.exe
