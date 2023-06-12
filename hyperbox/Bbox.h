@@ -15,6 +15,16 @@
 
 using namespace std;
 
+// the hyperboxes with internal and external boundaries
+class AABB
+{
+   public:
+      AABB(int);
+      ~AABB();
+      int id;
+      vector<double> loOut, loIn, hiOut, hiIn; // internal and external max coordinates
+};
+
 class Bbox
 {
    public:
@@ -25,13 +35,16 @@ class Bbox
       int ndim,n; // number of dimensions (features), num points
       vector<vector<double>> X;  // features
       vector<int> Y;             // classes
-      struct AABB{vector<double> min; vector<double> max;};
-      vector<AABB> hbox;         // the final hyperboxes
+      struct hbox{vector<double> min; vector<double> max;}; // a final hyperbox, means of AABB
+      vector<hbox> finalBoxes;   // the final hyperboxes
+      vector<AABB> hboxes;       // the AABB along the way
       vector<int> ind0,ind1;     // indices of the two classes
 
+      void initializeBox(int idx, AABB& box, hbox domain);
+      void expandBox(int idx, AABB& box, int dim);
       string ExePath();
       vector<string> split(string str, char sep);
       void read_data(string fpath);
-
+      bool isInside(int idx, AABB box);
+      bool isInside(int idx, vector<double> lo, vector<double> hi);
 };
-
