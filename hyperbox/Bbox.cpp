@@ -51,8 +51,6 @@ int Bbox::bboxHeu(string fpath)
       AABB box(ndim);
       initializeBox(idx,box,domain); // out is whole domain, in is the point
       expandBox(idx,box,dim);
-
-      hboxes.push_back(box);
       idx++;
    }
 
@@ -94,6 +92,8 @@ void Bbox::expandBox(int idx, AABB& box, int d)
                   if (isInside((*p)[j], box))
                      cout << (*p)[j] << " is inside" << endl;
             }
+
+            hboxes.push_back(box);
          }
       }
    }
