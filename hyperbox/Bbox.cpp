@@ -59,9 +59,11 @@ int Bbox::bboxHeu(string fpath)
 
 // expands a box along all dimensions, starts from dimension d
 void Bbox::expandBox(int idx, AABB& box, int d)
-{  int i,j,dim;
+{  int i,j,k,dim;
    vector<int>* p;
 
+   cout << idx << " dim " << d << endl;
+   // check box against all points
    for(i=0;i<this->n;i++)
    {
       if(Y[idx]==Y[i] && isInside(i,box)) // same category, expand in
@@ -79,9 +81,15 @@ void Bbox::expandBox(int idx, AABB& box, int d)
                if (Y[idx] == 0) p = &ind0;
                else             p = &ind1;
                box.loOut[dim] = X[i][dim];
+               box.loIn[dim]  = X[idx][dim];
                for (j = 0; j < (*p).size(); j++)
-                  if (isInside((*p)[j], box))
-                     cout << (*p)[j] << " is inside" << endl;
+                  if (isInside((*p)[j], box.hiOut, box.loOut))
+                  {
+                     cout << (*p)[j] << " is inside lo" << endl;
+                     k = (*p)[j];
+                     if(X[k][dim] < box.loIn[dim]) box.loIn[dim]= X[k][dim];
+                  }
+               if (dim < ndim - 1) expandBox(idx, box, dim + 1);
             }
             if (X[i][dim] < box.hiOut[dim])
             {  cout << "Abbasso hi" << endl;  // abbasso sopra
@@ -89,12 +97,15 @@ void Bbox::expandBox(int idx, AABB& box, int d)
                else             p = &ind1;
                box.loOut[dim] = X[i][dim];
                for (j = 0; j < (*p).size(); j++)
-                  if (isInside((*p)[j], box))
-                     cout << (*p)[j] << " is inside" << endl;
+                  if (isInside((*p)[j], box.hiOut,box.loOut))
+                  {  cout << (*p)[j] << " is inside hi" << endl;
+                     k = (*p)[j];
+                     if (X[k][dim] > box.hiIn[dim]) box.hiIn[dim] = X[k][dim];
+                  }
+               if(dim<ndim-1) expandBox(idx, box, dim+1);
             }
-
-            hboxes.push_back(box);
          }
+         hboxes.push_back(box);
       }
    }
 }
