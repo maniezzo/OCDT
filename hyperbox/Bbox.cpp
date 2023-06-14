@@ -72,9 +72,9 @@ void Bbox::writeHboxes()
       cout << i << endl;
       for(dim=0;dim<ndim;dim++)
          cout << setw(5) << hboxes[i].hiOut[dim] << 
-                 setw(5) << hboxes[i].hiIn[dim] <<
-                 setw(5) << hboxes[i].loOut[dim] <<
-                 setw(5) << hboxes[i].loIn[dim] << endl;
+                 setw(5) << hboxes[i].hiIn[dim]  <<
+                 setw(5) << hboxes[i].loIn[dim]  <<
+                 setw(5) << hboxes[i].loOut[dim] << endl;
    }
 }
 
@@ -87,61 +87,67 @@ void Bbox::expandBox(int idx, AABB& box, int d)
    // check box against all points
    for(i=0;i<this->n;i++)
    {
-      if(Y[idx]==Y[i] && isInside(i,box)) // same category, expand in
-      {  for (dim = d; dim < this->ndim; dim++)
-         {  if (X[i][dim] > box.hiIn[dim]) box.loIn[dim] = X[i][dim];
-            if (X[i][dim] < box.loIn[dim]) box.loIn[dim] = X[i][dim];
-         }
-      }
-      else  // different category, reduce out and fork
-      {  for (dim = d; dim < this->ndim; dim++)
-         {  
-            if (Y[idx] == 0) p = &ind0;
-            else             p = &ind1;
-            if (X[i][dim] > box.loOut[dim])
-            {  cout << "Alzo il lo" << endl; // taglio sotto
-               box.loOut[dim] = X[i][dim];
-               box.loIn[dim]  = X[idx][dim]; // reinizializzo i punti nterni
-               for (j = 0; j < (*p).size(); j++)
-                  if (isInside((*p)[j], box.hiOut, box.loOut))
-                  {  cout << (*p)[j] << " is inside lo" << endl;
-                     k = (*p)[j];
-                     if(X[k][dim] < box.loIn[dim]) box.loIn[dim]= X[k][dim];
-                  }
-               if (dim < ndim - 1) expandBox(idx, box, dim + 1);
-            }
-            if (X[i][dim] < box.hiOut[dim])
-            {  cout << "Abbasso hi" << endl;  // abbasso sopra
-               box.loOut[dim] = X[i][dim];
-               box.hiIn[dim] = X[idx][dim]; // reinizializzo i punti nterni
-               for (j = 0; j < (*p).size(); j++)
-                  if (isInside((*p)[j], box.hiOut,box.loOut))
-                  {  cout << (*p)[j] << " is inside hi" << endl;
-                     k = (*p)[j];
-                     if (X[k][dim] > box.hiIn[dim]) box.hiIn[dim] = X[k][dim];
-                  }
-               if(dim<ndim-1) expandBox(idx, box, dim+1);
+      if(isInside(i, box))
+         if(Y[idx]==Y[i]) // same category, expand in
+         {  for (dim = d; dim < this->ndim; dim++)
+            {  if (X[i][dim] > box.hiIn[dim]) box.loIn[dim] = X[i][dim];
+               if (X[i][dim] < box.loIn[dim]) box.loIn[dim] = X[i][dim];
             }
          }
-         h = hash(box);
-         if(hashtable[h]!=0)
-            for (j = 0; j < hboxes.size(); j++)
-            {
-               h1 = hash(hboxes[j]);
-               if(h1==h)   // maybe the box is already there
-                  for (k = 0; k < this->ndim; k++)
-                     if (box.hiOut[k] == hboxes[j].hiOut[k] &&
-                        box.loOut[k] == hboxes[j].loOut[k] &&
-                        box.hiIn[k] == hboxes[j].hiIn[k] &&
-                        box.loIn[k] == hboxes[j].loIn[k])
-                     {
-                        cout << "Duplicate box" << endl;
-                        return;
+         else  // different category, reduce out and fork
+         {  for (dim = d; dim < this->ndim; dim++)
+            {  if (Y[idx] == 0) p = &ind0;
+               else             p = &ind1;
+
+               if (X[i][dim] > box.loOut[dim] && X[i][dim] < X[idx][dim])
+               {  cout << "Alzo il lo" << endl; // taglio sotto
+                  box.loOut[dim] = X[i][dim];
+                  box.loIn[dim]  = X[idx][dim]; // reinizializzo i punti nterni
+                  for (j = 0; j < (*p).size(); j++)
+                     if (isInside((*p)[j], box.hiOut, box.loOut))
+                     {  cout << (*p)[j] << " is inside lo" << endl;
+                        k = (*p)[j];
+                        if(X[k][dim] < box.loIn[dim]) box.loIn[dim] = X[k][dim];
                      }
+                  if(box.hiIn[dim] < box.loIn[dim])
+                     continue;
+                  if (dim < ndim - 1) expandBox(idx, box, dim + 1);
+               }
+
+               if (X[i][dim] < box.hiOut[dim] && X[i][dim] > X[idx][dim])
+               {  cout << "Abbasso hi" << endl;  // abbasso sopra
+                  box.hiOut[dim] = X[i][dim];
+                  box.hiIn[dim] = X[idx][dim]; // reinizializzo i punti nterni
+                  for (j = 0; j < (*p).size(); j++)
+                     if (isInside((*p)[j], box.hiOut,box.loOut))
+                     {  cout << (*p)[j] << " is inside hi" << endl;
+                        k = (*p)[j];
+                        if (X[k][dim] > box.hiIn[dim]) box.hiIn[dim] = X[k][dim];
+                     }
+                  if (box.hiIn[dim] < box.loIn[dim])
+                     continue;
+                  if(dim<ndim-1) expandBox(idx, box, dim+1);
+               }
             }
-         hboxes.push_back(box);
-         hashtable[h] = 1;
-      }
+            // add box to hboxes list
+            h = hash(box);
+            if(hashtable[h]!=0)
+               for (j = 0; j < hboxes.size(); j++)
+               {  h1 = hash(hboxes[j]);
+                  if(h1==h)   // maybe the box is already there
+                     for (k = 0; k < this->ndim; k++)
+                        if (box.hiOut[k] == hboxes[j].hiOut[k] &&
+                           box.loOut[k] == hboxes[j].loOut[k] &&
+                           box.hiIn[k] == hboxes[j].hiIn[k] &&
+                           box.loIn[k] == hboxes[j].loIn[k])
+                        {
+                           cout << "Duplicate box" << endl;
+                           return;
+                        }
+               }
+            hboxes.push_back(box);
+            hashtable[h] = 1;
+         }
    }
 }
 
@@ -154,7 +160,6 @@ int Bbox::hash(AABB box)
    cout << " h=" << h << endl;
    return h;
 }
-
 
 // if a point is inside the outer box of an AABB
 bool Bbox::isInside(int idx, AABB box)
