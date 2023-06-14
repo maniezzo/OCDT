@@ -27,10 +27,14 @@ Bbox::~Bbox()
 {  return;
 }
 
-// main method, everythong starts from here
+// >>>>>>>>>>>>>>>>>>> main method, everythong starts from here <<<<<<<<<<<<<<<<<<<<<<<
 int Bbox::bboxHeu(string fpath)
 {  int i,j,dim,idx;
    read_data(fpath);
+
+   this->m = 10000;
+   hashtable.resize(this->m);
+   fill(hashtable.begin(), hashtable.end(), 0);
 
    // find min and max coords of the domain
    hbox domain;
@@ -54,12 +58,29 @@ int Bbox::bboxHeu(string fpath)
       idx++;
    }
 
+   cout << "n. box: " << hboxes.size() << endl;
+   writeHboxes();
    return 0;
+}
+
+// writes out the final boxes
+void Bbox::writeHboxes()
+{
+   int i,dim;
+   for (i = 0; i < hboxes.size(); i++)
+   {
+      cout << i << endl;
+      for(dim=0;dim<ndim;dim++)
+         cout << setw(5) << hboxes[i].hiOut[dim] << 
+                 setw(5) << hboxes[i].hiIn[dim] <<
+                 setw(5) << hboxes[i].loOut[dim] <<
+                 setw(5) << hboxes[i].loIn[dim] << endl;
+   }
 }
 
 // expands a box along all dimensions, starts from dimension d
 void Bbox::expandBox(int idx, AABB& box, int d)
-{  int i,j,k,dim;
+{  int i,j,k,h,h1,dim;
    vector<int>* p;
 
    cout << idx << " dim " << d << endl;
@@ -73,19 +94,17 @@ void Bbox::expandBox(int idx, AABB& box, int d)
          }
       }
       else  // different category, reduce out and fork
-      {
-         for (dim = d; dim < this->ndim; dim++)
-         {
+      {  for (dim = d; dim < this->ndim; dim++)
+         {  
+            if (Y[idx] == 0) p = &ind0;
+            else             p = &ind1;
             if (X[i][dim] > box.loOut[dim])
             {  cout << "Alzo il lo" << endl; // taglio sotto
-               if (Y[idx] == 0) p = &ind0;
-               else             p = &ind1;
                box.loOut[dim] = X[i][dim];
-               box.loIn[dim]  = X[idx][dim];
+               box.loIn[dim]  = X[idx][dim]; // reinizializzo i punti nterni
                for (j = 0; j < (*p).size(); j++)
                   if (isInside((*p)[j], box.hiOut, box.loOut))
-                  {
-                     cout << (*p)[j] << " is inside lo" << endl;
+                  {  cout << (*p)[j] << " is inside lo" << endl;
                      k = (*p)[j];
                      if(X[k][dim] < box.loIn[dim]) box.loIn[dim]= X[k][dim];
                   }
@@ -93,9 +112,8 @@ void Bbox::expandBox(int idx, AABB& box, int d)
             }
             if (X[i][dim] < box.hiOut[dim])
             {  cout << "Abbasso hi" << endl;  // abbasso sopra
-               if (Y[idx] == 0) p = &ind0;
-               else             p = &ind1;
                box.loOut[dim] = X[i][dim];
+               box.hiIn[dim] = X[idx][dim]; // reinizializzo i punti nterni
                for (j = 0; j < (*p).size(); j++)
                   if (isInside((*p)[j], box.hiOut,box.loOut))
                   {  cout << (*p)[j] << " is inside hi" << endl;
@@ -105,10 +123,38 @@ void Bbox::expandBox(int idx, AABB& box, int d)
                if(dim<ndim-1) expandBox(idx, box, dim+1);
             }
          }
+         h = hash(box);
+         if(hashtable[h]!=0)
+            for (j = 0; j < hboxes.size(); j++)
+            {
+               h1 = hash(hboxes[j]);
+               if(h1==h)   // maybe the box is already there
+                  for (k = 0; k < this->ndim; k++)
+                     if (box.hiOut[k] == hboxes[j].hiOut[k] &&
+                        box.loOut[k] == hboxes[j].loOut[k] &&
+                        box.hiIn[k] == hboxes[j].hiIn[k] &&
+                        box.loIn[k] == hboxes[j].loIn[k])
+                     {
+                        cout << "Duplicate box" << endl;
+                        return;
+                     }
+            }
          hboxes.push_back(box);
+         hashtable[h] = 1;
       }
    }
 }
+
+// hash of box, fast check of duplicate boxes
+int Bbox::hash(AABB box)
+{  int i,m,h,sum = 0;
+   for(i=0;i<this->ndim;i++)
+      sum += box.hiOut[i] * box.loOut[i] * box.hiIn[i] * box.loIn[i];
+   h = (int)sum % this->m;
+   cout << " h=" << h << endl;
+   return h;
+}
+
 
 // if a point is inside the outer box of an AABB
 bool Bbox::isInside(int idx, AABB box)
