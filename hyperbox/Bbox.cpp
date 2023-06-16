@@ -80,7 +80,7 @@ void Bbox::writeHboxes()
 
 // expands a box along all dimensions, starts from dimension d
 void Bbox::expandBox(int idx, AABB& box, int d)
-{  int i,j,k,h,h1,dim;
+{  int i,i1,j,k,h,h1,dim;
    vector<int>* p;
 
    cout << idx << " dim " << d << endl;
@@ -107,10 +107,11 @@ void Bbox::expandBox(int idx, AABB& box, int d)
                      if (isInside((*p)[j], box.hiOut, box.loOut))
                      {  cout << (*p)[j] << " is inside lo" << endl;
                         k = (*p)[j];
+                        //cout << box.loIn[dim] << " -> " << X[k][dim] << endl;
                         if(X[k][dim] < box.loIn[dim]) box.loIn[dim] = X[k][dim];
                      }
                   if(box.hiIn[dim] < box.loIn[dim])
-                     continue;
+                     cout << "ERROR hiin " << box.hiIn[dim] << " lo " << box.loIn[dim] << endl;;;
                   if (dim < ndim - 1) expandBox(idx, box, dim + 1);
                }
 
@@ -119,13 +120,16 @@ void Bbox::expandBox(int idx, AABB& box, int d)
                   box.hiOut[dim] = X[i][dim];
                   box.hiIn[dim] = X[idx][dim]; // reinizializzo i punti nterni
                   for (j = 0; j < (*p).size(); j++)
-                     if (isInside((*p)[j], box.hiOut,box.loOut))
+                  {  i1 = (*p)[j];
+                     if (isInside(i1, box.hiOut,box.loOut))
                      {  cout << (*p)[j] << " is inside hi" << endl;
                         k = (*p)[j];
+                        //cout << box.hiIn[dim] << " -> " << X[k][dim] << endl;
                         if (X[k][dim] > box.hiIn[dim]) box.hiIn[dim] = X[k][dim];
                      }
+                  }
                   if (box.hiIn[dim] < box.loIn[dim])
-                     continue;
+                     cout << "ERROR hiin " << box.hiIn[dim] << " lo " << box.loIn[dim] << endl;;
                   if(dim<ndim-1) expandBox(idx, box, dim+1);
                }
             }
@@ -157,7 +161,7 @@ int Bbox::hash(AABB box)
    for(i=0;i<this->ndim;i++)
       sum += box.hiOut[i] * box.loOut[i] * box.hiIn[i] * box.loIn[i];
    h = (int)sum % this->m;
-   cout << " h=" << h << endl;
+   //cout << " h=" << h << endl;
    return h;
 }
 
@@ -193,9 +197,9 @@ void Bbox::initializeBox(int idx, AABB& box, hbox domain)
    for (int dim = 0; dim < this->ndim; dim++)
    {
       box.hiIn[dim] = X[idx][dim];
-      box.hiOut[dim] = domain.max[dim];
+      box.hiOut[dim] = domain.max[dim]+1; // sennò un punto non sta dentro il suo box
       box.loIn[dim] = X[idx][dim];
-      box.loOut[dim] = domain.min[dim];
+      box.loOut[dim] = domain.min[dim]-1;
    }
    box.id = this->hboxes.size();
 }
