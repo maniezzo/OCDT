@@ -22,7 +22,9 @@ class AABB
       AABB(int);
       ~AABB();
       int id;
+      int classe;
       vector<double> loOut, loIn, hiOut, hiIn; // internal and external max coordinates
+      vector<int> points;  // points inside the box
 };
 
 class Bbox
@@ -47,7 +49,7 @@ class Bbox
       vector<string> split(string str, char sep);
       void read_data(string fpath);
       bool isInside(int idx, AABB box);
-      bool isInside(int idx, vector<double> lo, vector<double> hi);
+      bool isInsideVec(int idx, vector<double> lo, vector<double> hi);
       int  hash(AABB box);
       void writeHboxes();
 };

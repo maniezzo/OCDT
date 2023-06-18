@@ -69,7 +69,7 @@ void Bbox::writeHboxes()
    int i,dim;
    for (i = 0; i < hboxes.size(); i++)
    {
-      cout << i << endl;
+      cout << i << " class " << hboxes[i].classe << endl;
       for(dim=0;dim<ndim;dim++)
          cout << setw(5) << hboxes[i].hiOut[dim] << 
                  setw(5) << hboxes[i].hiIn[dim]  <<
@@ -82,8 +82,11 @@ void Bbox::writeHboxes()
 void Bbox::expandBox(int idx, AABB& box, int d)
 {  int i,i1,j,k,h,h1,dim;
    vector<int>* p;
+   vector<int> pts;
 
-   cout << idx << " dim " << d << endl;
+   cout << ">>>>> Box " << box.id << " class " << Y[idx] << " seed " << idx << " dim " << d << endl;
+   if (Y[idx] == 0) p = &ind0;
+   else             p = &ind1;
    // check box against all points
    for(i=0;i<this->n;i++)
    {
@@ -96,43 +99,48 @@ void Bbox::expandBox(int idx, AABB& box, int d)
          }
          else  // different category, reduce out and fork
          {  for (dim = d; dim < this->ndim; dim++)
-            {  if (Y[idx] == 0) p = &ind0;
-               else             p = &ind1;
-
+            {  
                if (X[i][dim] > box.loOut[dim] && X[i][dim] < X[idx][dim])
-               {  cout << "Alzo il lo" << endl; // taglio sotto
+               {  cout << "------ box " << box.id <<" point " << i << " Alzo il lo " << box.loOut[dim] << " -> " << X[i][dim] << endl; // taglio sotto
                   box.loOut[dim] = X[i][dim];
                   box.loIn[dim]  = X[idx][dim]; // reinizializzo i punti nterni
+                  pts = box.points;
+                  box.points.clear();
                   for (j = 0; j < (*p).size(); j++)
-                     if (isInside((*p)[j], box.hiOut, box.loOut))
-                     {  cout << (*p)[j] << " is inside lo" << endl;
-                        k = (*p)[j];
-                        //cout << box.loIn[dim] << " -> " << X[k][dim] << endl;
-                        if(X[k][dim] < box.loIn[dim]) box.loIn[dim] = X[k][dim];
+                  {  k = (*p)[j];
+                     if (isInsideVec(k, box.loOut, box.hiOut))
+                     {  cout << k << " is inside lo" << endl;
+                        if(X[k][dim] < box.loIn[dim])
+                        {  cout << "loin dim "<< dim << " " << box.loIn[dim] << " -> " << X[k][dim] << endl;
+                           box.loIn[dim] = X[k][dim];
+                        }
                      }
-                  if(box.hiIn[dim] < box.loIn[dim])
-                     cout << "ERROR hiin " << box.hiIn[dim] << " lo " << box.loIn[dim] << endl;;;
+                  }
                   if (dim < ndim - 1) expandBox(idx, box, dim + 1);
                }
 
                if (X[i][dim] < box.hiOut[dim] && X[i][dim] > X[idx][dim])
-               {  cout << "Abbasso hi" << endl;  // abbasso sopra
+               {  cout << "++++++ box "<<box.id<< " point " << i << " Abbasso hi " << box.hiOut[dim] << " -> " << X[i][dim] << endl;  // abbasso sopra
                   box.hiOut[dim] = X[i][dim];
-                  box.hiIn[dim] = X[idx][dim]; // reinizializzo i punti nterni
-                  for (j = 0; j < (*p).size(); j++)
-                  {  i1 = (*p)[j];
-                     if (isInside(i1, box.hiOut,box.loOut))
-                     {  cout << (*p)[j] << " is inside hi" << endl;
-                        k = (*p)[j];
-                        //cout << box.hiIn[dim] << " -> " << X[k][dim] << endl;
-                        if (X[k][dim] > box.hiIn[dim]) box.hiIn[dim] = X[k][dim];
+                  box.hiIn[dim]  = X[idx][dim]; // reinizializzo i punti nterni
+                  //for (j = 0; j < (*p).size(); j++)
+                  //{  i1 = (*p)[j];
+                  for (j = 0; j < pts.size(); j++)
+                  {
+                     k = pts[j];
+                     if (isInsideVec(k, box.loOut, box.hiOut))
+                     {  cout << k << " is inside hi" << endl;
+                        if (X[k][dim] > box.hiIn[dim])
+                        {  cout << "hiin dim " << dim << " " << box.hiIn[dim] << " -> " << X[k][dim] << endl;
+                           box.hiIn[dim] = X[k][dim];
+                        }
                      }
                   }
-                  if (box.hiIn[dim] < box.loIn[dim])
-                     cout << "ERROR hiin " << box.hiIn[dim] << " lo " << box.loIn[dim] << endl;;
                   if(dim<ndim-1) expandBox(idx, box, dim+1);
                }
-            }
+            if (box.hiIn[dim] < box.loIn[dim])
+               cout << "ERROR hiin " << box.hiIn[dim] << " lo " << box.loIn[dim] << endl;;;
+         }
             // add box to hboxes list
             h = hash(box);
             if(hashtable[h]!=0)
@@ -150,7 +158,7 @@ void Bbox::expandBox(int idx, AABB& box, int d)
                         }
                }
             hboxes.push_back(box);
-            hashtable[h] = 1;
+            hashtable[h] = 1;  // cell is used
          }
    }
 }
@@ -170,7 +178,7 @@ bool Bbox::isInside(int idx, AABB box)
 {  int dim;
    bool isIn = false;
    for (dim = 0; dim < this->ndim; dim++)
-   {  if (X[idx][dim] > box.hiOut[dim]) goto l0;
+   {  if (X[idx][dim] > box.hiOut[dim]) goto l0; // non è dentro
       if (X[idx][dim] < box.loOut[dim]) goto l0;
    }
    isIn = true;
@@ -179,12 +187,12 @@ l0:return isIn;
 }
 
 // if a point is inside a hyperrect given hi and lo coords
-bool Bbox::isInside(int idx, vector<double> lo, vector<double> hi)
+bool Bbox::isInsideVec(int i1, vector<double> lo, vector<double> hi)
 {  int dim;
    bool isIn = false;
    for (dim = 0; dim < this->ndim; dim++)
-   {  if (X[idx][dim] > hi[dim]) goto l0;
-      if (X[idx][dim] < lo[dim]) goto l0;
+   {  if (X[i1][dim] > hi[dim]) goto l0; // non è dentro
+      if (X[i1][dim] < lo[dim]) goto l0;
    }
    isIn = true;
 
@@ -202,6 +210,8 @@ void Bbox::initializeBox(int idx, AABB& box, hbox domain)
       box.loOut[dim] = domain.min[dim]-1;
    }
    box.id = this->hboxes.size();
+   box.classe = Y[idx];
+   box.points.push_back(idx);
 }
 
 void Bbox::read_data(string fpath)
