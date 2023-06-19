@@ -71,7 +71,7 @@ void Bbox::writeHboxes()
 {  int i,j,dim;
    for (i = 0; i < hboxes.size(); i++)
    {
-      cout << i << " class " << hboxes[i].classe;
+      cout << i << ") Box " << hboxes[i].id << " class " << hboxes[i].classe;
       for(j=0;j<hboxes[i].points.size();j++)
          cout << " " << hboxes[i].points[j]; cout << endl;
       for(dim=0;dim<ndim;dim++)
@@ -88,7 +88,29 @@ void Bbox::expandBox(int idx, AABB& box, int d)
    vector<int> pts;
 
    cout << ">>>>> Box " << box.id << " class " << Y[idx] << " seed " << idx << " dim " << d << endl;
-   // check box against all points
+
+   // base della ricorsione, add box to hboxes list
+   if (d == ndim)
+   {  h = hash(box);
+      if (hashtable[h] != 0)
+         for (j = 0; j < hboxes.size(); j++)
+         {  h1 = hash(hboxes[j]);
+            if (h1 == h)   // maybe the box is already there
+               for (k = 0; k < this->ndim; k++)
+                  if (box.hiOut[k] == hboxes[j].hiOut[k] &&
+                     box.loOut[k] == hboxes[j].loOut[k] &&
+                     box.hiIn[k] == hboxes[j].hiIn[k] &&
+                     box.loIn[k] == hboxes[j].loIn[k])
+                  {  cout << "Duplicate box" << endl;
+                     return;
+                  }
+         }
+      cout << "Adding box " << box.id << endl;
+      hboxes.push_back(box);
+      hashtable[h] = 1;  // cell is used
+      return;
+   }
+   // ELSE check box against all points
    for(i=0;i<this->n;i++)
    {
       if(isInside(i, box))
@@ -118,7 +140,7 @@ void Bbox::expandBox(int idx, AABB& box, int d)
                         box.points.push_back(k);
                      }
                   }
-                  if (dim < ndim - 1) expandBox(idx, box, dim + 1);
+                  expandBox(idx, box, dim + 1);
                }
 
                if (X[i][dim] < box.hiOut[dim] && X[i][dim] > X[idx][dim])
@@ -141,30 +163,15 @@ void Bbox::expandBox(int idx, AABB& box, int d)
                         box.points.push_back(k);
                      }
                   }
-                  if(dim<ndim-1) expandBox(idx, box, dim+1);
+                  expandBox(idx, box, dim+1);
                }
-            if (box.hiIn[dim] < box.loIn[dim])
-               cout << "ERROR hiin " << box.hiIn[dim] << " lo " << box.loIn[dim] << endl;;;
+               if (box.hiIn[dim] < box.loIn[dim])
+                  cout << "ERROR hiin " << box.hiIn[dim] << " lo " << box.loIn[dim] << endl;;;
+            }
          }
-      }
    }
-   // add box to hboxes list
-   h = hash(box);
-   if(hashtable[h]!=0)
-      for (j = 0; j < hboxes.size(); j++)
-      {  h1 = hash(hboxes[j]);
-         if(h1==h)   // maybe the box is already there
-            for (k = 0; k < this->ndim; k++)
-               if(box.hiOut[k] == hboxes[j].hiOut[k] &&
-                  box.loOut[k] == hboxes[j].loOut[k] &&
-                  box.hiIn[k] == hboxes[j].hiIn[k] &&
-                  box.loIn[k] == hboxes[j].loIn[k])
-               {  cout << "Duplicate box" << endl;
-                  return;
-               }
-      }
-   hboxes.push_back(box);
-   hashtable[h] = 1;  // cell is used
+   // niente da cambiare in questa dimensione
+   if(dim<ndim) expandBox(idx, box, dim + 1);
 }
 
 // hash of box, fast check of duplicate boxes
