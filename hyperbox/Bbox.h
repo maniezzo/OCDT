@@ -34,7 +34,8 @@ class Bbox
       ~Bbox();
       int bboxHeu(string fpath);
    private:
-      int ndim,n,m; // number of dimensions (features), num points, hashtable size
+      int ndim,n,m;  // number of dimensions (features), num points, hashtable size
+      int nb;        // boxes global counter
       vector<vector<double>> X;  // features
       vector<int> Y;             // classes
       struct hbox{vector<double> min; vector<double> max;}; // a final hyperbox, means of AABB
