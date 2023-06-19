@@ -19,7 +19,10 @@ AABB::~AABB()
 
 
 Bbox::Bbox()
-{  return;
+{  vector<int> dummy;
+   ptClass.push_back(dummy); // row 0
+   ptClass.push_back(dummy); // row 1
+   return;
 }
 
 //dtor
@@ -65,35 +68,33 @@ int Bbox::bboxHeu(string fpath)
 
 // writes out the final boxes
 void Bbox::writeHboxes()
-{
-   int i,dim;
+{  int i,j,dim;
    for (i = 0; i < hboxes.size(); i++)
    {
-      cout << i << " class " << hboxes[i].classe << endl;
+      cout << i << " class " << hboxes[i].classe;
+      for(j=0;j<hboxes[i].points.size();j++)
+         cout << " " << hboxes[i].points[j]; cout << endl;
       for(dim=0;dim<ndim;dim++)
-         cout << setw(5) << hboxes[i].hiOut[dim] << 
-                 setw(5) << hboxes[i].hiIn[dim]  <<
+         cout << setw(5) << hboxes[i].loOut[dim] << 
                  setw(5) << hboxes[i].loIn[dim]  <<
-                 setw(5) << hboxes[i].loOut[dim] << endl;
+                 setw(5) << hboxes[i].hiIn[dim]  <<
+                 setw(5) << hboxes[i].hiOut[dim] << endl;
    }
 }
 
 // expands a box along all dimensions, starts from dimension d
 void Bbox::expandBox(int idx, AABB& box, int d)
 {  int i,i1,j,k,h,h1,dim;
-   vector<int>* p;
    vector<int> pts;
 
    cout << ">>>>> Box " << box.id << " class " << Y[idx] << " seed " << idx << " dim " << d << endl;
-   if (Y[idx] == 0) p = &ind0;
-   else             p = &ind1;
    // check box against all points
    for(i=0;i<this->n;i++)
    {
       if(isInside(i, box))
          if(Y[idx]==Y[i]) // same category, expand in
          {  for (dim = d; dim < this->ndim; dim++)
-            {  if (X[i][dim] > box.hiIn[dim]) box.loIn[dim] = X[i][dim];
+            {  if (X[i][dim] > box.hiIn[dim]) box.hiIn[dim] = X[i][dim];
                if (X[i][dim] < box.loIn[dim]) box.loIn[dim] = X[i][dim];
             }
          }
@@ -106,14 +107,15 @@ void Bbox::expandBox(int idx, AABB& box, int d)
                   box.loIn[dim]  = X[idx][dim]; // reinizializzo i punti nterni
                   pts = box.points;
                   box.points.clear();
-                  for (j = 0; j < (*p).size(); j++)
-                  {  k = (*p)[j];
+                  for (j = 0; j < ptClass[Y[idx]].size(); j++)
+                  {  k = ptClass[Y[idx]][j];
                      if (isInsideVec(k, box.loOut, box.hiOut))
                      {  cout << k << " is inside lo" << endl;
                         if(X[k][dim] < box.loIn[dim])
                         {  cout << "loin dim "<< dim << " " << box.loIn[dim] << " -> " << X[k][dim] << endl;
                            box.loIn[dim] = X[k][dim];
                         }
+                        box.points.push_back(k);
                      }
                   }
                   if (dim < ndim - 1) expandBox(idx, box, dim + 1);
@@ -123,17 +125,20 @@ void Bbox::expandBox(int idx, AABB& box, int d)
                {  cout << "++++++ box "<<box.id<< " point " << i << " Abbasso hi " << box.hiOut[dim] << " -> " << X[i][dim] << endl;  // abbasso sopra
                   box.hiOut[dim] = X[i][dim];
                   box.hiIn[dim]  = X[idx][dim]; // reinizializzo i punti nterni
+                  pts = box.points;
+                  box.points.clear();
                   //for (j = 0; j < (*p).size(); j++)
                   //{  i1 = (*p)[j];
-                  for (j = 0; j < pts.size(); j++)
+                  for (j = 0; j < ptClass[1 - Y[idx]].size(); j++)
                   {
-                     k = pts[j];
+                     k = ptClass[Y[idx]][j];
                      if (isInsideVec(k, box.loOut, box.hiOut))
                      {  cout << k << " is inside hi" << endl;
                         if (X[k][dim] > box.hiIn[dim])
                         {  cout << "hiin dim " << dim << " " << box.hiIn[dim] << " -> " << X[k][dim] << endl;
                            box.hiIn[dim] = X[k][dim];
                         }
+                        box.points.push_back(k);
                      }
                   }
                   if(dim<ndim-1) expandBox(idx, box, dim+1);
@@ -141,26 +146,25 @@ void Bbox::expandBox(int idx, AABB& box, int d)
             if (box.hiIn[dim] < box.loIn[dim])
                cout << "ERROR hiin " << box.hiIn[dim] << " lo " << box.loIn[dim] << endl;;;
          }
-            // add box to hboxes list
-            h = hash(box);
-            if(hashtable[h]!=0)
-               for (j = 0; j < hboxes.size(); j++)
-               {  h1 = hash(hboxes[j]);
-                  if(h1==h)   // maybe the box is already there
-                     for (k = 0; k < this->ndim; k++)
-                        if (box.hiOut[k] == hboxes[j].hiOut[k] &&
-                           box.loOut[k] == hboxes[j].loOut[k] &&
-                           box.hiIn[k] == hboxes[j].hiIn[k] &&
-                           box.loIn[k] == hboxes[j].loIn[k])
-                        {
-                           cout << "Duplicate box" << endl;
-                           return;
-                        }
-               }
-            hboxes.push_back(box);
-            hashtable[h] = 1;  // cell is used
-         }
+      }
    }
+   // add box to hboxes list
+   h = hash(box);
+   if(hashtable[h]!=0)
+      for (j = 0; j < hboxes.size(); j++)
+      {  h1 = hash(hboxes[j]);
+         if(h1==h)   // maybe the box is already there
+            for (k = 0; k < this->ndim; k++)
+               if(box.hiOut[k] == hboxes[j].hiOut[k] &&
+                  box.loOut[k] == hboxes[j].loOut[k] &&
+                  box.hiIn[k] == hboxes[j].hiIn[k] &&
+                  box.loIn[k] == hboxes[j].loIn[k])
+               {  cout << "Duplicate box" << endl;
+                  return;
+               }
+      }
+   hboxes.push_back(box);
+   hashtable[h] = 1;  // cell is used
 }
 
 // hash of box, fast check of duplicate boxes
@@ -240,8 +244,9 @@ void Bbox::read_data(string fpath)
       X.push_back(val);
       j = stoi(elem[ndim + 1]);
       Y.push_back(j);
-      if(j==0) ind0.push_back(stoi(elem[0]));
-      else     ind1.push_back(stoi(elem[0]));
+      if(j==0) ptClass[0].push_back(stoi(elem[0]));
+      else     ptClass[1].push_back(stoi(elem[0]));
+      
    }
    f.close();
    n = Y.size();  // number of input records

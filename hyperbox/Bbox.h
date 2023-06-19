@@ -40,8 +40,8 @@ class Bbox
       struct hbox{vector<double> min; vector<double> max;}; // a final hyperbox, means of AABB
       vector<hbox> finalBoxes;   // the final hyperboxes
       vector<AABB> hboxes;       // the AABB along the way
-      vector<int> ind0,ind1;     // indices of the two classes
       vector<int> hashtable;     // hash of hboxes
+      vector<vector<int>> ptClass; // indices of the two classes
 
       void initializeBox(int idx, AABB& box, hbox domain);
       void expandBox(int idx, AABB& box, int dim);
