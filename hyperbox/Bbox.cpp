@@ -157,12 +157,18 @@ void Bbox::expandBox(int idx, AABB& box, int d, int idpt)
 
    // base della ricorsione, add box to hboxes list
    if (d <= ndim)
-   {  h = hash(box);
+   {  sort(box.loOut.begin(), box.loOut.end());
+      sort(box.loIn.begin(), box.loIn.end());
+      sort(box.hiIn.begin(), box.hiIn.end());
+      sort(box.hiOut.begin(), box.hiOut.end());
+      h = hash(box);
       if (hashtable[h] != 0)
-         for (j = 0; j < hboxes.size(); j++)
+      {  j=0;
+         while (j < hboxes.size())
          {  h1 = hash(hboxes[j]);
             if (h1 == h)   // maybe the box is already there
-               for (k = 0; k < this->ndim; k++)
+            {
+               for (k = 0; k < ndim; k++)
                   if (box.hiOut[k] == hboxes[j].hiOut[k] &&
                      box.loOut[k] == hboxes[j].loOut[k] &&
                      box.hiIn[k] == hboxes[j].hiIn[k] &&
@@ -170,7 +176,31 @@ void Bbox::expandBox(int idx, AABB& box, int d, int idpt)
                   {  cout << "Duplicate box" << endl;
                      return;
                   }
+               j++;
+            }
+            else  // forse contiene / è contenuto in qualcun altro
+            {
+               for (k = 0; k < ndim; k++)
+                  if (box.hiOut[k] <= hboxes[j].hiOut[k] &&
+                     box.loOut[k] >= hboxes[j].loOut[k] &&
+                     box.hiIn[k] <= hboxes[j].hiIn[k] &&
+                     box.loIn[k] >= hboxes[j].loIn[k])
+                  {  cout << "Box contained, rejected" << endl;
+                     return;
+                  }
+                  else
+                     if (box.hiOut[k] >= hboxes[j].hiOut[k] &&
+                        box.loOut[k] <= hboxes[j].loOut[k] &&
+                        box.hiIn[k] >= hboxes[j].hiIn[k] &&
+                        box.loIn[k] <= hboxes[j].loIn[k])
+                     {  cout << "Box containing" << endl;
+                        hboxes.erase(hboxes.begin() + j);
+                        j--;
+                     }
+               j++;
+            }
          }
+      }
       cout << "Adding box " << box.id << endl;
       hboxes.push_back(box);
       hashtable[h] = 1;  // cell is used
