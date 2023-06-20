@@ -17,7 +17,6 @@ AABB::~AABB()
 {  return;
 }
 
-
 Bbox::Bbox()
 {  vector<int> dummy;
    ptClass.push_back(dummy); // row 0
@@ -54,11 +53,11 @@ int Bbox::bboxHeu(string fpath)
    // box a set
    dim = 0; // the class (dimension) under study
    idx = 0; // index of incumbent record
-   while (idx<Y.size())
-   {  
+   while (idx<Y.size()) // expand each point along every dimension
+   {  cout << "-> -> -> -> -> -> -> -> -> initializaing point " << idx << endl; 
       AABB box(ndim);
       initializeBox(idx,box,domain); // out is whole domain, in is the point
-      expandBox(idx,box,dim);
+      expandBox(idx,box,dim,0);
       idx++;
    }
 
@@ -83,24 +82,28 @@ void Bbox::writeHboxes()
    }
 }
 
-// expands a box along all dimensions, starts from dimension d
-void Bbox::expandBox(int idx, AABB& box, int d)
+// expands a box along all dimensions, starts from dimension d, inner loop from node idpt
+void Bbox::expandBox(int idx, AABB& box, int d, int idpt)
 {  int i,i1,j,k,h,h1,dim;
    vector<int> pts;
+   bool changed;
 
    nb++;
    box.id = nb;
    cout << ">>>>> Box " << box.id << " class " << Y[idx] << " seed " << idx << " dim " << d << endl;
    // check box against all points
-   for(i=0;i<this->n;i++)
+   for(i=idpt;i<n;i++)
    {
       if(isInside(i, box))
          if(Y[idx]==Y[i]) // same category, expand in
-         {  for (dim = d; dim < this->ndim; dim++)
-            {  if (X[i][dim] > box.hiIn[dim]) box.hiIn[dim] = X[i][dim];
-               if (X[i][dim] < box.loIn[dim]) box.loIn[dim] = X[i][dim];
+         {  for (dim = 0; dim < this->ndim; dim++)
+            {  if (X[i][dim] > box.hiIn[dim] && X[i][dim] < box.hiOut[dim]) 
+                  box.hiIn[dim] = X[i][dim];
+               if (X[i][dim] < box.loIn[dim] && X[i][dim] > box.loOut[dim]) 
+                  box.loIn[dim] = X[i][dim]; 
             }
-            if (find(box.points.begin(), box.points.end(), i) == box.points.end())
+            if (isInsideVec(i,box.loIn,box.hiIn) &&
+                find(box.points.begin(), box.points.end(), i) == box.points.end())
                box.points.push_back(i);
          }
          else  // different category, reduce out and fork
@@ -123,7 +126,7 @@ void Bbox::expandBox(int idx, AABB& box, int d)
                         box.points.push_back(k);
                      }
                   }
-                  expandBox(idx, box, dim + 1);
+                  expandBox(idx, box, dim, i+1);
                }
 
                if (X[i][dim] < box.hiOut[dim] && X[i][dim] > X[idx][dim])
@@ -143,17 +146,17 @@ void Bbox::expandBox(int idx, AABB& box, int d)
                         box.points.push_back(k);
                      }
                   }
-                  expandBox(idx, box, dim+1);
+                  expandBox(idx, box, dim, i+1);
                }
 
                if (box.hiIn[dim] < box.loIn[dim])
-                  cout << "ERROR hiin " << box.hiIn[dim] << " lo " << box.loIn[dim] << endl;;;
+                  cout << "ERROR hiin " << box.hiIn[dim] << " lo " << box.loIn[dim] << endl;
             }
          }
    }
 
    // base della ricorsione, add box to hboxes list
-   if (d == ndim)
+   if (d <= ndim)
    {  h = hash(box);
       if (hashtable[h] != 0)
          for (j = 0; j < hboxes.size(); j++)
@@ -175,7 +178,7 @@ void Bbox::expandBox(int idx, AABB& box, int d)
    }
    else
       // niente da cambiare in questa dimensione
-      if (dim < ndim) expandBox(idx, box, dim + 1);
+      if (d < ndim) expandBox(idx, box, d + 1,0);
 }
 
 // hash of box, fast check of duplicate boxes

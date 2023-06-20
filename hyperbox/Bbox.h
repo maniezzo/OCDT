@@ -45,7 +45,7 @@ class Bbox
       vector<vector<int>> ptClass; // indices of the two classes
 
       void initializeBox(int idx, AABB& box, hbox domain);
-      void expandBox(int idx, AABB& box, int dim);
+      void expandBox(int idx, AABB& box, int dim, int idpt);
       string ExePath();
       vector<string> split(string str, char sep);
       void read_data(string fpath);
