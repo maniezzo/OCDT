@@ -162,12 +162,11 @@ void Bbox::expandBox(int idx, AABB& box, int d, int idpt)
       sort(box.hiIn.begin(), box.hiIn.end());
       sort(box.hiOut.begin(), box.hiOut.end());
       h = hash(box);
-      if (hashtable[h] != 0)
-      {  j=0;
-         while (j < hboxes.size())
-         {  h1 = hash(hboxes[j]);
-            if (h1 == h)   // maybe the box is already there
-            {
+      j=0;
+      while (j < hboxes.size())
+      {  h1 = hash(hboxes[j]);
+         if (hashtable[h] != 0)
+         {  if (h1 == h)   // maybe the box is already there
                for (k = 0; k < ndim; k++)
                   if (box.hiOut[k] == hboxes[j].hiOut[k] &&
                      box.loOut[k] == hboxes[j].loOut[k] &&
@@ -176,30 +175,28 @@ void Bbox::expandBox(int idx, AABB& box, int d, int idpt)
                   {  cout << "Duplicate box" << endl;
                      return;
                   }
-               j++;
-            }
-            else  // forse contiene / è contenuto in qualcun altro
-            {
-               for (k = 0; k < ndim; k++)
-                  if (box.hiOut[k] <= hboxes[j].hiOut[k] &&
-                     box.loOut[k] >= hboxes[j].loOut[k] &&
-                     box.hiIn[k] <= hboxes[j].hiIn[k] &&
-                     box.loIn[k] >= hboxes[j].loIn[k])
-                  {  cout << "Box contained, rejected" << endl;
-                     return;
-                  }
-                  else
-                     if (box.hiOut[k] >= hboxes[j].hiOut[k] &&
-                        box.loOut[k] <= hboxes[j].loOut[k] &&
-                        box.hiIn[k] >= hboxes[j].hiIn[k] &&
-                        box.loIn[k] <= hboxes[j].loIn[k])
-                     {  cout << "Box containing" << endl;
-                        hboxes.erase(hboxes.begin() + j);
-                        j--;
-                     }
-               j++;
-            }
          }
+         else  // forse contiene / è contenuto in qualcun altro
+         {
+            for (k = 0; k < ndim; k++)
+               if (box.hiOut[k] <= hboxes[j].hiOut[k] &&
+                  box.loOut[k] >= hboxes[j].loOut[k] &&
+                  box.hiIn[k] <= hboxes[j].hiIn[k] &&
+                  box.loIn[k] >= hboxes[j].loIn[k])
+               {  cout << "Box contained, rejected" << endl;
+                  return;
+               }
+               else
+                  if (box.hiOut[k] >= hboxes[j].hiOut[k] &&
+                     box.loOut[k] <= hboxes[j].loOut[k] &&
+                     box.hiIn[k] >= hboxes[j].hiIn[k] &&
+                     box.loIn[k] <= hboxes[j].loIn[k])
+                  {  cout << "Box containing" << endl;
+                     hboxes.erase(hboxes.begin() + j);
+                     j--;
+                  }
+         }
+         j++;
       }
       cout << "Adding box " << box.id << endl;
       hboxes.push_back(box);
