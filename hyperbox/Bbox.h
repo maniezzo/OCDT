@@ -49,8 +49,8 @@ class Bbox
       string ExePath();
       vector<string> split(string str, char sep);
       void read_data(string fpath);
-      bool isInside(int idx, AABB box);
-      bool isInsideVec(int idx, vector<double> lo, vector<double> hi);
+      bool isInside(int idx, AABB box, bool fBoundariesIncluded);
+      bool isInsideVec(int idx, vector<double> lo, vector<double> hi, bool fBoundariesIncluded);
       int  hash(AABB box);
       void writeHboxes();
 };

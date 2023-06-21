@@ -86,7 +86,6 @@ void Bbox::writeHboxes()
 void Bbox::expandBox(int idx, AABB& box, int d, int idpt)
 {  int i,i1,j,k,h,h1,dim;
    vector<int> pts;
-   bool changed;
 
    nb++;
    box.id = nb;
@@ -94,7 +93,7 @@ void Bbox::expandBox(int idx, AABB& box, int d, int idpt)
    // check box against all points
    for(i=idpt;i<n;i++)
    {
-      if(isInside(i, box))
+      if(isInside(i, box, true))
          if(Y[idx]==Y[i]) // same category, expand in
          {  for (dim = 0; dim < this->ndim; dim++)
             {  if (X[i][dim] > box.hiIn[dim] && X[i][dim] < box.hiOut[dim]) 
@@ -102,22 +101,22 @@ void Bbox::expandBox(int idx, AABB& box, int d, int idpt)
                if (X[i][dim] < box.loIn[dim] && X[i][dim] > box.loOut[dim]) 
                   box.loIn[dim] = X[i][dim]; 
             }
-            if (isInsideVec(i,box.loIn,box.hiIn) &&
-                find(box.points.begin(), box.points.end(), i) == box.points.end())
+            if (isInsideVec(i,box.loIn,box.hiIn, true) &&
+                find(box.points.begin(), box.points.end(), i) == box.points.end()) // non è già incluso
                box.points.push_back(i);
          }
-         else  // different category, reduce out and fork
+         else  // different category, reduce out
          {  for (dim = d; dim < this->ndim; dim++)
-            {  
+            {
+               pts = box.points;
                if (X[i][dim] > box.loOut[dim] && X[i][dim] < X[idx][dim])
                {  cout << "------ box " << box.id <<" point " << i << " Alzo il lo " << box.loOut[dim] << " -> " << X[i][dim] << endl; // taglio sotto
                   box.loOut[dim] = X[i][dim];
-                  box.loIn[dim]  = X[idx][dim]; // reinizializzo i punti nterni
-                  pts = box.points;
+                  box.loIn[dim]  = X[idx][dim]; // ricalcolo i punti interni
                   box.points.clear();
                   for (j = 0; j < pts.size(); j++)
                   {  k = pts[j];
-                     if (isInsideVec(k, box.loOut, box.hiOut))
+                     if (isInsideVec(k, box.loOut, box.hiOut, true))
                      {  cout << k << " is inside lo" << endl;
                         if(X[k][dim] < box.loIn[dim])
                         {  cout << "loin dim "<< dim << " " << box.loIn[dim] << " -> " << X[k][dim] << endl;
@@ -132,12 +131,11 @@ void Bbox::expandBox(int idx, AABB& box, int d, int idpt)
                if (X[i][dim] < box.hiOut[dim] && X[i][dim] > X[idx][dim])
                {  cout << "++++++ box "<<box.id<< " point " << i << " Abbasso hi " << box.hiOut[dim] << " -> " << X[i][dim] << endl;  // abbasso sopra
                   box.hiOut[dim] = X[i][dim];
-                  box.hiIn[dim]  = X[idx][dim]; // reinizializzo i punti nterni
-                  pts = box.points;
+                  box.hiIn[dim]  = X[idx][dim]; // ricalcolo i punti interni
                   box.points.clear();
                   for (j = 0; j < pts.size(); j++)
                   {  k = pts[j];
-                     if (isInsideVec(k, box.loOut, box.hiOut))
+                     if (isInsideVec(k, box.loOut, box.hiOut, true))
                      {  cout << k << " is inside hi" << endl;
                         if (X[k][dim] > box.hiIn[dim])
                         {  cout << "hiin dim " << dim << " " << box.hiIn[dim] << " -> " << X[k][dim] << endl;
@@ -191,27 +189,37 @@ int Bbox::hash(AABB box)
    return h;
 }
 
-// if a point is inside the outer box of an AABB
-bool Bbox::isInside(int idx, AABB box)
+// if a point is inside the outer box of an AABB, option on boundaries
+bool Bbox::isInside(int idx, AABB box, bool fBoundariesIncluded)
 {  int dim;
    bool isIn = false;
    for (dim = 0; dim < this->ndim; dim++)
-   {  if (X[idx][dim] > box.hiOut[dim]) goto l0; // non è dentro
-      if (X[idx][dim] < box.loOut[dim]) goto l0;
-   }
+      if(fBoundariesIncluded)
+      {  if (X[idx][dim] > box.hiOut[dim]) goto l0; // non è dentro, confini dentro
+         if (X[idx][dim] < box.loOut[dim]) goto l0;
+      }
+      else
+      {  if (X[idx][dim] >= box.hiOut[dim]) goto l0; // non è dentro, confini fuori
+         if (X[idx][dim] <= box.loOut[dim]) goto l0;
+      }
    isIn = true;
 
 l0:return isIn;
 }
 
-// if a point is inside a hyperrect given hi and lo coords
-bool Bbox::isInsideVec(int i1, vector<double> lo, vector<double> hi)
+// if a point is inside a hyperrect given hi and lo coords, option on boundaries
+bool Bbox::isInsideVec(int i1, vector<double> lo, vector<double> hi, bool fBoundariesIncluded)
 {  int dim;
    bool isIn = false;
    for (dim = 0; dim < this->ndim; dim++)
-   {  if (X[i1][dim] > hi[dim]) goto l0; // non è dentro
-      if (X[i1][dim] < lo[dim]) goto l0;
-   }
+      if (fBoundariesIncluded)
+      {  if (X[i1][dim] > hi[dim]) goto l0; // non è dentro, confini dentro
+         if (X[i1][dim] < lo[dim]) goto l0;
+      }
+      else
+      {  if (X[i1][dim] >= hi[dim]) goto l0; // non è dentro, confini fuori
+         if (X[i1][dim] <= lo[dim]) goto l0;
+      }
    isIn = true;
 
 l0:return isIn;
