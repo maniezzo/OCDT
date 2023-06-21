@@ -110,7 +110,7 @@ void Bbox::expandBox(int idx, AABB& box, int d, int idpt)
             {
                pts = box.points;
                if (X[i][dim] > box.loOut[dim] && X[i][dim] < X[idx][dim])
-               {  cout << "------ box " << box.id <<" point " << i << " Alzo il lo " << box.loOut[dim] << " -> " << X[i][dim] << endl; // taglio sotto
+               {  cout << "------ box " << box.id <<" point " << i <<" dim "<<dim<< " Alzo il lo " << box.loOut[dim] << " -> " << X[i][dim] << endl; // taglio sotto
                   box.loOut[dim] = X[i][dim];
                   box.loIn[dim]  = X[idx][dim]; // ricalcolo i punti interni
                   box.points.clear();
@@ -129,7 +129,7 @@ void Bbox::expandBox(int idx, AABB& box, int d, int idpt)
                }
 
                if (X[i][dim] < box.hiOut[dim] && X[i][dim] > X[idx][dim])
-               {  cout << "++++++ box "<<box.id<< " point " << i << " Abbasso hi " << box.hiOut[dim] << " -> " << X[i][dim] << endl;  // abbasso sopra
+               {  cout << "++++++ box "<<box.id<< " point " << i << " dim " << dim << " Abbasso hi " << box.hiOut[dim] << " -> " << X[i][dim] << endl;  // abbasso sopra
                   box.hiOut[dim] = X[i][dim];
                   box.hiIn[dim]  = X[idx][dim]; // ricalcolo i punti interni
                   box.points.clear();
@@ -148,7 +148,9 @@ void Bbox::expandBox(int idx, AABB& box, int d, int idpt)
                }
 
                if (box.hiIn[dim] < box.loIn[dim])
-                  cout << "ERROR hiin " << box.hiIn[dim] << " lo " << box.loIn[dim] << endl;
+               {  cout << "ERROR hiin " << box.hiIn[dim] << " lo " << box.loIn[dim] << ", aborting ..." << endl;
+                  abort();
+               }
             }
          }
    }
@@ -170,29 +172,36 @@ void Bbox::expandBox(int idx, AABB& box, int d, int idpt)
                      box.loOut[k] == hboxes[j].loOut[k] &&
                      box.hiIn[k] == hboxes[j].hiIn[k] &&
                      box.loIn[k] == hboxes[j].loIn[k])
-                  {  cout << "Duplicate box" << endl;
+                  {  cout << "Duplicate box: " << box.id << endl;
                      return;
                   }
          }
          else  // forse contiene / è contenuto in qualcun altro
-         {
+         {  bool fContained=true, fContaining=true;
             for (k = 0; k < ndim; k++)
-               if (box.hiOut[k] <= hboxes[j].hiOut[k] &&
+            {
+               if (!(box.hiOut[k] <= hboxes[j].hiOut[k] &&
                   box.loOut[k] >= hboxes[j].loOut[k] &&
                   box.hiIn[k] <= hboxes[j].hiIn[k] &&
-                  box.loIn[k] >= hboxes[j].loIn[k])
-               {  cout << "Box contained, rejected" << endl;
-                  return;
+                  box.loIn[k] >= hboxes[j].loIn[k]))
+               {  fContained = false;
                }
-               else
-                  if (box.hiOut[k] >= hboxes[j].hiOut[k] &&
-                     box.loOut[k] <= hboxes[j].loOut[k] &&
-                     box.hiIn[k] >= hboxes[j].hiIn[k] &&
-                     box.loIn[k] <= hboxes[j].loIn[k])
-                  {  cout << "Box containing" << endl;
-                     hboxes.erase(hboxes.begin() + j);
-                     j--;
-                  }
+               if (!(box.hiOut[k] >= hboxes[j].hiOut[k] &&
+                  box.loOut[k] <= hboxes[j].loOut[k] &&
+                  box.hiIn[k] >= hboxes[j].hiIn[k] &&
+                  box.loIn[k] <= hboxes[j].loIn[k]))
+               {  fContaining = false;
+               }
+            }
+            if(fContained)
+            {  cout << "Box contained, "<< box.id << " rejected" << endl;
+               return;
+            }
+            if(fContaining)
+            {  cout << "Box containing, removing box "<< hboxes[j].id << endl;
+               hboxes.erase(hboxes.begin() + j);
+               j--;
+            }
          }
          j++;
       }
