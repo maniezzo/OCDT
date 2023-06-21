@@ -148,7 +148,7 @@ void Bbox::expandBox(int idx, AABB& box, int d, int idpt)
                }
 
                if (box.hiIn[dim] < box.loIn[dim])
-               {  cout << "ERROR hiin " << box.hiIn[dim] << " lo " << box.loIn[dim] << ", aborting ..." << endl;
+               {  cout << "ERROR box "<< box.id <<" hiin " << box.hiIn[dim] << " lo " << box.loIn[dim] << ", aborting ..." << endl;
                   abort();
                }
             }
