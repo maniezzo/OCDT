@@ -146,16 +146,16 @@ dmypy.json
 *.userprefs
 
 # Build results
-GAPVS/[Dd]ebug/
-GAPVS/[Dd]ebugPublic/
-GAPVS/[Rr]elease/
-GAPVS/[Rr]eleases/
-GAPVS/x64/
-GAPVS/x86/
-GAPVS/bld/
-GAPVS/[Bb]in/
-GAPVS/[Oo]bj/
-GAPVS/[Ll]og/
+hyperbox/[Dd]ebug/
+hyperbox/[Dd]ebugPublic/
+hyperbox/[Rr]elease/
+hyperbox/[Rr]eleases/
+hyperbox/x64/
+hyperbox/x86/
+hyperbox/bld/
+hyperbox/[Bb]in/
+hyperbox/[Oo]bj/
+hyperbox/[Ll]og/
 .vscode/
 x64/
 [Dd]ebug/
