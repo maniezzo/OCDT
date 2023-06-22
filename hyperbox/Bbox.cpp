@@ -169,6 +169,16 @@ void Bbox::expandBox()
             }  // else, different category
       }   // for i
 
+<<<<<<< HEAD
+=======
+               if (box.hiIn[dim] < box.loIn[dim])
+               {  cout << "ERROR box "<< box.id <<" hiin " << box.hiIn[dim] << " lo " << box.loIn[dim] << ", aborting ..." << endl;
+                  abort();
+               }
+            }
+         }
+   }
+>>>>>>> 1a350a56629e964b776fe0a6b59fd410d47e8a7b
 
    // base della ricorsione, keep box alive
       sort(box.loOut.begin(), box.loOut.end());
