@@ -23,6 +23,8 @@ class AABB
       ~AABB();
       int id;
       int classe;
+      int seed;      // primo punto del cluster
+      bool removed;  // removed from the stack
       vector<double> loOut, loIn, hiOut, hiIn; // internal and external max coordinates
       vector<int> points;  // points inside the box
 };
@@ -40,12 +42,12 @@ class Bbox
       vector<int> Y;             // classes
       struct hbox{vector<double> min; vector<double> max;}; // a final hyperbox, means of AABB
       vector<hbox> finalBoxes;   // the final hyperboxes
-      vector<AABB> hboxes;       // the AABB along the way
+      vector<AABB> hboxes;       // the stack of boxes
       vector<int> hashtable;     // hash of hboxes
       vector<vector<int>> ptClass; // indices of the two classes
 
       void initializeBox(int idx, AABB& box, hbox domain);
-      void expandBox(int idx, AABB& box, int dim, int idpt);
+      void expandBox();
       string ExePath();
       vector<string> split(string str, char sep);
       void read_data(string fpath);

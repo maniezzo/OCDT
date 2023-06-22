@@ -10,6 +10,7 @@ AABB::AABB(int ndim)
       this->loIn.push_back(DBL_MAX);
       this->loOut.push_back(DBL_MAX);
    }
+   this->removed=false;
    return;
 }
 
@@ -31,7 +32,7 @@ Bbox::~Bbox()
 
 // >>>>>>>>>>>>>>>>>>> main method, everythong starts from here <<<<<<<<<<<<<<<<<<<<<<<
 int Bbox::bboxHeu(string fpath)
-{  int i,j,dim,idx;
+{  int i,dim,idx;
    read_data(fpath);
 
    nb = 0;     // box counter
@@ -51,15 +52,15 @@ int Bbox::bboxHeu(string fpath)
    }
 
    // box a set
-   dim = 0; // the class (dimension) under study
    idx = 0; // index of incumbent record
-   while (idx<Y.size()) // expand each point along every dimension
-   {  cout << "-> -> -> -> -> -> -> -> -> initializaing point " << idx << endl; 
+   while (idx<Y.size()) // initialize box stack
+   {  cout << "initializaing points" << idx << endl; 
       AABB box(ndim);
       initializeBox(idx,box,domain); // out is whole domain, in is the point
-      expandBox(idx,box,dim,0);
+      hboxes.push_back(box);
       idx++;
    }
+   expandBox();
 
    cout << "n. box: " << hboxes.size() << endl;
    writeHboxes();
@@ -70,7 +71,7 @@ int Bbox::bboxHeu(string fpath)
 void Bbox::writeHboxes()
 {  int i,j,dim;
    for (i = 0; i < hboxes.size(); i++)
-   {
+   {  if(hboxes[i].removed) continue;
       cout << i << ") Box " << hboxes[i].id << " class " << hboxes[i].classe << " pts ";
       for(j=0;j<hboxes[i].points.size();j++)
          cout << " " << hboxes[i].points[j]; cout << endl;
@@ -82,142 +83,160 @@ void Bbox::writeHboxes()
    }
 }
 
-// expands a box along all dimensions, starts from dimension d, inner loop from node idpt
-void Bbox::expandBox(int idx, AABB& box, int d, int idpt)
-{  int i,i1,j,k,h,h1,dim;
+// expands the stack box along all dimensions, first point was iSeed, starts from dimension d, inner loop from node idpt
+void Bbox::expandBox()
+{  int i,j,k,h,h1,dim,idx,iSeed;
    vector<int> pts;
 
-   nb++;
-   box.id = nb;
-   cout << ">>>>> Box " << box.id << " class " << Y[idx] << " seed " << idx << " dim " << d << endl;
-   // check box against all points
-   for(i=idpt;i<n;i++)
-   {
-      if(isInside(i, box, true))
-         if(Y[idx]==Y[i]) // same category, expand in
-         {  for (dim = 0; dim < this->ndim; dim++)
-            {  if (X[i][dim] > box.hiIn[dim] && X[i][dim] < box.hiOut[dim]) 
-                  box.hiIn[dim] = X[i][dim];
-               if (X[i][dim] < box.loIn[dim] && X[i][dim] > box.loOut[dim]) 
-                  box.loIn[dim] = X[i][dim]; 
+   // expand stack, idx pointer to current
+   idx=0;
+   while(idx<hboxes.size())
+   {  AABB box = hboxes[idx];
+      iSeed = box.seed;
+      cout << ">>>>> Box " << box.id << " class " << Y[iSeed] << " seed " << iSeed << endl;
+      for(i=0;i<n;i++) // check current box against all points
+      {
+         if(isInside(i, box, true))
+            if(Y[iSeed]==Y[i]) // same category (aka box.classe), expand in
+            {  for (dim = 0; dim < this->ndim; dim++)
+               {  if (X[i][dim] > box.hiIn[dim] && X[i][dim] < box.hiOut[dim]) // inner box cresce hi
+                     box.hiIn[dim] = X[i][dim];
+                  if (X[i][dim] < box.loIn[dim] && X[i][dim] > box.loOut[dim]) // inner box cala lo 
+                     box.loIn[dim] = X[i][dim]; 
+               }
+               if (isInsideVec(i,box.loIn,box.hiIn, true) &&
+                   find(box.points.begin(), box.points.end(), i) == box.points.end()) // punto i non è già incluso
+                  box.points.push_back(i);
             }
-            if (isInsideVec(i,box.loIn,box.hiIn, true) &&
-                find(box.points.begin(), box.points.end(), i) == box.points.end()) // non è già incluso
-               box.points.push_back(i);
-         }
-         else  // different category, reduce out
-         {  for (dim = d; dim < this->ndim; dim++)
-            {
-               pts = box.points;
-               if (X[i][dim] > box.loOut[dim] && X[i][dim] < X[idx][dim])
-               {  cout << "------ box " << box.id <<" point " << i <<" dim "<<dim<< " Alzo il lo " << box.loOut[dim] << " -> " << X[i][dim] << endl; // taglio sotto
-                  box.loOut[dim] = X[i][dim];
-                  box.loIn[dim]  = X[idx][dim]; // ricalcolo i punti interni
-                  box.points.clear();
-                  for (j = 0; j < pts.size(); j++)
-                  {  k = pts[j];
-                     if (isInsideVec(k, box.loOut, box.hiOut, true))
-                     {  cout << k << " is inside lo" << endl;
-                        if(X[k][dim] < box.loIn[dim])
-                        {  cout << "loin dim "<< dim << " " << box.loIn[dim] << " -> " << X[k][dim] << endl;
-                           box.loIn[dim] = X[k][dim];
+            else  // different category, reduce out
+            {  for (dim = 0; dim < ndim; dim++)
+               {  pts = box.points;
+                  // taglio out in basso
+                  if (X[i][dim] > box.loOut[dim] && X[i][dim] < X[iSeed][dim])
+                  {  cout << "------ box " << box.id <<" point " << i <<" dim "<<dim<< " Alzo il lo " << box.loOut[dim] << " -> " << X[i][dim] << endl; // taglio sotto
+                     AABB newBox(box);
+                     nb++;
+                     newBox.id = nb;
+                     newBox.loOut[dim] = X[i][dim];
+                     newBox.loIn[dim]  = X[iSeed][dim]; // ricalcolo i punti interni
+                     newBox.points.clear();
+                     for (j = 0; j < pts.size(); j++)
+                     {  k = pts[j];
+                        if (isInsideVec(k, newBox.loOut, newBox.hiOut, true))
+                        {  cout << k << " is inside lo" << endl;
+                           if(X[k][dim] < newBox.loIn[dim])
+                           {  cout << "loin dim "<< dim << " " << newBox.loIn[dim] << " -> " << X[k][dim] << endl;
+                              newBox.loIn[dim] = X[k][dim];
+                           }
+                           newBox.points.push_back(k);
                         }
-                        box.points.push_back(k);
                      }
+                     if (newBox.hiIn[dim] < newBox.loIn[dim])
+                     {  cout << "ERROR hiin " << newBox.hiIn[dim] << " lo " << newBox.loIn[dim] << ", aborting ..." << endl;
+                        abort();
+                     }
+                     hboxes.push_back(newBox);
+                     hboxes[idx].removed = true;
                   }
-                  expandBox(idx, box, dim, i+1);
-               }
-
-               if (X[i][dim] < box.hiOut[dim] && X[i][dim] > X[idx][dim])
-               {  cout << "++++++ box "<<box.id<< " point " << i << " dim " << dim << " Abbasso hi " << box.hiOut[dim] << " -> " << X[i][dim] << endl;  // abbasso sopra
-                  box.hiOut[dim] = X[i][dim];
-                  box.hiIn[dim]  = X[idx][dim]; // ricalcolo i punti interni
-                  box.points.clear();
-                  for (j = 0; j < pts.size(); j++)
-                  {  k = pts[j];
-                     if (isInsideVec(k, box.loOut, box.hiOut, true))
-                     {  cout << k << " is inside hi" << endl;
-                        if (X[k][dim] > box.hiIn[dim])
-                        {  cout << "hiin dim " << dim << " " << box.hiIn[dim] << " -> " << X[k][dim] << endl;
-                           box.hiIn[dim] = X[k][dim];
+                  // taglio out in alto
+                  if (X[i][dim] < box.hiOut[dim] && X[i][dim] > X[iSeed][dim])
+                  {  cout << "++++++ box "<<box.id<< " point " << i << " dim " << dim << " Abbasso hi " << box.hiOut[dim] << " -> " << X[i][dim] << endl;  // abbasso sopra
+                     AABB newBox(box);
+                     nb++;
+                     newBox.id = nb;
+                     newBox.hiOut[dim] = X[i][dim];
+                     newBox.hiIn[dim]  = X[iSeed][dim]; // ricalcolo i punti interni
+                     newBox.points.clear();
+                     for (j = 0; j < pts.size(); j++)
+                     {  k = pts[j];
+                        if (isInsideVec(k, newBox.loOut, newBox.hiOut, true))
+                        {  cout << k << " is inside hi" << endl;
+                           if (X[k][dim] > newBox.hiIn[dim])
+                           {  cout << "hiin dim " << dim << " " << newBox.hiIn[dim] << " -> " << X[k][dim] << endl;
+                              newBox.hiIn[dim] = X[k][dim];
+                           }
+                           newBox.points.push_back(k);
                         }
-                        box.points.push_back(k);
                      }
+                     if (newBox.hiIn[dim] < newBox.loIn[dim])
+                     {  cout << "ERROR hiin " << newBox.hiIn[dim] << " lo " << newBox.loIn[dim] << ", aborting ..." << endl;
+                        abort();
+                     }
+                     hboxes.push_back(newBox);
+                     hboxes[idx].removed = true;
                   }
-                  expandBox(idx, box, dim, i+1);
                }
+            }  // else, different category
+      }   // for i
 
-               if (box.hiIn[dim] < box.loIn[dim])
-               {  cout << "ERROR hiin " << box.hiIn[dim] << " lo " << box.loIn[dim] << ", aborting ..." << endl;
-                  abort();
-               }
-            }
-         }
-   }
 
-   // base della ricorsione, add box to hboxes list
-   if (d <= ndim)
-   {  sort(box.loOut.begin(), box.loOut.end());
+   // base della ricorsione, keep box alive
+      sort(box.loOut.begin(), box.loOut.end());
       sort(box.loIn.begin(), box.loIn.end());
       sort(box.hiIn.begin(), box.hiIn.end());
       sort(box.hiOut.begin(), box.hiOut.end());
       h = hash(box);
-      j=0;
+      j = 0;
       while (j < hboxes.size())
       {  h1 = hash(hboxes[j]);
          if (hashtable[h] != 0)
-         {  if (h1 == h)   // maybe the box is already there
+         {
+            if (h1 == h)   // maybe the box is already there
                for (k = 0; k < ndim; k++)
                   if (box.hiOut[k] == hboxes[j].hiOut[k] &&
                      box.loOut[k] == hboxes[j].loOut[k] &&
                      box.hiIn[k] == hboxes[j].hiIn[k] &&
                      box.loIn[k] == hboxes[j].loIn[k])
-                  {  cout << "Duplicate box: " << box.id << endl;
+                  {
+                     cout << "Duplicate box: " << box.id << endl;
                      return;
                   }
          }
          else  // forse contiene / è contenuto in qualcun altro
-         {  bool fContained=true, fContaining=true;
+         {
+            bool fContained = true, fContaining = true;
             for (k = 0; k < ndim; k++)
             {
                if (!(box.hiOut[k] <= hboxes[j].hiOut[k] &&
                   box.loOut[k] >= hboxes[j].loOut[k] &&
                   box.hiIn[k] <= hboxes[j].hiIn[k] &&
                   box.loIn[k] >= hboxes[j].loIn[k]))
-               {  fContained = false;
+               {
+                  fContained = false;
                }
                if (!(box.hiOut[k] >= hboxes[j].hiOut[k] &&
                   box.loOut[k] <= hboxes[j].loOut[k] &&
                   box.hiIn[k] >= hboxes[j].hiIn[k] &&
                   box.loIn[k] <= hboxes[j].loIn[k]))
-               {  fContaining = false;
+               {
+                  fContaining = false;
                }
             }
-            if(fContained)
-            {  cout << "Box contained, "<< box.id << " rejected" << endl;
-               return;
+            if (fContained)
+            {
+               cout << "Box contained, " << box.id << " rejected" << endl;
+               hboxes[idx].removed = true;
             }
-            if(fContaining)
-            {  cout << "Box containing, removing box "<< hboxes[j].id << endl;
-               hboxes.erase(hboxes.begin() + j);
-               j--;
+            if (fContaining)
+            {
+               cout << "Box containing, removing box " << hboxes[j].id << endl;
+               hboxes[j].removed = true;
+               //hboxes.erase(hboxes.begin() + j);
+               //j--;
             }
          }
          j++;
       }
       cout << "Adding box " << box.id << endl;
-      hboxes.push_back(box);
       hashtable[h] = 1;  // cell is used
-      return;
+
+      idx++; // expand next box in the stack
    }
-   else
-      // niente da cambiare in questa dimensione
-      if (d < ndim) expandBox(idx, box, d + 1,0);
 }
 
 // hash of box, fast check of duplicate boxes
 int Bbox::hash(AABB box)
-{  int i,m,h,sum = 0;
+{  int i,h,sum = 0;
    for(i=0;i<this->ndim;i++)
       sum += box.hiOut[i] * box.loOut[i] * box.hiIn[i] * box.loIn[i];
    h = (int)sum % this->m;
@@ -273,6 +292,7 @@ void Bbox::initializeBox(int idx, AABB& box, hbox domain)
    }
    box.id = this->hboxes.size();
    box.classe = Y[idx];
+   box.seed   = idx;
    box.points.push_back(idx);
 }
 
