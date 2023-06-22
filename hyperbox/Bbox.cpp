@@ -90,6 +90,7 @@ void Bbox::expandBox()
 
    // expand stack, idx pointer to current
    idx=0;
+   nb = hboxes.size();
    while(idx<hboxes.size())
    {  AABB box = hboxes[idx];
       iSeed = box.seed;
@@ -169,76 +170,62 @@ void Bbox::expandBox()
             }  // else, different category
       }   // for i
 
-<<<<<<< HEAD
-=======
-               if (box.hiIn[dim] < box.loIn[dim])
-               {  cout << "ERROR box "<< box.id <<" hiin " << box.hiIn[dim] << " lo " << box.loIn[dim] << ", aborting ..." << endl;
-                  abort();
-               }
+      // base della ricorsione, keep box alive
+      if(!hboxes[idx].removed)
+      {  sort(box.loOut.begin(), box.loOut.end());
+         sort(box.loIn.begin(), box.loIn.end());
+         sort(box.hiIn.begin(), box.hiIn.end());
+         sort(box.hiOut.begin(), box.hiOut.end());
+         h = hash(box);
+         j = 0;
+         while (j < hboxes.size())
+         {  h1 = hash(hboxes[j]);
+            if (hashtable[h] != 0)
+            {  if (h1 == h)   // maybe the box is already there
+                  for (k = 0; k < ndim; k++)
+                     if (box.hiOut[k] == hboxes[j].hiOut[k] &&
+                        box.loOut[k] == hboxes[j].loOut[k] &&
+                        box.hiIn[k] == hboxes[j].hiIn[k] &&
+                        box.loIn[k] == hboxes[j].loIn[k])
+                     {  cout << "Duplicate box: " << box.id << endl;
+                        hboxes[idx].removed=true;;
+                        break;
+                     }
             }
-         }
-   }
->>>>>>> 1a350a56629e964b776fe0a6b59fd410d47e8a7b
-
-   // base della ricorsione, keep box alive
-      sort(box.loOut.begin(), box.loOut.end());
-      sort(box.loIn.begin(), box.loIn.end());
-      sort(box.hiIn.begin(), box.hiIn.end());
-      sort(box.hiOut.begin(), box.hiOut.end());
-      h = hash(box);
-      j = 0;
-      while (j < hboxes.size())
-      {  h1 = hash(hboxes[j]);
-         if (hashtable[h] != 0)
-         {
-            if (h1 == h)   // maybe the box is already there
+            else  // forse contiene / è contenuto in qualcun altro
+            {  bool fContained = true, fContaining = true;
                for (k = 0; k < ndim; k++)
-                  if (box.hiOut[k] == hboxes[j].hiOut[k] &&
-                     box.loOut[k] == hboxes[j].loOut[k] &&
-                     box.hiIn[k] == hboxes[j].hiIn[k] &&
-                     box.loIn[k] == hboxes[j].loIn[k])
-                  {
-                     cout << "Duplicate box: " << box.id << endl;
-                     return;
+               {  if (!(box.hiOut[k] <= hboxes[j].hiOut[k] &&
+                     box.loOut[k] >= hboxes[j].loOut[k] &&
+                     box.hiIn[k] <= hboxes[j].hiIn[k] &&
+                     box.loIn[k] >= hboxes[j].loIn[k]))
+                  {  fContained = false;
                   }
-         }
-         else  // forse contiene / è contenuto in qualcun altro
-         {
-            bool fContained = true, fContaining = true;
-            for (k = 0; k < ndim; k++)
-            {
-               if (!(box.hiOut[k] <= hboxes[j].hiOut[k] &&
-                  box.loOut[k] >= hboxes[j].loOut[k] &&
-                  box.hiIn[k] <= hboxes[j].hiIn[k] &&
-                  box.loIn[k] >= hboxes[j].loIn[k]))
-               {
-                  fContained = false;
+                  if (!(box.hiOut[k] >= hboxes[j].hiOut[k] &&
+                     box.loOut[k] <= hboxes[j].loOut[k] &&
+                     box.hiIn[k] >= hboxes[j].hiIn[k] &&
+                     box.loIn[k] <= hboxes[j].loIn[k]))
+                  {  fContaining = false;
+                  }
                }
-               if (!(box.hiOut[k] >= hboxes[j].hiOut[k] &&
-                  box.loOut[k] <= hboxes[j].loOut[k] &&
-                  box.hiIn[k] >= hboxes[j].hiIn[k] &&
-                  box.loIn[k] <= hboxes[j].loIn[k]))
-               {
-                  fContaining = false;
+               if (fContained)
+               {  cout << "Box contained, " << box.id << " rejected" << endl;
+                  hboxes[idx].removed = true;
+                  break;
+               }
+               if (fContaining)
+               {  cout << "Box containing, removing box " << hboxes[j].id << endl;
+                  hboxes[j].removed = true;
+                  //hboxes.erase(hboxes.begin() + j);
+                  //j--;
                }
             }
-            if (fContained)
-            {
-               cout << "Box contained, " << box.id << " rejected" << endl;
-               hboxes[idx].removed = true;
-            }
-            if (fContaining)
-            {
-               cout << "Box containing, removing box " << hboxes[j].id << endl;
-               hboxes[j].removed = true;
-               //hboxes.erase(hboxes.begin() + j);
-               //j--;
-            }
+            j++;
          }
-         j++;
+         cout << "Confirming box " << box.id << endl;
+         hboxes[idx] = box; // should have sorted arrays
+         hashtable[h] = 1;  // cell is used
       }
-      cout << "Adding box " << box.id << endl;
-      hashtable[h] = 1;  // cell is used
 
       idx++; // expand next box in the stack
    }
