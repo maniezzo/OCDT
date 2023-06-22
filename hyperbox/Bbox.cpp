@@ -11,12 +11,11 @@ AABB::AABB(int ndim)
       this->loOut.push_back(DBL_MAX);
    }
    this->removed=false;
+   this->hash   =-1;
    return;
 }
 
-AABB::~AABB()
-{  return;
-}
+AABB::~AABB() {  return; }
 
 Bbox::Bbox()
 {  vector<int> dummy;
@@ -26,9 +25,7 @@ Bbox::Bbox()
 }
 
 //dtor
-Bbox::~Bbox()
-{  return;
-}
+Bbox::~Bbox() {  return; }
 
 // >>>>>>>>>>>>>>>>>>> main method, everythong starts from here <<<<<<<<<<<<<<<<<<<<<<<
 int Bbox::bboxHeu(string fpath)
@@ -57,12 +54,12 @@ int Bbox::bboxHeu(string fpath)
    {  cout << "initializaing points" << idx << endl; 
       AABB box(ndim);
       initializeBox(idx,box,domain); // out is whole domain, in is the point
-      hboxes.push_back(box);
+      AABBstack.push_back(box);
       idx++;
    }
    expandBox();
 
-   cout << "n. box: " << hboxes.size() << endl;
+   cout << "n. box: " << AABBstack.size() << endl;
    writeHboxes();
    return 0;
 }
@@ -70,16 +67,16 @@ int Bbox::bboxHeu(string fpath)
 // writes out the final boxes
 void Bbox::writeHboxes()
 {  int i,j,dim;
-   for (i = 0; i < hboxes.size(); i++)
-   {  if(hboxes[i].removed) continue;
-      cout << i << ") Box " << hboxes[i].id << " class " << hboxes[i].classe << " pts ";
-      for(j=0;j<hboxes[i].points.size();j++)
-         cout << " " << hboxes[i].points[j]; cout << endl;
+   for (i = 0; i < AABBstack.size(); i++)
+   {  if(AABBstack[i].removed) continue;
+      cout << i << ") Box " << AABBstack[i].id << " class " << AABBstack[i].classe << " pts ";
+      for(j=0;j<AABBstack[i].points.size();j++)
+         cout << " " << AABBstack[i].points[j]; cout << endl;
       for(dim=0;dim<ndim;dim++)
-         cout << setw(5) << hboxes[i].loOut[dim] << 
-                 setw(5) << hboxes[i].loIn[dim]  <<
-                 setw(5) << hboxes[i].hiIn[dim]  <<
-                 setw(5) << hboxes[i].hiOut[dim] << endl;
+         cout << setw(5) << AABBstack[i].loOut[dim] << 
+                 setw(5) << AABBstack[i].loIn[dim]  <<
+                 setw(5) << AABBstack[i].hiIn[dim]  <<
+                 setw(5) << AABBstack[i].hiOut[dim] << endl;
    }
 }
 
@@ -90,9 +87,9 @@ void Bbox::expandBox()
 
    // expand stack, idx pointer to current
    idx=0;
-   nb = hboxes.size();
-   while(idx<hboxes.size())
-   {  AABB box = hboxes[idx];
+   nb = AABBstack.size()-1;
+   while(idx<AABBstack.size())
+   {  AABB box = AABBstack[idx];
       iSeed = box.seed;
       cout << ">>>>> Box " << box.id << " class " << Y[iSeed] << " seed " << iSeed << endl;
       for(i=0;i<n;i++) // check current box against all points
@@ -136,8 +133,11 @@ void Bbox::expandBox()
                      {  cout << "ERROR hiin " << newBox.hiIn[dim] << " lo " << newBox.loIn[dim] << ", aborting ..." << endl;
                         abort();
                      }
-                     hboxes.push_back(newBox);
-                     hboxes[idx].removed = true;
+                     if(!checkDominated(newBox))
+                     {  AABBstack.push_back(newBox);
+                        AABBstack[idx].removed = true;
+                        cout << "Queuing " << newBox.id << " removing " << idx << endl;
+                     }
                   }
                   // taglio out in alto
                   if (X[i][dim] < box.hiOut[dim] && X[i][dim] > X[iSeed][dim])
@@ -163,76 +163,88 @@ void Bbox::expandBox()
                      {  cout << "ERROR hiin " << newBox.hiIn[dim] << " lo " << newBox.loIn[dim] << ", aborting ..." << endl;
                         abort();
                      }
-                     hboxes.push_back(newBox);
-                     hboxes[idx].removed = true;
+                     if (!checkDominated(newBox))
+                     {  AABBstack.push_back(newBox);
+                        AABBstack[idx].removed = true;
+                        cout << "Queuing " << newBox.id << " removing " << idx << endl;
+                     }
                   }
                }
             }  // else, different category
       }   // for i
 
       // base della ricorsione, keep box alive
-      if(!hboxes[idx].removed)
-      {  sort(box.loOut.begin(), box.loOut.end());
-         sort(box.loIn.begin(), box.loIn.end());
-         sort(box.hiIn.begin(), box.hiIn.end());
-         sort(box.hiOut.begin(), box.hiOut.end());
-         h = hash(box);
-         j = 0;
-         while (j < hboxes.size())
-         {  h1 = hash(hboxes[j]);
-            if (hashtable[h] != 0)
-            {  if (h1 == h)   // maybe the box is already there
-                  for (k = 0; k < ndim; k++)
-                     if (box.hiOut[k] == hboxes[j].hiOut[k] &&
-                        box.loOut[k] == hboxes[j].loOut[k] &&
-                        box.hiIn[k] == hboxes[j].hiIn[k] &&
-                        box.loIn[k] == hboxes[j].loIn[k])
-                     {  cout << "Duplicate box: " << box.id << endl;
-                        hboxes[idx].removed=true;;
-                        break;
-                     }
-            }
-            else  // forse contiene / è contenuto in qualcun altro
-            {  bool fContained = true, fContaining = true;
-               for (k = 0; k < ndim; k++)
-               {  if (!(box.hiOut[k] <= hboxes[j].hiOut[k] &&
-                     box.loOut[k] >= hboxes[j].loOut[k] &&
-                     box.hiIn[k] <= hboxes[j].hiIn[k] &&
-                     box.loIn[k] >= hboxes[j].loIn[k]))
-                  {  fContained = false;
-                  }
-                  if (!(box.hiOut[k] >= hboxes[j].hiOut[k] &&
-                     box.loOut[k] <= hboxes[j].loOut[k] &&
-                     box.hiIn[k] >= hboxes[j].hiIn[k] &&
-                     box.loIn[k] <= hboxes[j].loIn[k]))
-                  {  fContaining = false;
-                  }
-               }
-               if (fContained)
-               {  cout << "Box contained, " << box.id << " rejected" << endl;
-                  hboxes[idx].removed = true;
-                  break;
-               }
-               if (fContaining)
-               {  cout << "Box containing, removing box " << hboxes[j].id << endl;
-                  hboxes[j].removed = true;
-                  //hboxes.erase(hboxes.begin() + j);
-                  //j--;
-               }
-            }
-            j++;
+      if(!AABBstack[idx].removed)
+         if(!checkDominated(box))
+         {  cout << "Confirming box " << box.id << endl;
+            AABBstack[idx] = box; // should have sorted arrays
+            hashtable[box.hash] = 1;  // cell is used
          }
-         cout << "Confirming box " << box.id << endl;
-         hboxes[idx] = box; // should have sorted arrays
-         hashtable[h] = 1;  // cell is used
-      }
 
       idx++; // expand next box in the stack
    }
 }
 
+// checks whether a box is already dominated
+bool Bbox::checkDominated(AABB& box)
+{  bool isDominated = false;
+   int i,j,h,k,h1;
+
+   sort(box.points.begin(), box.points.end());
+   h = hash(box);
+   box.hash = h;
+   j = 0;
+   while (j < AABBstack.size())
+   {
+      h1 = AABBstack[j].hash;
+      if (hashtable[h] != 0)
+      {
+         if (h1 == h)   // maybe the box is already there
+            for (k = 0; k < ndim; k++)
+               if (box.hiOut[k] == AABBstack[j].hiOut[k] &&
+                  box.loOut[k] == AABBstack[j].loOut[k] &&
+                  box.hiIn[k] == AABBstack[j].hiIn[k] &&
+                  box.loIn[k] == AABBstack[j].loIn[k])
+               {  cout << "Duplicate box: " << box.id << endl;
+                  isDominated = true;
+                  break;
+               }
+      }
+      else  // forse contiene / è contenuto in qualcun altro
+      {  bool fContained = true, fContaining = true;
+         for (k = 0; k < ndim; k++)
+         {  if (!(box.hiOut[k] <= AABBstack[j].hiOut[k] &&
+               box.loOut[k] >= AABBstack[j].loOut[k] &&
+               box.hiIn[k] <= AABBstack[j].hiIn[k] &&
+               box.loIn[k] >= AABBstack[j].loIn[k]))
+            {  fContained = false;
+            }
+            if (!(box.hiOut[k] >= AABBstack[j].hiOut[k] &&
+               box.loOut[k] <= AABBstack[j].loOut[k] &&
+               box.hiIn[k] >= AABBstack[j].hiIn[k] &&
+               box.loIn[k] <= AABBstack[j].loIn[k]))
+            {  fContaining = false;
+            }
+         }
+         if (fContained)
+         {  cout << "Box contained, " << box.id << " rejected" << endl;
+            isDominated = true;
+            break;
+         }
+         if (fContaining)
+         {  cout << "Box containing, redefining box " << AABBstack[j].id << endl;
+            AABBstack[j] = box;
+            isDominated = true;
+            break;
+         }
+      }
+      j++;
+   }
+   return isDominated;
+}
+
 // hash of box, fast check of duplicate boxes
-int Bbox::hash(AABB box)
+int Bbox::hash(AABB& box)
 {  int i,h,sum = 0;
    for(i=0;i<this->ndim;i++)
       sum += box.hiOut[i] * box.loOut[i] * box.hiIn[i] * box.loIn[i];
@@ -242,7 +254,7 @@ int Bbox::hash(AABB box)
 }
 
 // if a point is inside the outer box of an AABB, option on boundaries
-bool Bbox::isInside(int idx, AABB box, bool fBoundariesIncluded)
+bool Bbox::isInside(int idx, AABB& box, bool fBoundariesIncluded)
 {  int dim;
    bool isIn = false;
    for (dim = 0; dim < this->ndim; dim++)
@@ -287,7 +299,7 @@ void Bbox::initializeBox(int idx, AABB& box, hbox domain)
       box.loIn[dim] = X[idx][dim];
       box.loOut[dim] = domain.min[dim]-1;
    }
-   box.id = this->hboxes.size();
+   box.id = this->AABBstack.size();
    box.classe = Y[idx];
    box.seed   = idx;
    box.points.push_back(idx);
