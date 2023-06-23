@@ -57,4 +57,5 @@ class Bbox
       int  hash(AABB& box);
       void writeHboxes();
       bool checkDominated(AABB& box); // checks whether a box is already dominated
+      void writeFinals(vector<int> lstIdBox); // writes out the final solution
 };

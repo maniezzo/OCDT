@@ -51,7 +51,7 @@ int Bbox::bboxHeu(string fpath)
    // box a set
    idx = 0; // index of incumbent record
    while (idx<Y.size()) // initialize box stack
-   {  cout << "initializaing points" << idx << endl; 
+   {  cout << "initializaing point " << idx << endl; 
       AABB box(ndim);
       initializeBox(idx,box,domain); // out is whole domain, in is the point
       AABBstack.push_back(box);
@@ -67,8 +67,11 @@ int Bbox::bboxHeu(string fpath)
 // writes out the final boxes
 void Bbox::writeHboxes()
 {  int i,j,dim;
+   vector<int> lstIdBox;  // list of undominated boxes
+
    for (i = 0; i < AABBstack.size(); i++)
    {  if(AABBstack[i].removed) continue;
+      lstIdBox.push_back(i);
       cout << i << ") Box " << AABBstack[i].id << " class " << AABBstack[i].classe << " pts ";
       for(j=0;j<AABBstack[i].points.size();j++)
          cout << " " << AABBstack[i].points[j]; cout << endl;
@@ -78,6 +81,19 @@ void Bbox::writeHboxes()
                  setw(5) << AABBstack[i].hiIn[dim]  <<
                  setw(5) << AABBstack[i].hiOut[dim] << endl;
    }
+   writeFinals(lstIdBox);
+}
+
+void Bbox::writeFinals(vector<int> lstIdBox)
+{  int i,j;
+
+   for (i = 0; i < lstIdBox.size()-1; i++)
+      for (j = i+1; j < lstIdBox.size(); j++)
+         if (std::includes(AABBstack[lstIdBox[i]].points.begin(), AABBstack[lstIdBox[i]].points.end(),
+            AABBstack[lstIdBox[j]].points.begin(), AABBstack[lstIdBox[j]].points.end()))
+         {
+            cout << i << " dominates " << j << endl;
+         }
 }
 
 // expands the stack box along all dimensions, first point was iSeed, starts from dimension d, inner loop from node idpt
@@ -91,10 +107,10 @@ void Bbox::expandBox()
    while(idx<AABBstack.size())
    {  AABB box = AABBstack[idx];
       iSeed = box.seed;
-      cout << ">>>>> Box " << box.id << " class " << Y[iSeed] << " seed " << iSeed << endl;
+      cout << ">>>>> Expanding box " << box.id << " class " << Y[iSeed] << " seed " << iSeed << endl;
       for(i=0;i<n;i++) // check current box against all points
       {
-         if(isInside(i, box, true))
+         if(isInside(i, box, false)) // false: i confini out hanno punti non cluster
             if(Y[iSeed]==Y[i]) // same category (aka box.classe), expand in
             {  for (dim = 0; dim < this->ndim; dim++)
                {  if (X[i][dim] > box.hiIn[dim] && X[i][dim] < box.hiOut[dim]) // inner box cresce hi
@@ -112,6 +128,7 @@ void Bbox::expandBox()
                   // taglio out in basso
                   if (X[i][dim] > box.loOut[dim] && X[i][dim] < X[iSeed][dim])
                   {  cout << "------ box " << box.id <<" point " << i <<" dim "<<dim<< " Alzo il lo " << box.loOut[dim] << " -> " << X[i][dim] << endl; // taglio sotto
+                     AABBstack[idx].removed = true;
                      AABB newBox(box);
                      nb++;
                      newBox.id = nb;
@@ -135,13 +152,13 @@ void Bbox::expandBox()
                      }
                      if(!checkDominated(newBox))
                      {  AABBstack.push_back(newBox);
-                        AABBstack[idx].removed = true;
                         cout << "Queuing " << newBox.id << " removing " << idx << endl;
                      }
                   }
                   // taglio out in alto
                   if (X[i][dim] < box.hiOut[dim] && X[i][dim] > X[iSeed][dim])
                   {  cout << "++++++ box "<<box.id<< " point " << i << " dim " << dim << " Abbasso hi " << box.hiOut[dim] << " -> " << X[i][dim] << endl;  // abbasso sopra
+                     AABBstack[idx].removed = true;
                      AABB newBox(box);
                      nb++;
                      newBox.id = nb;
@@ -165,7 +182,6 @@ void Bbox::expandBox()
                      }
                      if (!checkDominated(newBox))
                      {  AABBstack.push_back(newBox);
-                        AABBstack[idx].removed = true;
                         cout << "Queuing " << newBox.id << " removing " << idx << endl;
                      }
                   }
@@ -195,7 +211,7 @@ bool Bbox::checkDominated(AABB& box)
    box.hash = h;
    j = 0;
    while (j < AABBstack.size())
-   {
+   {  if(AABBstack[j].removed) goto l0;
       h1 = AABBstack[j].hash;
       if (hashtable[h] != 0)
       {
@@ -238,7 +254,7 @@ bool Bbox::checkDominated(AABB& box)
             break;
          }
       }
-      j++;
+l0:   j++;
    }
    return isDominated;
 }
@@ -253,7 +269,7 @@ int Bbox::hash(AABB& box)
    return h;
 }
 
-// if a point is inside the outer box of an AABB, option on boundaries
+// if a point is inside the outer box of an AABB, option on boundaries accepting
 bool Bbox::isInside(int idx, AABB& box, bool fBoundariesIncluded)
 {  int dim;
    bool isIn = false;
@@ -271,7 +287,7 @@ bool Bbox::isInside(int idx, AABB& box, bool fBoundariesIncluded)
 l0:return isIn;
 }
 
-// if a point is inside a hyperrect given hi and lo coords, option on boundaries
+// if a point is inside a hyperrect given hi and lo coords, option on boundaries accepting
 bool Bbox::isInsideVec(int i1, vector<double> lo, vector<double> hi, bool fBoundariesIncluded)
 {  int dim;
    bool isIn = false;
