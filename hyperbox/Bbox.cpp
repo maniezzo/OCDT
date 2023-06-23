@@ -85,15 +85,45 @@ void Bbox::writeHboxes()
 }
 
 void Bbox::writeFinals(vector<int> lstIdBox)
-{  int i,j;
+{  int i,j,k,dim;
 
-   for (i = 0; i < lstIdBox.size()-1; i++)
-      for (j = i+1; j < lstIdBox.size(); j++)
-         if (std::includes(AABBstack[lstIdBox[i]].points.begin(), AABBstack[lstIdBox[i]].points.end(),
-            AABBstack[lstIdBox[j]].points.begin(), AABBstack[lstIdBox[j]].points.end()))
-         {
-            cout << i << " dominates " << j << endl;
-         }
+   for (i = 0; i < lstIdBox.size(); i++)
+      for (j = 0; j < lstIdBox.size(); j++) // è asimmetrico
+         if(i!=j && !AABBstack[lstIdBox[j]].removed && !AABBstack[lstIdBox[i]].removed)
+            if (std::includes(AABBstack[lstIdBox[i]].points.begin(), AABBstack[lstIdBox[i]].points.end(),
+                AABBstack[lstIdBox[j]].points.begin(), AABBstack[lstIdBox[j]].points.end()))
+            {  cout << i << " dominates " << j << endl;
+               AABBstack[lstIdBox[j]].removed = true;
+            }
+   for (j = 0; j < lstIdBox.size(); j++)
+   {  i = lstIdBox[j];
+      if (AABBstack[i].removed) continue;
+      vector<double>minVal(ndim);
+      vector<double>maxVal(ndim);
+      cout << i << ") Box " << AABBstack[i].id << " class " << AABBstack[i].classe << " pts ";
+      for (k = 0; k < AABBstack[i].points.size(); k++)
+         cout << " " << AABBstack[i].points[k]; cout << endl;
+      for (dim = 0; dim < ndim; dim++)
+      {  cout << setw(5) << AABBstack[i].loOut[dim] <<
+         setw(5) << AABBstack[i].loIn[dim] <<
+         setw(5) << AABBstack[i].hiIn[dim] <<
+         setw(5) << AABBstack[i].hiOut[dim] << endl;
+         minVal[dim] = (AABBstack[i].loIn[dim] + AABBstack[i].loOut[dim])/2;
+         maxVal[dim] = (AABBstack[i].hiIn[dim] + AABBstack[i].hiOut[dim])/2;
+      }
+      hbox hb = {minVal, maxVal};
+      finalBoxes.push_back(hb);
+   }
+
+   // writing output file
+   ofstream f("hyperboxes.txt");
+   for (i = 0; i < finalBoxes.size(); i++)
+   {
+      f << "Hyperbox " << i << endl;
+      for (dim = 0; dim < ndim; dim++) f << finalBoxes[i].min[dim] << " "; f << endl;
+      for (dim = 0; dim < ndim; dim++) f << finalBoxes[i].max[dim] << " "; f << endl;
+   }
+   f.close();
 }
 
 // expands the stack box along all dimensions, first point was iSeed, starts from dimension d, inner loop from node idpt
