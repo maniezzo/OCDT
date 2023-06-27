@@ -197,7 +197,7 @@ void Bbox::expandBox()
                      newBox.points.clear();
                      for (j = 0; j < pts.size(); j++)
                      {  k = pts[j];
-                        if (isInsideVec(k, newBox.loOut, newBox.hiOut, true))
+                        if (isInsideVec(k, newBox.loOut, newBox.hiOut, false))
                         {  cout << k << " is inside hi" << endl;
                            if (X[k][dim] > newBox.hiIn[dim])
                            {  cout << "hiin dim " << dim << " " << newBox.hiIn[dim] << " -> " << X[k][dim] << endl;
