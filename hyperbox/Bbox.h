@@ -58,4 +58,5 @@ class Bbox
       void writeHboxes();
       bool checkDominated(AABB& box); // checks whether a box is already dominated
       void writeFinals(vector<int> lstIdBox); // writes out the final solution
+      void removeNonParetian(hbox domain);  // removes points surronded by similar ones
 };

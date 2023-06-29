@@ -47,6 +47,7 @@ int Bbox::bboxHeu(string fpath)
          if (X[i][dim] > domain.max[dim]) domain.max[dim] = X[i][dim];
       }
    }
+   removeNonParetian(domain);
 
    // box a set
    idx = 0; // index of incumbent record
@@ -406,4 +407,70 @@ vector<string> Bbox::split(string str, char sep)
       tokens.push_back(str.substr(start, end - start));
    }
    return tokens;
+}
+
+// removes points surronded by similar ones
+void Bbox::removeNonParetian(hbox domain)
+{  int i,ii,j,jj,dim,maxdim,mindim, idClass;
+   bool isDominated;
+
+   hbox base; // tutto nullo, per inizializzare e per confronto
+   for (i = 0; i < ndim; i++)
+   {  base.min.push_back(-1);
+      base.max.push_back(-1);
+   }
+
+   for(idClass = 0; idClass <=1; idClass++)
+      for(ii=0;ii<ptClass[idClass].size();ii++)
+      {  isDominated = true;
+         i = ptClass[idClass][ii];
+         // same class bounding area
+         hbox limitPoints = base;
+         for (jj = 0; jj < ptClass[idClass].size(); jj++)
+         {  // if j different on more dimensions, it is not aligned
+            j = ptClass[idClass][jj];
+            if(j==i) continue;
+            mindim = -1;  // id punto tutte coordinate uguali e una più piccola (-1 non c'è, id c'è)
+            maxdim = -1;  // id punto tutte coordinate uguali e una più grande
+            for (dim = 0; dim < ndim; dim++)
+            {  if ((X[j][dim] > X[i][dim]))
+                  if(maxdim<0)
+                     maxdim=dim;
+                  else
+                     maxdim=n+1;
+               if ((X[j][dim] < X[i][dim]))
+                  if(mindim<0)
+                     mindim=dim;
+                  else
+                     mindim=n+1;
+            }
+            if (mindim < 0 && maxdim >= 0 && maxdim < ndim)
+               limitPoints.max[maxdim] = j;
+            if (maxdim < 0 && mindim >= 0 && mindim < ndim)
+               limitPoints.min[mindim] = j;
+            if (maxdim > n || mindim > n)
+               continue; // j not aligned with i
+         }
+
+         // check if opposite class point is inside
+         for (jj = 0; jj < ptClass[1-idClass].size(); jj++)
+         {  j = ptClass[1 - idClass][jj];
+            for(dim=0;dim<ndim;dim++)
+            {  if (X[j][dim]==X[i][dim])
+               {  // check se j sotto i
+                  if (limitPoints.min[dim] < 0 ||
+                      X[j][dim] < X[limitPoints.min[dim]][dim])
+                  {  isDominated = false;
+                     goto l0;
+                  }
+                  // check se j sopra j
+                  if (limitPoints.max[dim] < 0 || X[j][dim] > X[limitPoints.max[dim]][dim])
+                  {  isDominated = false;
+                     goto l0;
+                  }
+               }
+            }
+         }
+   l0:   if(isDominated) cout << "point " << i << " to be removed" << endl;
+      }
 }
