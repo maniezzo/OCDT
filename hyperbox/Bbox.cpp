@@ -452,25 +452,44 @@ void Bbox::removeNonParetian(hbox domain)
                continue; // j not aligned with i
          }
 
+         // check if bounded on all sides
+         isDominated = false;
+         for (int d = 0; d < ndim; d++)
+            if (limitPoints.min[d] < 0 || limitPoints.max[d] < 0)
+               goto l0;
+         isDominated = true;
+
          // check if opposite class point is inside
          for (jj = 0; jj < ptClass[1-idClass].size(); jj++)
          {  j = ptClass[1 - idClass][jj];
             for(dim=0;dim<ndim;dim++)
-            {  if (X[j][dim]==X[i][dim])
-               {  // check se j sotto i
-                  if (limitPoints.min[dim] < 0 ||
-                      X[j][dim] < X[limitPoints.min[dim]][dim])
-                  {  isDominated = false;
-                     goto l0;
-                  }
-                  // check se j sopra j
-                  if (limitPoints.max[dim] < 0 || X[j][dim] > X[limitPoints.max[dim]][dim])
-                  {  isDominated = false;
-                     goto l0;
-                  }
+            {  // check whether they differ only in one dim
+               for (int d = 0; d < ndim; d++)
+                  if (d != dim && X[j][d] != X[i][d])
+                     goto nextj;
+               // check se j sotto i
+               if(inBetween(limitPoints.min[dim], X[j][dim],X[i][dim]))
+               {  isDominated = false;
+                  goto l0;
+               }
+               // check se j sopra j
+               if(inBetween(X[i][dim],X[j][dim], limitPoints.max[dim]))
+               {  isDominated = false;
+                  goto l0;
                }
             }
+nextj:      continue;
          }
-   l0:   if(isDominated) cout << "point " << i << " to be removed" << endl;
+l0:      if(isDominated) cout << "point " << i << " to be removed" << endl;
       }
+}
+
+// not accepting domain bounds
+bool Bbox::inBetween(double a, double b, double c)
+{  bool isBetween = false;
+   if (a < 0) isBetween = true;
+   if (a >= 0 && a < b && b < c) isBetween = true;
+   if (c >= 0 && a < b && b < c) isBetween = true;
+   if (c < 0) isBetween = true;
+   return isBetween;
 }
