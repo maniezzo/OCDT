@@ -93,7 +93,7 @@ void Bbox::writeFinals(vector<int> lstIdBox)
          if(i!=j && !AABBstack[lstIdBox[j]].removed && !AABBstack[lstIdBox[i]].removed)
             if (std::includes(AABBstack[lstIdBox[i]].points.begin(), AABBstack[lstIdBox[i]].points.end(),
                 AABBstack[lstIdBox[j]].points.begin(), AABBstack[lstIdBox[j]].points.end()))
-            {  cout << i << " dominates " << j << endl;
+            {  cout << "box " << i << " dominates box " << j << endl;
                AABBstack[lstIdBox[j]].removed = true;
             }
    for (j = 0; j < lstIdBox.size(); j++)
@@ -169,7 +169,7 @@ void Bbox::expandBox()
                      for (j = 0; j < pts.size(); j++)
                      {  k = pts[j];
                         if (isInsideVec(k, newBox.loOut, newBox.hiOut, true))
-                        {  cout << k << " is inside lo" << endl;
+                        {  //cout << k << " is inside lo" << endl;
                            if(X[k][dim] < newBox.loIn[dim])
                            {  cout << "loin dim "<< dim << " " << newBox.loIn[dim] << " -> " << X[k][dim] << endl;
                               newBox.loIn[dim] = X[k][dim];
@@ -199,7 +199,7 @@ void Bbox::expandBox()
                      for (j = 0; j < pts.size(); j++)
                      {  k = pts[j];
                         if (isInsideVec(k, newBox.loOut, newBox.hiOut, false))
-                        {  cout << k << " is inside hi" << endl;
+                        {  //cout << k << " is inside hi" << endl;
                            if (X[k][dim] > newBox.hiIn[dim])
                            {  cout << "hiin dim " << dim << " " << newBox.hiIn[dim] << " -> " << X[k][dim] << endl;
                               newBox.hiIn[dim] = X[k][dim];
@@ -374,7 +374,7 @@ void Bbox::read_data(string fpath)
       cout << elem[0] << endl; //print the data of the string
       vector<double> val;
       for (i = 1; i < 1 + ndim; i++)
-         val.push_back(stoi(elem[i]));
+         val.push_back(stof(elem[i]));
       X.push_back(val);
       j = stoi(elem[ndim + 1]);
       Y.push_back(j);

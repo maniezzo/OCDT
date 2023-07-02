@@ -7,7 +7,7 @@ int main()
 {
    Bbox B;
    string fpath;
-   fpath = "../data/test1.csv";
+   fpath = "../data/Iris_setosa.csv";
    B.bboxHeu(fpath);
    cout << "Fine\n";
 }
