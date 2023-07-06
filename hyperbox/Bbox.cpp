@@ -353,7 +353,8 @@ void Bbox::initializeBox(int idx, AABB& box, hbox domain)
 }
 
 void Bbox::read_data(string fpath)
-{  int i, j;
+{  int i, j, cont;
+   double v;
    string s, line;
    vector<string> elem;
 
@@ -368,21 +369,29 @@ void Bbox::read_data(string fpath)
       elem = split(line, ',');
       ndim = elem.size() - 2;
    }
-   while (getline(f, line)) 
+   cout << "READING ONLY PARTIAL DATASET" << endl;
+   cont = 0;
+   while (getline(f, line))
    {  //read data from file object and put it into string.
+      vector<double> val;
+      if(cont>3 && !(cont>100 && cont < 103)) goto l0;
       elem = split(line, ',');
       cout << elem[0] << endl; //print the data of the string
-      vector<double> val;
       for (i = 1; i < 1 + ndim; i++)
-         val.push_back(stof(elem[i]));
+         if(i==2 || i==3)
+         {  v = stod(elem[i]);
+            v = round(100.0 * v) /100.0;         // rounded to 2nd decimal
+            val.push_back(v);
+         }
       X.push_back(val);
       j = stoi(elem[ndim + 1]);
       Y.push_back(j);
       if(j==0) ptClass[0].push_back(stoi(elem[0]));
       else     ptClass[1].push_back(stoi(elem[0]));
-      
+l0:   cont++;
    }
    f.close();
+   ndim = X[0].size(); // in case of partial dataset
    n = Y.size();  // number of input records
 }
 
