@@ -1,0 +1,8 @@
+// A graph
+digraph {
+	A [label="King Arthur"]
+	B [label="Sir Bedevere the Wise"]
+	C [label="Sir Lancelot the Brave"]
+	A -> B
+	A -> C
+}
