@@ -1,1 +1,2 @@
 C:\git\ODT\hyperbox\x64\Debug\hyperbox.exe
+D:\git\ODT\hyperbox\x64\Debug\hyperbox.exe

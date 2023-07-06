@@ -138,7 +138,8 @@ void Bbox::expandBox()
    while(idx<AABBstack.size())
    {  AABB box = AABBstack[idx];
       iSeed = box.seed;
-      cout << ">>>>> Expanding box " << box.id << " class " << Y[iSeed] << " seed " << iSeed << endl;
+      if(this->isVerbose || idx%1000 == 0)
+         cout << ">>>>> Expanding box " << box.id << " class " << Y[iSeed] << " seed " << iSeed << endl;
       for(i=0;i<n;i++) // check current box against all points
       {
          if(isInside(i, box, false)) // false: i confini out hanno punti non cluster
@@ -158,7 +159,8 @@ void Bbox::expandBox()
                {  pts = box.points;
                   // taglio out in basso
                   if (X[i][dim] > box.loOut[dim] && X[i][dim] < X[iSeed][dim])
-                  {  cout << "------ box " << box.id <<" point " << i <<" dim "<<dim<< " Alzo il lo " << box.loOut[dim] << " -> " << X[i][dim] << endl; // taglio sotto
+                  {  if(this->isVerbose)
+                        cout << "------ box " << box.id <<" point " << i <<" dim "<<dim<< " Alzo il lo " << box.loOut[dim] << " -> " << X[i][dim] << endl; // taglio sotto
                      AABBstack[idx].removed = true;
                      AABB newBox(box);
                      nb++;
@@ -171,7 +173,8 @@ void Bbox::expandBox()
                         if (isInsideVec(k, newBox.loOut, newBox.hiOut, true))
                         {  //cout << k << " is inside lo" << endl;
                            if(X[k][dim] < newBox.loIn[dim])
-                           {  cout << "loin dim "<< dim << " " << newBox.loIn[dim] << " -> " << X[k][dim] << endl;
+                           {  if(this->isVerbose)
+                                 cout << "loin dim "<< dim << " " << newBox.loIn[dim] << " -> " << X[k][dim] << endl;
                               newBox.loIn[dim] = X[k][dim];
                            }
                            newBox.points.push_back(k);
@@ -183,12 +186,14 @@ void Bbox::expandBox()
                      }
                      if(!checkDominated(newBox))
                      {  AABBstack.push_back(newBox);
-                        cout << "Queuing " << newBox.id << " removing " << idx << endl;
+                        if(this->isVerbose)
+                           cout << "Queuing " << newBox.id << " removing " << idx << endl;
                      }
                   }
                   // taglio out in alto
                   if (X[i][dim] < box.hiOut[dim] && X[i][dim] > X[iSeed][dim])
-                  {  cout << "++++++ box "<<box.id<< " point " << i << " dim " << dim << " Abbasso hi " << box.hiOut[dim] << " -> " << X[i][dim] << endl;  // abbasso sopra
+                  {  if(this->isVerbose)
+                        cout << "++++++ box "<<box.id<< " point " << i << " dim " << dim << " Abbasso hi " << box.hiOut[dim] << " -> " << X[i][dim] << endl;  // abbasso sopra
                      AABBstack[idx].removed = true;
                      AABB newBox(box);
                      nb++;
@@ -201,7 +206,8 @@ void Bbox::expandBox()
                         if (isInsideVec(k, newBox.loOut, newBox.hiOut, false))
                         {  //cout << k << " is inside hi" << endl;
                            if (X[k][dim] > newBox.hiIn[dim])
-                           {  cout << "hiin dim " << dim << " " << newBox.hiIn[dim] << " -> " << X[k][dim] << endl;
+                           {  if(this->isVerbose)
+                                 cout << "hiin dim " << dim << " " << newBox.hiIn[dim] << " -> " << X[k][dim] << endl;
                               newBox.hiIn[dim] = X[k][dim];
                            }
                            newBox.points.push_back(k);
@@ -213,7 +219,8 @@ void Bbox::expandBox()
                      }
                      if (!checkDominated(newBox))
                      {  AABBstack.push_back(newBox);
-                        cout << "Queuing " << newBox.id << " removing " << idx << endl;
+                        if(this->isVerbose)
+                           cout << "Queuing " << newBox.id << " removing " << idx << endl;
                      }
                   }
                }
@@ -274,12 +281,14 @@ bool Bbox::checkDominated(AABB& box)
             }
          }
          if (fContained)
-         {  cout << "Box contained, " << box.id << " rejected" << endl;
+         {  if(this->isVerbose)
+               cout << "Box contained, " << box.id << " rejected" << endl;
             isDominated = true;
             break;
          }
          if (fContaining)
-         {  cout << "Box containing, redefining box " << AABBstack[j].id << endl;
+         {  if (this->isVerbose)
+               cout << "Box containing, redefining box " << AABBstack[j].id << endl;
             AABBstack[j] = box;
             isDominated = true;
             break;
@@ -353,10 +362,11 @@ void Bbox::initializeBox(int idx, AABB& box, hbox domain)
 }
 
 void Bbox::read_data(string fpath)
-{  int i, j, cont;
+{  int i, j, cont, id;
    double v;
    string s, line;
    vector<string> elem;
+   vector<float> val;
 
    cout << "Running from " << ExePath() << endl;
    ifstream f;
@@ -373,21 +383,22 @@ void Bbox::read_data(string fpath)
    cont = 0;
    while (getline(f, line))
    {  //read data from file object and put it into string.
-      vector<double> val;
-      if(cont>3 && !(cont>100 && cont < 103)) goto l0;
+      val.clear();
       elem = split(line, ',');
-      cout << elem[0] << endl; //print the data of the string
-      for (i = 1; i < 1 + ndim; i++)
-         if(i==2 || i==3)
-         {  v = stod(elem[i]);
-            v = round(100.0 * v) /100.0;         // rounded to 2nd decimal
+      id = stoi(elem[0]);
+      //if (id > 40 && !(id > 100 && id < 141)) goto l0;
+      cout << id << endl;
+      for (i = 1; i < 1 + ndim; i++)         // FILTERING DATA <<<<<<<<<<<<<<<<<<<<<<<<<<<
+         //if(i==2 || i==3)
+         {  v = stof(elem[i]);
+            v = round(100.0 * v) /100.0;     // rounded to 2nd decimal
             val.push_back(v);
          }
       X.push_back(val);
       j = stoi(elem[ndim + 1]);
       Y.push_back(j);
-      if(j==0) ptClass[0].push_back(stoi(elem[0]));
-      else     ptClass[1].push_back(stoi(elem[0]));
+      if(j==0) ptClass[0].push_back(Y.size() - 1); // starts at 0
+      else     ptClass[1].push_back(Y.size() - 1);
 l0:   cont++;
    }
    f.close();
