@@ -201,8 +201,8 @@ def computeAABB():
 
 if __name__ == "__main__":
    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-   df = pd.read_csv("test1.csv")
-   df["class"] = df["class"].map({"x":0,"o":1})
+   df = pd.read_csv("..\\data\\Iris_setosa.csv",usecols=["Id","SepalWidthCm","PetalLengthCm","class"])
+   #df["class"] = df["class"].map({"x":0,"o":1})
 
    n = len(df["class"])       # num of points
    X = df.iloc[:,1:-1].values # coords of the points
