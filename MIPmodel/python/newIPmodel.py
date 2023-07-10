@@ -201,7 +201,8 @@ def computeAABB():
 
 if __name__ == "__main__":
    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-   df = pd.read_csv("..\\data\\Iris_setosa.csv",usecols=["Id","SepalWidthCm","PetalLengthCm","class"])
+   df = pd.read_csv("..\\..\data\\test1.csv")
+   #df = pd.read_csv("..\\data\\Iris_setosa.csv",usecols=["Id","SepalWidthCm","PetalLengthCm","class"])
    #df["class"] = df["class"].map({"x":0,"o":1})
 
    n = len(df["class"])       # num of points
@@ -222,6 +223,7 @@ if __name__ == "__main__":
    # passing point class, not box class!!
    cuts = M.makeModel(lstAABB,X,ndim,df.iloc[:,3].to_numpy())
 
+   f = open("cuts.txt", "w") # file con i cut, da usare per ricavare l'ODT
    plt.figure(figsize=(9,6))
    plt.scatter(X[:, 0], X[:, 1], c=df["class"].values)
    for i in np.arange(n):
@@ -238,7 +240,9 @@ if __name__ == "__main__":
          y2 = c['xcut']
          x2 = 6
       plt.plot([x1, x2], [y1, y2], linewidth=2, marker='o')
+      f.write(f"dim {c['dim']} pos {c['xcut']}\n")
    plt.show()
+   f.close()
 
    print("... END")
    pass

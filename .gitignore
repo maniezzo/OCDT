@@ -151,6 +151,7 @@ hyperbox/[Dd]ebugPublic/
 hyperbox/[Rr]elease/
 hyperbox/[Rr]eleases/
 hyperbox/x64/
+hyperbox/x64/Debug/
 hyperbox/x86/
 hyperbox/bld/
 hyperbox/[Bb]in/
