@@ -3,13 +3,34 @@
 
 void Tree::goTree()
 {  vector<int> dummy;
-   ptClass.push_back(dummy); // row 0
-   ptClass.push_back(dummy); // row 1
+   ptClass.push_back(dummy); // row 0, class 0 points
+   ptClass.push_back(dummy); // row 1, class 1 points
 
    string dataSetFile = "..//..//..//data//test1.csv";
    readData(dataSetFile);
+   regionBitmasks();
 }
 
+// bitmask identifier of all domain partitions
+void Tree::regionBitmasks()
+{  int i,j,dim;
+   double val;
+   unsigned long bitmask;
+
+   for(i=0;i<n;i++)
+   {  bitmask=0;
+      for(j=0;j<ncuts;j++)
+      {  dim = cutlines[j].dim;
+         val = cutlines[j].cutval;
+         if(X[i][dim]>val)
+            bitmask |= (1 << j);  // mette a 1 il j-esimo bit da destra (i cut sarammo da dx a sx !!!!)
+      }
+      myCluster.push_back(bitmask);
+      clusters[bitmask].push_back(i);
+   }
+}
+
+// cut lines and data points
 void Tree::readData(string dataSetFile)
 {  int i,j,cont,id;
    double d;
@@ -22,14 +43,19 @@ void Tree::readData(string dataSetFile)
    ifstream f;
    f.open("..//..//..//MIPmodel//python//cuts.txt");
    if (f.is_open())
-   {  while (getline(f, line))
+   {  cont = 0;
+      while (getline(f, line))
       {  cout << line << endl;
          elem = split(line, ' ');
          i = atoi(elem[1].c_str());
-         dim.push_back(i); // dimensione in cui agisce il taglio
          d = atof(elem[3].c_str());
-         cutval.push_back(d); // posizione del taglio
+         Cutline c;
+         c.dim = i;      // dimensione in cui agisce il taglio
+         c.cutval = d;   // posizione del taglio
+         cutlines[cont] = c;
+         cont++;
       }
+      ncuts = cont;
       f.close();
    }
    else cout << "Cannot open cuts input file\n";
