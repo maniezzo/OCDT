@@ -29,6 +29,7 @@ class Tree
       vector<int> Y;               // classes
       map<unsigned long, vector<int>> clusters; // points of each cluster
       vector<unsigned long> myCluster;          // cluster of each point
+      vector<unsigned long> bitmasks;           // list of bitmasks
 
       int ndim;  // num dimensions
       int n;     // num points

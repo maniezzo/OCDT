@@ -25,8 +25,10 @@ void Tree::regionBitmasks()
          if(X[i][dim]>val)
             bitmask |= (1 << j);  // mette a 1 il j-esimo bit da destra (i cut sarammo da dx a sx !!!!)
       }
-      myCluster.push_back(bitmask);
-      clusters[bitmask].push_back(i);
+      myCluster.push_back(bitmask);   // cluster in cui cade ogni punto
+      clusters[bitmask].push_back(i); // punti dentro ogni cluster
+      if(find(bitmasks.begin(), bitmasks.end(), bitmask) == bitmasks.end())
+         bitmasks.push_back(bitmask); // bitmask dei cluster
    }
 }
 
