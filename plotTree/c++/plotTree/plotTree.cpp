@@ -9,6 +9,32 @@ void Tree::goTree()
    string dataSetFile = "..//..//..//data//test1.csv";
    readData(dataSetFile);
    regionBitmasks();
+   contingency3D();
+}
+
+// number of cases per cut and per value
+void Tree::contingency3D()
+{  int i,j,dim,ptClass,minval;
+   vector<vector<vector<int>>> freq (ncuts, vector<vector<int>>(2,vector<int>(2,0)));
+   
+   for (i = 0; i < bitmasks.size(); i++)
+   {  ptClass = Y[clusters[bitmasks[i]][0]];
+      for (j = 0; j < ncuts; j++)
+      {  //dim = cutlines[j].dim;
+         if(bitmasks[i]&(1 << j))
+            freq[j][1][ptClass]++;
+         else
+            freq[j][0][ptClass]++;
+      }
+   }
+   minval = INT_MAX;
+   int idCut = -1;
+   for (i = 0; i < ncuts; i++)
+   {  if (freq[i][0][0] < minval) { minval = freq[i][0][0]; idCut = i; }
+      if (freq[i][0][1] < minval) { minval = freq[i][0][1]; idCut = i; }
+      if (freq[i][1][0] < minval) { minval = freq[i][1][0]; idCut = i; }
+      if (freq[i][1][1] < minval) { minval = freq[i][1][1]; idCut = i; }
+   }
 }
 
 // bitmask identifier of all domain partitions

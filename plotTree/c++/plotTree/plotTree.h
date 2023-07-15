@@ -39,4 +39,5 @@ class Tree
       vector<string> split(string str, char sep);
       void readData(string dataSetFile);
       void regionBitmasks();  // bitmask identifier of all domain partitions
+      void contingency3D();   // number of cases per cut and per value
 };
