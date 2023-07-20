@@ -29,12 +29,28 @@ void Tree::contingency3D()
    }
    minval = INT_MAX;
    int idCut = -1;
+   double sum;
+   double h;
    for (i = 0; i < ncuts; i++)
    {  if (freq[i][0][0] < minval) { minval = freq[i][0][0]; idCut = i; }
       if (freq[i][0][1] < minval) { minval = freq[i][0][1]; idCut = i; }
       if (freq[i][1][0] < minval) { minval = freq[i][1][0]; idCut = i; }
       if (freq[i][1][1] < minval) { minval = freq[i][1][1]; idCut = i; }
+
+      if(minval > 0)
+      {
+         sum = freq[i][0][0] + freq[i][0][1] + freq[i][1][0] + freq[i][1][1];
+         h = 0;   // entropia del cut
+         h += -(freq[i][0][0] / sum) * log(freq[i][0][0] / sum);
+         h += -(freq[i][0][1] / sum) * log(freq[i][0][1] / sum);
+         h += -(freq[i][1][0] / sum) * log(freq[i][1][0] / sum);
+         h += -(freq[i][1][1] / sum) * log(freq[i][1][1] / sum);
+      }
+      else
+         h = DBL_MAX;
    }
+
+
 }
 
 // bitmask identifier of all domain partitions
