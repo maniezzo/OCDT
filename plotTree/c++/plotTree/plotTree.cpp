@@ -14,9 +14,10 @@ void Tree::goTree()
 
 // number of cases per cut and per value
 void Tree::contingency3D()
-{  int i,j,dim,ptClass,minval;
+{  int i,j,dim,ptClass;
    vector<vector<vector<int>>> freq (ncuts, vector<vector<int>>(2,vector<int>(2,0)));
    
+   // contingency table (num cases per cut, per attr. value (above/below cut), per class
    for (i = 0; i < bitmasks.size(); i++)
    {  ptClass = Y[clusters[bitmasks[i]][0]];
       for (j = 0; j < ncuts; j++)
@@ -27,10 +28,15 @@ void Tree::contingency3D()
             freq[j][0][ptClass]++;
       }
    }
+   defineNode(freq);
+}
+
+void Tree::defineNode(vector<vector<vector<int>>> freq)
+{  int i,minval;
    minval = INT_MAX;
-   int idCut = -1;
+   int idCut = -1, idmax = -1;
    double sum;
-   double h;
+   double h,maxh = -1;
    for (i = 0; i < ncuts; i++)
    {  if (freq[i][0][0] < minval) { minval = freq[i][0][0]; idCut = i; }
       if (freq[i][0][1] < minval) { minval = freq[i][0][1]; idCut = i; }
@@ -38,8 +44,7 @@ void Tree::contingency3D()
       if (freq[i][1][1] < minval) { minval = freq[i][1][1]; idCut = i; }
 
       if(minval > 0)
-      {
-         sum = freq[i][0][0] + freq[i][0][1] + freq[i][1][0] + freq[i][1][1];
+      {  sum = freq[i][0][0] + freq[i][0][1] + freq[i][1][0] + freq[i][1][1];
          h = 0;   // entropia del cut
          h += -(freq[i][0][0] / sum) * log(freq[i][0][0] / sum);
          h += -(freq[i][0][1] / sum) * log(freq[i][0][1] / sum);
@@ -48,9 +53,22 @@ void Tree::contingency3D()
       }
       else
          h = DBL_MAX;
+
+      if (h > maxh)
+      {
+         maxh  = h;
+         idmax = i; // cut di entropia massima
+      }
    }
 
-
+   Node N;
+   N.id = decTree.size();
+   N.idCut = idmax;
+   N.cutDim = cutlines[i].dim;
+   N.cutValue = cutlines[i].cutval;
+   N.left = N.id + 1;
+   N.right = N.id + 2;
+   decTree.push_back(N);
 }
 
 // bitmask identifier of all domain partitions

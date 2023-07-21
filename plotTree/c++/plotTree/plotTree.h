@@ -16,6 +16,16 @@
 
 using namespace std;
 
+class Node
+{
+   public:
+      int id;
+      int idCut;        // cut associato al nodo
+      int    cutDim;    // dimension where the cut acts
+      double cutValue;  // calue of the cut
+      int left,right;   // pointers to left and right offspring
+};
+
 class Tree
 {
    public:
@@ -34,10 +44,12 @@ class Tree
       int ndim;  // num dimensions
       int n;     // num points
       int ncuts; // num of cuts
+      vector<Node> decTree; // the resulting decision tree (list of nodes, pointers are list posisitons)
 
       string exePath();
       vector<string> split(string str, char sep);
       void readData(string dataSetFile);
       void regionBitmasks();  // bitmask identifier of all domain partitions
       void contingency3D();   // number of cases per cut and per value
+      void defineNode(vector<vector<vector<int>>> freq);
 };
