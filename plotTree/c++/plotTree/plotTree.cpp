@@ -10,42 +10,41 @@ void Tree::goTree()
    string dataSetFile = "..//..//..//data//test1.csv";
    readData(dataSetFile);
    regionBitmasks();
-   contingency3D();
+   DFS(0);
 }
 
-// prints all not yet visited vertices reachable from s
 void Tree::DFS(int s)
 {
-   // Initially mark all vertices as not visited
-   vector<bool> visited(V, false);
+   decTree[s].visited = false;
 
    // Create a stack for DFS
    stack<int> stack;
 
-   // Push the current source node.
+   // Push the source node.
+   contingency3D();
    stack.push(s);
 
    while (!stack.empty())
    {
-      // Pop a vertex from stack and print it
+      // Pop a vertex from stack 
       int s = stack.top();
       stack.pop();
 
       // Stack may contain same vertex twice. So
-      // we need to print the popped item only
-      // if it is not visited.
-      if (!visited[s])
-      {
-         cout << s << " ";
-         visited[s] = true;
+      // we need to print the popped item only if it is not visited.
+      if (!decTree[s].visited)
+      {  cout << s << " ";
+         decTree[s].visited = true;
       }
 
       // Get all adjacent vertices of the popped vertex s
-      // If a adjacent has not been visited, then push it
-      // to the stack.
-      for (auto i = adj[s].begin(); i != adj[s].end(); ++i)
-         if (!visited[*i])
-            stack.push(*i);
+      // If a adjacent has not been visited, then push it to the stack.
+      int l = decTree[s].left;
+      if (!decTree[l].visited)
+         stack.push(l);
+      int r = decTree[s].right;
+      if (!decTree[r].visited)
+         stack.push(r);
    }
 }
 

@@ -24,6 +24,7 @@ class Node
       int    cutDim;    // dimension where the cut acts
       double cutValue;  // calue of the cut
       int left,right;   // pointers to left and right offspring
+      bool visited;     // used by the DFS
 };
 
 class Tree
@@ -52,4 +53,5 @@ class Tree
       void regionBitmasks();  // bitmask identifier of all domain partitions
       void contingency3D();   // number of cases per cut and per value
       void defineNode(vector<vector<vector<int>>> freq);
+      void DFS(int s);
 };
