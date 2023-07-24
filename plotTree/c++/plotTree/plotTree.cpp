@@ -14,14 +14,15 @@ void Tree::goTree()
 }
 
 void Tree::DFS(int s)
-{
-   decTree[s].visited = false;
-
+{  int i;
    // Create a stack for DFS
    stack<int> stack;
 
-   // Push the source node.
-   contingency3D();
+   // Push the source node, points are id of all points
+   std::vector<int> v(Y.size());
+   for(i=0;i<v.size();i++) v[i]=i;
+   nodePoints.push_back(v);
+   contingency3D(s);
    stack.push(s);
 
    while (!stack.empty())
@@ -48,14 +49,14 @@ void Tree::DFS(int s)
    }
 }
 
-// number of cases per cut and per value
-void Tree::contingency3D()
+// number of cases per cut and per value. Works on the regions not on the points
+void Tree::contingency3D(int idnode)
 {  int i,j,dim,ptClass;
    vector<vector<vector<int>>> freq (ncuts, vector<vector<int>>(2,vector<int>(2,0)));
    
    // contingency table (num cases per cut, per attr. value (above/below cut), per class
-   for (i = 0; i < bitmasks.size(); i++)
-   {  ptClass = Y[clusters[bitmasks[i]][0]];
+   for (i = 0; i < bitmasks.size(); i++) // for each bitmask (region)
+   {  ptClass = Y[clusters[bitmasks[i]][0]]; // class 0 or 1 of the region. Bitmasks encode regions
       for (j = 0; j < ncuts; j++)
       {  //dim = cutlines[j].dim;
          if(bitmasks[i]&(1 << j))
@@ -64,10 +65,10 @@ void Tree::contingency3D()
             freq[j][0][ptClass]++;
       }
    }
-   defineNode(freq);
+   defineNode(freq,idnode);
 }
 
-void Tree::defineNode(vector<vector<vector<int>>> freq)
+void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode)
 {  int i,minval;
    minval = INT_MAX;
    int idCut = -1, idmax = -1;
@@ -99,12 +100,23 @@ void Tree::defineNode(vector<vector<vector<int>>> freq)
 
    Node N;
    N.id = decTree.size();
-   N.idCut = idmax;
-   N.cutDim = cutlines[i].dim;
+   N.idCut    = idmax;
+   N.cutDim   = cutlines[i].dim;
    N.cutValue = cutlines[i].cutval;
-   N.left = N.id + 1;
-   N.right = N.id + 2;
+   N.left     = N.id + 1;
+   N.right    = N.id + 2;
+   N.visited  = false;
    decTree.push_back(N);
+
+   vector<int> leftpoints, rightpoints; // smaller than cut, bigger than cut
+   for(i=0;i<nodePoints[idnode].size();i++)
+      if(X[nodePoints[idnode][i]][N.cutDim]>N.cutValue)
+         rightpoints.push_back(nodePoints[idnode][i]);
+      else
+         leftpoints.push_back(nodePoints[idnode][i]);
+
+   nodePoints.push_back(leftpoints);
+   nodePoints.push_back(rightpoints);
 }
 
 // bitmask identifier of all domain partitions

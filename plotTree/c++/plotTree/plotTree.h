@@ -40,18 +40,19 @@ class Tree
       vector<int> Y;               // classes
       map<unsigned long, vector<int>> clusters; // points of each cluster
       vector<unsigned long> myCluster;          // cluster of each point
-      vector<unsigned long> bitmasks;           // list of bitmasks
+      vector<unsigned long> bitmasks;           // list of bitmasks encoding regions of attribute space ndim-dimensional
 
       int ndim;  // num dimensions
       int n;     // num points
       int ncuts; // num of cuts
-      vector<Node> decTree; // the resulting decision tree (list of nodes, pointers are list posisitons)
+      vector<Node> decTree;           // the resulting decision tree (list of nodes, pointers are list posisitons)
+      vector<vector<int>> nodePoints; // subset of points associated with each node of the decision tree
 
       string exePath();
       vector<string> split(string str, char sep);
       void readData(string dataSetFile);
-      void regionBitmasks();  // bitmask identifier of all domain partitions
-      void contingency3D();   // number of cases per cut and per value
-      void defineNode(vector<vector<vector<int>>> freq);
-      void DFS(int s);
+      void regionBitmasks();            // bitmask identifier of all domain partitions
+      void contingency3D(int idnode);   // number of cases per cut and per value
+      void defineNode(vector<vector<vector<int>>> freq, int idnode);
+      void DFS(int s);                  // actually, not search but construction
 };
