@@ -56,4 +56,6 @@ class Tree
       void defineNode(vector<vector<vector<int>>> freq, int idnode);
       void DFS(int s);                  // actually, not search but construction
       bool sameClass(int node);         // checks if all points are of the same class
+      void makeLeftSon(int idnode);     // points smaller than cut
+      void makeRightSon(int idnode);    // points bigger than cut
 };

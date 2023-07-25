@@ -23,6 +23,8 @@ void Tree::DFS(int s)
    for(i=0;i<v.size();i++) v[i]=i;
    nodePoints.push_back(v);
    contingency3D(s);
+   makeLeftSon(s);
+   makeRightSon(s);
    stack.push(s);
 
    while (!stack.empty())
@@ -42,11 +44,13 @@ void Tree::DFS(int s)
             int l = decTree[s].left;
             if (l>0 && (decTree.size() <= l || !decTree[l].visited))
             {  contingency3D(l);
+               makeLeftSon(l);
                stack.push(l);
             }
             int r = decTree[s].right;
             if (r>0 && (decTree.size() <= r || !decTree[r].visited))
             {  contingency3D(r);
+               makeRightSon(r);
                stack.push(r);
             }
          }
@@ -120,27 +124,57 @@ void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode)
    N.idCut    = idmax;
    N.cutDim   = cutlines[idmax].dim;
    N.cutValue = cutlines[idmax].cutval;
-   N.left     = nodePoints.size();
-   N.right    = nodePoints.size() + 1;
+   N.left     = -1;
+   N.right    = -1;
    N.visited  = false;
    decTree.push_back(N);
 
-   vector<int> leftpoints, rightpoints; // smaller than cut, bigger than cut
-   for(i=0;i<nodePoints[idnode].size();i++)
-      if(X[nodePoints[idnode][i]][N.cutDim]>N.cutValue)
-         rightpoints.push_back(nodePoints[idnode][i]);
-      else
+   //vector<int> leftpoints, rightpoints; // smaller than cut, bigger than cut
+   //for(i=0;i<nodePoints[idnode].size();i++)
+   //   if(X[nodePoints[idnode][i]][N.cutDim]>N.cutValue)
+   //      rightpoints.push_back(nodePoints[idnode][i]);
+      //else
+      //   leftpoints.push_back(nodePoints[idnode][i]);
+
+   //if(leftpoints.size() > 0)
+   //   nodePoints.push_back(leftpoints);
+   //else
+   //   N.left = -1;    // no left son
+   
+   //if(rightpoints.size()>0)
+   //   nodePoints.push_back(rightpoints);
+   //else
+   //   N.right = -1;   // no right son
+}
+
+// points smaller than cut
+void Tree::makeLeftSon(int idnode)
+{  int i;
+   vector<int> leftpoints;
+   Node* N = &decTree[decTree.size() - 1];
+   for (i = 0; i < nodePoints[idnode].size(); i++)
+      if (X[nodePoints[idnode][i]][N->cutDim] < N->cutValue)
          leftpoints.push_back(nodePoints[idnode][i]);
 
-   if(leftpoints.size() > 0)
-      nodePoints.push_back(leftpoints);
-   else
-      N.left = -1;    // no left son
-   
-   if(rightpoints.size()>0)
-      nodePoints.push_back(rightpoints);
-   else
-      N.right = -1;   // no right son
+   if (leftpoints.size() > 0)
+   {  nodePoints.push_back(leftpoints);
+      N->left = nodePoints.size() - 1;
+   }
+}
+
+// points bigger than cut
+void Tree::makeRightSon(int idnode)
+{  int i;
+   vector<int> rightpoints;
+   Node* N = &decTree[decTree.size() - 1];
+   for (i = 0; i < nodePoints[idnode].size(); i++)
+      if (X[nodePoints[idnode][i]][N->cutDim] > N->cutValue)
+         rightpoints.push_back(nodePoints[idnode][i]);
+
+   if (rightpoints.size() > 0)
+   {  nodePoints.push_back(rightpoints);
+      N->right = nodePoints.size() - 1;
+   }
 }
 
 // bitmask identifier of all domain partitions
