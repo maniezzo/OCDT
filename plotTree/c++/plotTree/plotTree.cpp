@@ -28,25 +28,43 @@ void Tree::DFS(int s)
    while (!stack.empty())
    {
       // Pop a vertex from stack 
-      int s = stack.top();
+      s = stack.top();
       stack.pop();
 
       // Stack may contain same vertex twice. So
       // we need to print the popped item only if it is not visited.
       if (!decTree[s].visited)
-      {  cout << s << " ";
+      {  cout << "Expanding node " << s << " bpoints " << nodePoints[s].size() << endl;
          decTree[s].visited = true;
-      }
 
-      // Get all adjacent vertices of the popped vertex s
-      // If a adjacent has not been visited, then push it to the stack.
-      int l = decTree[s].left;
-      if (!decTree[l].visited)
-         stack.push(l);
-      int r = decTree[s].right;
-      if (!decTree[r].visited)
-         stack.push(r);
+         if(!sameClass(s))
+         {  // Get all adjacent vertices of the popped vertex s
+            int l = decTree[s].left;
+            if (l>0 && (decTree.size() <= l || !decTree[l].visited))
+            {  contingency3D(l);
+               stack.push(l);
+            }
+            int r = decTree[s].right;
+            if (r>0 && (decTree.size() <= r || !decTree[r].visited))
+            {  contingency3D(r);
+               stack.push(r);
+            }
+         }
+      }
    }
+}
+
+// checks if all points are of the same class
+bool Tree::sameClass(int node)
+{  int i,idclass;
+   bool fSame = true;
+   idclass = Y[nodePoints[node][0]];
+   for(i=0;i<nodePoints[node].size();i++)
+      if(Y[nodePoints[node][i]] != idclass)
+      {  fSame = false;
+         break;
+      }
+   return fSame;
 }
 
 // number of cases per cut and per value. Works on the regions not on the points
@@ -92,8 +110,7 @@ void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode)
          h = DBL_MAX;
 
       if (h > maxh)
-      {
-         maxh  = h;
+      {  maxh  = h;
          idmax = i; // cut di entropia massima
       }
    }
@@ -101,10 +118,10 @@ void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode)
    Node N;
    N.id = decTree.size();
    N.idCut    = idmax;
-   N.cutDim   = cutlines[i].dim;
-   N.cutValue = cutlines[i].cutval;
-   N.left     = N.id + 1;
-   N.right    = N.id + 2;
+   N.cutDim   = cutlines[idmax].dim;
+   N.cutValue = cutlines[idmax].cutval;
+   N.left     = nodePoints.size();
+   N.right    = nodePoints.size() + 1;
    N.visited  = false;
    decTree.push_back(N);
 
@@ -115,8 +132,15 @@ void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode)
       else
          leftpoints.push_back(nodePoints[idnode][i]);
 
-   nodePoints.push_back(leftpoints);
-   nodePoints.push_back(rightpoints);
+   if(leftpoints.size() > 0)
+      nodePoints.push_back(leftpoints);
+   else
+      N.left = -1;    // no left son
+   
+   if(rightpoints.size()>0)
+      nodePoints.push_back(rightpoints);
+   else
+      N.right = -1;   // no right son
 }
 
 // bitmask identifier of all domain partitions

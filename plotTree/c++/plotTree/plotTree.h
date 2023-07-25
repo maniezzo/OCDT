@@ -55,4 +55,5 @@ class Tree
       void contingency3D(int idnode);   // number of cases per cut and per value
       void defineNode(vector<vector<vector<int>>> freq, int idnode);
       void DFS(int s);                  // actually, not search but construction
+      bool sameClass(int node);         // checks if all points are of the same class
 };
