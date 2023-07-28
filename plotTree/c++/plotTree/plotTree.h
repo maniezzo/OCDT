@@ -45,7 +45,7 @@ class Tree
       int ndim;  // num dimensions
       int n;     // num points
       int ncuts; // num of cuts
-      vector<Node> decTree;           // the resulting decision tree (list of nodes, pointers are list posisitons)
+      map<int,Node> decTree;          // the resulting decision tree (dict of id / nodes, id is the index in nodepoints)
       vector<vector<int>> nodePoints; // subset of points associated with each node of the decision tree
 
       string exePath();

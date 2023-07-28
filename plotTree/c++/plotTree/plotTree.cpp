@@ -45,11 +45,13 @@ void Tree::DFS(int s)
             if (l>0 && (decTree.size() <= l || !decTree[l].visited))
             {  contingency3D(l);
                makeLeftSon(l);
+               //makeRightSon(l);
                stack.push(l);
             }
             int r = decTree[s].right;
             if (r>0 && (decTree.size() <= r || !decTree[r].visited))
             {  contingency3D(r);
+               //makeLeftSon(r);
                makeRightSon(r);
                stack.push(r);
             }
@@ -73,7 +75,7 @@ bool Tree::sameClass(int node)
 
 // number of cases per cut and per value. Works on the regions not on the points
 void Tree::contingency3D(int idnode)
-{  int i,j,dim,ptClass;
+{  int i,j,ptClass;
    vector<vector<vector<int>>> freq (ncuts, vector<vector<int>>(2,vector<int>(2,0)));
    
    // contingency table (num cases per cut, per attr. value (above/below cut), per class
@@ -127,31 +129,14 @@ void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode)
    N.left     = -1;
    N.right    = -1;
    N.visited  = false;
-   decTree.push_back(N);
-
-   //vector<int> leftpoints, rightpoints; // smaller than cut, bigger than cut
-   //for(i=0;i<nodePoints[idnode].size();i++)
-   //   if(X[nodePoints[idnode][i]][N.cutDim]>N.cutValue)
-   //      rightpoints.push_back(nodePoints[idnode][i]);
-      //else
-      //   leftpoints.push_back(nodePoints[idnode][i]);
-
-   //if(leftpoints.size() > 0)
-   //   nodePoints.push_back(leftpoints);
-   //else
-   //   N.left = -1;    // no left son
-   
-   //if(rightpoints.size()>0)
-   //   nodePoints.push_back(rightpoints);
-   //else
-   //   N.right = -1;   // no right son
+   decTree[N.id] = (N);
 }
 
 // points smaller than cut
 void Tree::makeLeftSon(int idnode)
 {  int i;
    vector<int> leftpoints;
-   Node* N = &decTree[decTree.size() - 1];
+   Node* N = &decTree[decTree.size() - 1]; // parent node
    for (i = 0; i < nodePoints[idnode].size(); i++)
       if (X[nodePoints[idnode][i]][N->cutDim] < N->cutValue)
          leftpoints.push_back(nodePoints[idnode][i]);
@@ -166,7 +151,7 @@ void Tree::makeLeftSon(int idnode)
 void Tree::makeRightSon(int idnode)
 {  int i;
    vector<int> rightpoints;
-   Node* N = &decTree[decTree.size() - 1];
+   Node* N = &decTree[decTree.size() - 1]; // parent node
    for (i = 0; i < nodePoints[idnode].size(); i++)
       if (X[nodePoints[idnode][i]][N->cutDim] > N->cutValue)
          rightpoints.push_back(nodePoints[idnode][i]);
@@ -265,8 +250,7 @@ l0:      cont++;
 
 // split di una stringa in un array di elementi delimitati da separatori
 vector<string> Tree::split(string str, char sep)
-{
-   vector<string> tokens;
+{  vector<string> tokens;
    size_t start;
    size_t end = 0;
    while ((start = str.find_first_not_of(sep, end)) != std::string::npos) {
@@ -278,8 +262,7 @@ vector<string> Tree::split(string str, char sep)
 
 // trova il path del direttorio da cui si e' lanciato l'eseguibile
 string Tree::exePath()
-{
-   wchar_t buffer[MAX_PATH];
+{  wchar_t buffer[MAX_PATH];
    GetModuleFileName(NULL, buffer, MAX_PATH);
    wstring ws(buffer);
    string s = string(ws.begin(), ws.end());
