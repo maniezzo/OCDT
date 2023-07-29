@@ -14,24 +14,28 @@ void Tree::goTree()
 }
 
 void Tree::DFS(int s)
-{  int i;
+{  int i, cutBitMask, cutBM;
    // Create a stack for DFS
-   stack<int> stack;
+   stack<stackItem> stack;
+   stackItem si;
 
    // Push the source node, points are id of all points
-   std::vector<int> v(Y.size());
+   vector<int> v(Y.size());
    for(i=0;i<v.size();i++) v[i]=i;
    nodePoints.push_back(v);
-   contingency3D(s);
-   makeLeftSon(s);
-   makeRightSon(s);
-   stack.push(s);
+   newNode(s,0);
+   pointsLeftSon(s);
+   pointsRightSon(s);
+   si = {s,0};
+   stack.push(si);
 
    while (!stack.empty())
    {
       // Pop a vertex from stack 
-      s = stack.top();
+      si = stack.top();
       stack.pop();
+      s          = si.idnode;
+      cutBitMask = si.bitMaskCuts;
 
       // Stack may contain same vertex twice. So
       // we need to print the popped item only if it is not visited.
@@ -43,19 +47,27 @@ void Tree::DFS(int s)
          {  // Get all adjacent vertices of the popped vertex s
             int l = decTree[s].left;
             if (l>0 && (decTree.size() <= l || !decTree[l].visited))
-            {  contingency3D(l);
-               makeLeftSon(l);
-               //makeRightSon(l);
-               stack.push(l);
+            {  newNode(l, cutBitMask);
+               cutBM = cutBitMask;
+               cutBM |= (1 << decTree[l].idCut);  // mette a 1 il *-esimo bit DA DESTRA
+               pointsLeftSon(l);
+               pointsRightSon(l);
+               si = {l,cutBM};
+               stack.push(si);
             }
             int r = decTree[s].right;
             if (r>0 && (decTree.size() <= r || !decTree[r].visited))
-            {  contingency3D(r);
-               //makeLeftSon(r);
-               makeRightSon(r);
-               stack.push(r);
+            {  newNode(r, cutBitMask);
+               cutBM = cutBitMask;
+               cutBM |= (1 << decTree[l].idCut);  // mette a 1 il *-esimo bit DA DESTRA
+               pointsLeftSon(r);
+               pointsRightSon(r);
+               si = {r,cutBM};
+               stack.push(si);
             }
          }
+         else // leaf node
+            decTree[s].idCut = -1;
       }
    }
 }
@@ -73,8 +85,8 @@ bool Tree::sameClass(int node)
    return fSame;
 }
 
-// number of cases per cut and per value. Works on the regions not on the points
-void Tree::contingency3D(int idnode)
+// 3D contingency table, number of cases per cut and per value. Works on the regions not on the points
+void Tree::newNode(int idnode, int cutBitMask)
 {  int i,j,ptClass;
    vector<vector<vector<int>>> freq (ncuts, vector<vector<int>>(2,vector<int>(2,0)));
    
@@ -89,17 +101,24 @@ void Tree::contingency3D(int idnode)
             freq[j][0][ptClass]++;
       }
    }
-   defineNode(freq,idnode);
+   defineNode(freq,idnode, cutBitMask);
 }
 
-void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode)
+// puts node in the decision tree
+void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode, int cutBitMask)
 {  int i,minval;
    minval = INT_MAX;
    int idCut = -1, idmax = -1;
    double sum;
    double h,maxh = -1;
    for (i = 0; i < ncuts; i++)
-   {  if (freq[i][0][0] < minval) { minval = freq[i][0][0]; idCut = i; }
+   {
+      bool is_set = (cutBitMask & (1 << i)) != 0; // check if i-th bit is set
+      if (is_set)
+      {  h = -1;
+         continue;
+      }
+      if (freq[i][0][0] < minval) { minval = freq[i][0][0]; idCut = i; }
       if (freq[i][0][1] < minval) { minval = freq[i][0][1]; idCut = i; }
       if (freq[i][1][0] < minval) { minval = freq[i][1][0]; idCut = i; }
       if (freq[i][1][1] < minval) { minval = freq[i][1][1]; idCut = i; }
@@ -129,11 +148,11 @@ void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode)
    N.left     = -1;
    N.right    = -1;
    N.visited  = false;
-   decTree[N.id] = (N);
+   decTree[idnode] = (N);
 }
 
 // points smaller than cut
-void Tree::makeLeftSon(int idnode)
+void Tree::pointsLeftSon(int idnode)
 {  int i;
    vector<int> leftpoints;
    Node* N = &decTree[decTree.size() - 1]; // parent node
@@ -141,14 +160,14 @@ void Tree::makeLeftSon(int idnode)
       if (X[nodePoints[idnode][i]][N->cutDim] < N->cutValue)
          leftpoints.push_back(nodePoints[idnode][i]);
 
-   if (leftpoints.size() > 0)
+   if (leftpoints.size() > 0 && leftpoints.size() < nodePoints[idnode].size())
    {  nodePoints.push_back(leftpoints);
       N->left = nodePoints.size() - 1;
    }
 }
 
 // points bigger than cut
-void Tree::makeRightSon(int idnode)
+void Tree::pointsRightSon(int idnode)
 {  int i;
    vector<int> rightpoints;
    Node* N = &decTree[decTree.size() - 1]; // parent node
@@ -156,7 +175,7 @@ void Tree::makeRightSon(int idnode)
       if (X[nodePoints[idnode][i]][N->cutDim] > N->cutValue)
          rightpoints.push_back(nodePoints[idnode][i]);
 
-   if (rightpoints.size() > 0)
+   if (rightpoints.size() > 0 && rightpoints.size() < nodePoints[idnode].size())
    {  nodePoints.push_back(rightpoints);
       N->right = nodePoints.size() - 1;
    }
