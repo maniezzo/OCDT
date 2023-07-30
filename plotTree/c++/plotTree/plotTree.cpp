@@ -14,7 +14,7 @@ void Tree::goTree()
 }
 
 void Tree::DFS(int s)
-{  int i, cutBitMask, cutBM;
+{  int i, cutBitMask, cutBM=0;
    // Create a stack for DFS
    stack<stackItem> stack;
    stackItem si;
@@ -26,7 +26,8 @@ void Tree::DFS(int s)
    newNode(s,0);
    pointsLeftSon(s);
    pointsRightSon(s);
-   si = {s,0};
+   cutBM |= (1 << decTree[0].idCut);  // mette a 1 il *-esimo bit DA DESTRA
+   si = {s,cutBM };
    stack.push(si);
 
    while (!stack.empty())
@@ -48,22 +49,26 @@ void Tree::DFS(int s)
             int l = decTree[s].left;
             if (l>0 && (decTree.size() <= l || !decTree[l].visited))
             {  newNode(l, cutBitMask);
-               cutBM = cutBitMask;
-               cutBM |= (1 << decTree[l].idCut);  // mette a 1 il *-esimo bit DA DESTRA
-               pointsLeftSon(l);
-               pointsRightSon(l);
-               si = {l,cutBM};
-               stack.push(si);
+               if(decTree[l].idCut >= 0)
+               {  cutBM = cutBitMask;
+                  cutBM |= (1 << decTree[l].idCut);  // mette a 1 il *-esimo bit DA DESTRA
+                  pointsLeftSon(l);
+                  pointsRightSon(l);
+                  si = {l,cutBM};
+                  stack.push(si);
+               }
             }
             int r = decTree[s].right;
             if (r>0 && (decTree.size() <= r || !decTree[r].visited))
             {  newNode(r, cutBitMask);
-               cutBM = cutBitMask;
-               cutBM |= (1 << decTree[l].idCut);  // mette a 1 il *-esimo bit DA DESTRA
-               pointsLeftSon(r);
-               pointsRightSon(r);
-               si = {r,cutBM};
-               stack.push(si);
+               if (decTree[r].idCut >= 0)
+               {  cutBM = cutBitMask;
+                  cutBM |= (1 << decTree[r].idCut);  // mette a 1 il *-esimo bit DA DESTRA
+                  pointsLeftSon(r);
+                  pointsRightSon(r);
+                  si = {r,cutBM};
+                  stack.push(si);
+               }
             }
          }
          else // leaf node
@@ -95,7 +100,7 @@ void Tree::newNode(int idnode, int cutBitMask)
    {  ptClass = Y[clusters[bitmasks[i]][0]]; // class 0 or 1 of the region. Bitmasks encode regions
       for (j = 0; j < ncuts; j++)
       {  //dim = cutlines[j].dim;
-         if(bitmasks[i]&(1 << j))
+         if(bitmasks[i]&(1 << j)) // region bitmask (NOT CUT)
             freq[j][1][ptClass]++;
          else
             freq[j][0][ptClass]++;
@@ -106,11 +111,17 @@ void Tree::newNode(int idnode, int cutBitMask)
 
 // puts node in the decision tree
 void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode, int cutBitMask)
-{  int i,minval;
-   minval = INT_MAX;
+{  int i,minval = INT_MAX;
    int idCut = -1, idmax = -1;
    double sum;
    double h,maxh = -1;
+   bool isSameCLass = false;
+
+   if(sameClass(idnode))
+   {  isSameCLass = true;
+      goto l0;
+   }
+
    for (i = 0; i < ncuts; i++)
    {
       bool is_set = (cutBitMask & (1 << i)) != 0; // check if i-th bit is set
@@ -140,11 +151,11 @@ void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode, int cutBitMa
       }
    }
 
-   Node N;
+l0:Node N;
    N.id = decTree.size();
-   N.idCut    = idmax;
-   N.cutDim   = cutlines[idmax].dim;
-   N.cutValue = cutlines[idmax].cutval;
+   N.idCut    = (isSameCLass ? -1 : idmax);
+   N.cutDim   = (isSameCLass ? -1 : cutlines[idmax].dim);
+   N.cutValue = (isSameCLass ? -1 : cutlines[idmax].cutval);
    N.left     = -1;
    N.right    = -1;
    N.visited  = false;
