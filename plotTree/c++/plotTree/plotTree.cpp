@@ -7,19 +7,22 @@ void Tree::goTree()
    ptClass.push_back(dummy); // row 0, class 0 points
    ptClass.push_back(dummy); // row 1, class 1 points
 
-   string dataSetFile = "..//..//..//data//test1.csv";
-   readData(dataSetFile);
+   string dataFileName = "test4";
+   readData(dataFileName);
    regionBitmasks();
    DFS(0);
-   writeTree();
+   writeTree(dataFileName);
 }
 
 // writes the tree on a file, input for graphviz
-void Tree::writeTree()
+void Tree::writeTree(string dataFileName)
 {  int i;
    ofstream f;
    f.open("graph.txt");
    f << "digraph G {" << endl;
+   f << "graph[fontname = \"helvetica\"]"<< endl;
+   f << "node[fontname = \"helvetica\"]" << endl;
+   f << "edge[fontname = \"helvetica\"]" << endl;
    for(i=0;i<decTree.size();i++)
       if(decTree[i].cutDim >=0)
          f << i << " [label = \"" << decTree[i].id << " (cut "<< decTree[i].idCut <<") \ndim "<< decTree[i].cutDim <<" val. "<< decTree[i].cutValue <<"\"]" << endl;
@@ -33,10 +36,14 @@ void Tree::writeTree()
       if (decTree[i].right >= 0)
          f << decTree[i].id << " -> " << decTree[i].right << endl;
    }
+   // title
+   f << "labelloc = \"t\""<<endl;
+   f << "label = \""<< dataFileName << "\"" << endl;
    f << "}" << endl;
    f.close();
 }
 
+// Depth First /search/ construction 
 void Tree::DFS(int s)
 {  int i, cutBitMask, cutBM=0;
    // Create a stack for DFS
@@ -239,7 +246,7 @@ void Tree::regionBitmasks()
 }
 
 // cut lines and data points
-void Tree::readData(string dataSetFile)
+void Tree::readData(string dataFileName)
 {  int i,j,cont,id;
    double d;
    string line;
@@ -249,7 +256,7 @@ void Tree::readData(string dataSetFile)
 
    // leggo i tagli
    ifstream f;
-   f.open("..//..//..//MIPmodel//python//cuts.txt");
+   f.open("..//..//..//MIPmodel//python//cuts_"+ dataFileName +".txt");
    if (f.is_open())
    {  cont = 0;
       while (getline(f, line))
@@ -269,6 +276,7 @@ void Tree::readData(string dataSetFile)
    else cout << "Cannot open cuts input file\n";
 
    // leggo i punti
+   string dataSetFile = "..//..//..//data//" + dataFileName + ".csv";
    f.open(dataSetFile);
    if (f.is_open())
    {  getline(f, line);  // headers

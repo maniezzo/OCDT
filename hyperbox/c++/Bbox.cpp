@@ -28,7 +28,7 @@ Bbox::Bbox()
 Bbox::~Bbox() {  return; }
 
 // >>>>>>>>>>>>>>>>>>> main method, everythong starts from here <<<<<<<<<<<<<<<<<<<<<<<
-int Bbox::bboxHeu(string fpath)
+int Bbox::bboxHeu(string fpath, string dataFileName)
 {  int i,dim,idx;
    read_data(fpath);
 
@@ -61,12 +61,12 @@ int Bbox::bboxHeu(string fpath)
    expandBox();
 
    cout << "n. box: " << AABBstack.size() << endl;
-   writeHboxes();
+   writeHboxes(dataFileName);
    return 0;
 }
 
 // writes out the final boxes
-void Bbox::writeHboxes()
+void Bbox::writeHboxes(string dataFileName)
 {  int i,j,dim;
    vector<int> lstIdBox;  // list of undominated boxes
 
@@ -82,10 +82,10 @@ void Bbox::writeHboxes()
                  setw(5) << AABBstack[i].hiIn[dim]  <<
                  setw(5) << AABBstack[i].hiOut[dim] << endl;
    }
-   writeFinals(lstIdBox);
+   writeFinals(lstIdBox, dataFileName);
 }
 
-void Bbox::writeFinals(vector<int> lstIdBox)
+void Bbox::writeFinals(vector<int> lstIdBox, string dataFileName)
 {  int i,j,k,dim;
 
    for (i = 0; i < lstIdBox.size(); i++)
@@ -117,7 +117,7 @@ void Bbox::writeFinals(vector<int> lstIdBox)
    }
 
    // writing output file
-   ofstream f("hyperboxes.txt");
+   ofstream f("hyperboxes_"+ dataFileName +".txt");
    for (i = 0; i < finalBoxes.size(); i++)
    {
       f << "Hyperbox " << i << endl;

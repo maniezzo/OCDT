@@ -1,6 +1,7 @@
 import numpy as np, pandas as pd, os
 from pulp import *
 
+# basic IP model for cut selection
 class MIPmodel:
    def __init__(self,npoints,nbox):
       self.npoints = npoints  # total number of points

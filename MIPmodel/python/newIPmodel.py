@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import copy, Bbox
 import MIPmodel
 
+# Main for IP based cut selection. Works on preliminary AABB clustering
+
 # plots a solution
 def plotSolution():
    plt.figure(figsize=(9,6))
@@ -201,7 +203,8 @@ def computeAABB():
 
 if __name__ == "__main__":
    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-   df = pd.read_csv("..\\..\data\\test1.csv")
+   dataFileName = "test4"
+   df = pd.read_csv(f"..\\..\data\\{dataFileName}.csv")
    #df = pd.read_csv("..\\data\\Iris_setosa.csv",usecols=["Id","SepalWidthCm","PetalLengthCm","class"])
    #df["class"] = df["class"].map({"x":0,"o":1})
 
@@ -223,7 +226,7 @@ if __name__ == "__main__":
    # passing point class, not box class!!
    cuts = M.makeModel(lstAABB,X,ndim,df.iloc[:,3].to_numpy())
 
-   f = open("cuts.txt", "w") # file con i cut, da usare per ricavare l'ODT
+   f = open(f"cuts_{dataFileName}.txt", "w") # file con i cut, da usare per ricavare l'ODT
    plt.figure(figsize=(9,6))
    plt.scatter(X[:, 0], X[:, 1], c=df["class"].values)
    for i in np.arange(n):

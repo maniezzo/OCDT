@@ -4,5 +4,6 @@ int main()
 {
    Tree T;
    T.goTree();
-   cout << "Fine ... " << endl;
+   system("graphviz.bat"); // running graphviz on file graph.txt
+   cout << "Fine, result in file output.png"<< endl;
 }

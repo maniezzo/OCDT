@@ -35,7 +35,7 @@ class Bbox
    public:
       Bbox();
       ~Bbox();
-      int bboxHeu(string fpath);
+      int bboxHeu(string fpath, string dataFileName);
       bool isVerbose;// verbose output
 private:
       int ndim,n,m;  // number of dimensions (features), num points, hashtable size
@@ -56,9 +56,9 @@ private:
       bool isInside(int idx, AABB& box, bool fBoundariesIncluded);
       bool isInsideVec(int idx, vector<double> lo, vector<double> hi, bool fBoundariesIncluded);
       int  hash(AABB& box);
-      void writeHboxes();
+      void writeHboxes(string dataFileName);
       bool checkDominated(AABB& box); // checks whether a box is already dominated
-      void writeFinals(vector<int> lstIdBox); // writes out the final solution
+      void writeFinals(vector<int> lstIdBox, string dataFileName); // writes out the final solution
       void removeNonParetian(hbox domain);  // removes points surronded by similar ones
       bool inBetween(double a, double b, double c);
 };

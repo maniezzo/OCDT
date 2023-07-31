@@ -56,9 +56,9 @@ class Tree
       void regionBitmasks();                    // bitmask identifier of all domain partitions
       void newNode(int idnode, int cutBitMask); // new tree node, based on number of cases per cut and per value
       void defineNode(vector<vector<vector<int>>> freq, int idnode, int cutBitMask);
-      void DFS(int s);                  // actually, not search but construction
-      bool sameClass(int node);         // checks if all points are of the same class
-      void pointsLeftSon(int idnode);   // points smaller than cut
-      void pointsRightSon(int idnode);  // points bigger than cut
-      void writeTree();                 // writes the tree on a file, input for graphviz
+      void DFS(int s);                     // actually, not search but construction
+      bool sameClass(int node);            // checks if all points are of the same class
+      void pointsLeftSon(int idnode);      // points smaller than cut
+      void pointsRightSon(int idnode);     // points bigger than cut
+      void writeTree(string dataFileName); // writes the tree on a file, input for graphviz
 };

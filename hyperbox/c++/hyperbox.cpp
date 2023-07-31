@@ -7,11 +7,12 @@ int main()
 {
    Bbox B;
    string fpath;
-   fpath = "../data/Iris_setosa.csv";
+   string dataFileName = "test4";
+   fpath = "..//..//data//"+dataFileName+".csv";
    B.isVerbose = false;
 
    clock_t c_start = clock();
-   B.bboxHeu(fpath);
+   B.bboxHeu(fpath, dataFileName);
    clock_t c_end = clock();
 
    double tt = (c_end - c_start) / CLOCKS_PER_SEC;

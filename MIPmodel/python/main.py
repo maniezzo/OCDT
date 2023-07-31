@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sn
 from sklearn.preprocessing import MinMaxScaler
 
+# Generic analysis, no optimization. Look for newIPmodel.py
 if __name__ == "__main__":
    os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
