@@ -11,6 +11,30 @@ void Tree::goTree()
    readData(dataSetFile);
    regionBitmasks();
    DFS(0);
+   writeTree();
+}
+
+// writes the tree on a file, input for graphviz
+void Tree::writeTree()
+{  int i;
+   ofstream f;
+   f.open("graph.txt");
+   f << "digraph G {" << endl;
+   for(i=0;i<decTree.size();i++)
+      if(decTree[i].cutDim >=0)
+         f << i << " [label = \"" << decTree[i].id << " (cut "<< decTree[i].idCut <<") \ndim "<< decTree[i].cutDim <<" val. "<< decTree[i].cutValue <<"\"]" << endl;
+      else
+         f << i << " [shape = box label = \"" << decTree[i].id << "\n class " << decTree[i].idClass << "\"]" << endl;
+
+   for (i = 0; i < decTree.size(); i++)
+   {
+      if (decTree[i].left >= 0)
+         f << decTree[i].id << " -> " << decTree[i].left << endl;
+      if (decTree[i].right >= 0)
+         f << decTree[i].id << " -> " << decTree[i].right << endl;
+   }
+   f << "}" << endl;
+   f.close();
 }
 
 void Tree::DFS(int s)
@@ -159,6 +183,7 @@ l0:Node N;
    N.left     = -1;
    N.right    = -1;
    N.visited  = false;
+   N.idClass  = (isSameCLass ? Y[nodePoints[idnode][0]] : INT_MIN);
    decTree[idnode] = (N);
 }
 

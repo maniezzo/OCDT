@@ -21,10 +21,11 @@ class Node
    public:
       int id;
       int idCut;        // cut associato al nodo
-      int    cutDim;    // dimension where the cut acts
+      int cutDim;       // dimension where the cut acts
       double cutValue;  // calue of the cut
-      int left,right;   // pointers to left and right offspring
       bool visited;     // used by the DFS
+      int idClass;      // in case of a node, class of all points
+      int left, right;  // pointers to left and right offspring
 };
 
 class Tree
@@ -59,4 +60,5 @@ class Tree
       bool sameClass(int node);         // checks if all points are of the same class
       void pointsLeftSon(int idnode);   // points smaller than cut
       void pointsRightSon(int idnode);  // points bigger than cut
+      void writeTree();                 // writes the tree on a file, input for graphviz
 };
