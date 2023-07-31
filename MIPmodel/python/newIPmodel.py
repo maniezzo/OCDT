@@ -5,6 +5,30 @@ import MIPmodel
 
 # Main for IP based cut selection. Works on preliminary AABB clustering
 
+# reads the hyperboxes
+def readAABB(dataFileName):
+   numHboxes = 0
+   lstMin = []    # lista dei minimi in ogni dimensione
+   lstMax = []    # lista dei massimi in ogni dimensione
+   with open(f"..\\..\\hyperbox\\c++\\hyperboxes_{dataFileName}.txt") as f:
+      for line in f:
+         elem = line.strip().split()
+         if(elem[0]=="Hyperbox"):
+            numHboxes += 1
+            lstAABB.append([lstMin,lstMax])
+            lstMin = []
+            lstMax = []
+         else:
+            a = [float(i) for i in elem]
+            if(lstMin==[]):
+               lstMin = a
+            else:
+               lstMax = a
+   lstAABB.pop(0) # first element contains empty lists
+   f.close()
+   print(f"Read {numHboxes} hyperboxes from file")
+   pass
+
 # plots a solution
 def plotSolution():
    plt.figure(figsize=(9,6))
@@ -203,7 +227,7 @@ def computeAABB():
 
 if __name__ == "__main__":
    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-   dataFileName = "test4"
+   dataFileName = "test3"
    df = pd.read_csv(f"..\\..\data\\{dataFileName}.csv")
    #df = pd.read_csv("..\\data\\Iris_setosa.csv",usecols=["Id","SepalWidthCm","PetalLengthCm","class"])
    #df["class"] = df["class"].map({"x":0,"o":1})
@@ -219,8 +243,12 @@ if __name__ == "__main__":
    eps     = 0.2
    lstAABB = [] # list of all maximal AABBs
    class01 = [] # corresponding class
-   computeAABB()
-   plotSolution()
+   fGoFromScratch = False # compute all AABB, do not rad them from file
+   if fGoFromScratch:
+      computeAABB()
+      plotSolution()
+   else:
+      readAABB(dataFileName)
 
    M = MIPmodel.MIPmodel(n,len(lstAABB))
    # passing point class, not box class!!

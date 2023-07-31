@@ -12,10 +12,16 @@ class MIPmodel:
          ibox = i // (2*ndim)
          idim = (i - ibox*2*ndim) // 2
          hilo = (i - ibox*2*ndim - idim*2)
-         if(hilo==0):
-            xcut = (lstAABB[ibox][idim,0]+lstAABB[ibox][idim,1])/2
+         if(len(lstAABB[0][0])== ndim):
+            if(hilo==0):
+               xcut = lstAABB[ibox][idim][0]
+            else:
+               xcut = lstAABB[ibox][idim][1]
          else:
-            xcut = (lstAABB[ibox][idim,2]+lstAABB[ibox][idim,3])/2
+            if(hilo==0):
+               xcut = (lstAABB[ibox][idim,0]+lstAABB[ibox][idim,1])/2
+            else:
+               xcut = (lstAABB[ibox][idim,2]+lstAABB[ibox][idim,3])/2
          colattr.append({"box":ibox,"dim":idim,"xcut":xcut})
       return
    def makeModel(self,lstAABB,Xcoord,ndim,class01):
