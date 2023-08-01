@@ -24,6 +24,7 @@ def readAABB(dataFileName):
                lstMin = a
             else:
                lstMax = a
+   lstAABB.append([lstMin, lstMax]) # last read hyperbox
    lstAABB.pop(0) # first element contains empty lists
    f.close()
    print(f"Read {numHboxes} hyperboxes from file")
@@ -226,10 +227,13 @@ def computeAABB():
    return lstAABB
 
 if __name__ == "__main__":
+   fGoFromScratch = False # compute all AABB, do not rad them from file
    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-   dataFileName = "test3"
-   df = pd.read_csv(f"..\\..\data\\{dataFileName}.csv")
-   #df = pd.read_csv("..\\data\\Iris_setosa.csv",usecols=["Id","SepalWidthCm","PetalLengthCm","class"])
+   dataFileName = "iris_setosa"
+   if(dataFileName == "iris_setosa"):
+      df = pd.read_csv("..\\..\\data\\Iris_setosa.csv",usecols=["Id","SepalWidthCm","PetalLengthCm","class"])
+   else:
+      df = pd.read_csv(f"..\\..\data\\{dataFileName}.csv")
    #df["class"] = df["class"].map({"x":0,"o":1})
 
    n = len(df["class"])       # num of points
@@ -243,7 +247,6 @@ if __name__ == "__main__":
    eps     = 0.2
    lstAABB = [] # list of all maximal AABBs
    class01 = [] # corresponding class
-   fGoFromScratch = False # compute all AABB, do not rad them from file
    if fGoFromScratch:
       computeAABB()
       plotSolution()

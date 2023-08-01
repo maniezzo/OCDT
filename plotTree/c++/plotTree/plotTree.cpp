@@ -7,7 +7,7 @@ void Tree::goTree()
    ptClass.push_back(dummy); // row 0, class 0 points
    ptClass.push_back(dummy); // row 1, class 1 points
 
-   string dataFileName = "test4";
+   string dataFileName = "iris_setosa";
    readData(dataFileName);
    regionBitmasks();
    DFS(0);
@@ -24,7 +24,7 @@ void Tree::writeTree(string dataFileName)
    f << "node[fontname = \"helvetica\"]" << endl;
    f << "edge[fontname = \"helvetica\"]" << endl;
    for(i=0;i<decTree.size();i++)
-      if(decTree[i].cutDim >=0)
+      if(decTree[i].idCut >=0)
          f << i << " [label = \"" << decTree[i].id << " (cut "<< decTree[i].idCut <<") \ndim "<< decTree[i].cutDim <<" val. "<< decTree[i].cutValue <<"\"]" << endl;
       else
          f << i << " [shape = box label = \"" << decTree[i].id << "\n class " << decTree[i].idClass << "\"]" << endl;
@@ -126,7 +126,7 @@ void Tree::newNode(int idnode, int cutBitMask)
 {  int i,j,ptClass;
    vector<vector<vector<int>>> freq (ncuts, vector<vector<int>>(2,vector<int>(2,0)));
    
-   // contingency table (num cases per cut, per attr. value (above/below cut), per class
+   // contingency table (num regions per cut, per attr. value (above/below cut), per class
    for (i = 0; i < bitmasks.size(); i++) // for each bitmask (region)
    {  ptClass = Y[clusters[bitmasks[i]][0]]; // class 0 or 1 of the region. Bitmasks encode regions
       for (j = 0; j < ncuts; j++)
@@ -291,8 +291,8 @@ void Tree::readData(string dataFileName)
          id = stoi(elem[0]);
          //if (id > 40 && !(id > 100 && id < 141)) goto l0;
          cout << id << endl;
-         for (i = 1; i < 1 + ndim; i++)         // FILTERING DATA ?
-         //if(i==2 || i==3)
+         for (i = 1; i < 1 + ndim; i++)         // FILTERING DATA for iris_setosa
+         if(dataFileName != "iris_setosa" || (i==2 || i==3))
          {  d = stof(elem[i]);
             d = round(100.0 * d) / 100.0;     // rounded to 2nd decimal
             val.push_back(d);
