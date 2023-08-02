@@ -4,6 +4,7 @@ from sklearn.datasets import make_blobs
 import matplotlib.pyplot as plt
 from scipy.spatial import ConvexHull, convex_hull_plot_2d
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection, Line3DCollection # comes with matplotlib
+#from mpl_toolkits.mplot3d import Axes3D
 
 # Nearest neighbor expansion
 from scipy.spatial import KDTree
@@ -37,11 +38,60 @@ def contained(pnt, eqn):
    eps = np.finfo(np.float32).eps
    return np.all(np.asarray(pnt) @ A.T + b.T < eps, axis=1)
 
+# bounding box già calcolati
+def bbox3d():
+   f = open("..\\..\\hyperbox\\c++\\hyperboxes_"+dataset+".txt", "r")
+   numBox = 0
+   for line in f:
+      elem = line.strip().split()
+      if(elem[0]== "Hyperbox"):
+         numBox += 1
+         idLine = 0 # della tripletta di valori
+      elif (idLine==0):
+         coordmin = [float(x) for x in elem] # from string to float
+         idLine = 1
+      elif (idLine==1):
+         coordmax = [float(x) for x in elem]
+         hboxes.append([coordmin,coordmax])
+         idLine = 2 # inutile
+   print(f"Read {numBox} hyperboxes")
+   f.close()
+   return
+
+def plotBboxes():
+   x, y, z = 0, 1, 2 # dimensinos to plot
+   fig = plt.figure()
+   ax = fig.add_subplot(111, projection='3d')
+
+   for i in np.arange(len(hboxes)):
+      a = hboxes[i][0]  # min coords
+      b = hboxes[i][1]  # max coords
+
+      vertices = [
+         # vertices of XZ 2 faces
+         [(a[x], a[y], a[z]), (b[x], a[y], a[z]), (b[x], a[y], b[z]), (a[x], a[y], b[z])],
+         [(a[x], b[y], a[z]), (b[x], b[y], a[z]), (b[x], b[y], b[z]), (a[x], b[y], b[z])],
+         # vertices of YZ 2 faces
+         [(a[x], a[y], a[z]), (a[x], b[y], a[z]), (a[x], b[y], b[z]), (a[x], a[y], b[z])],
+         [(b[x], a[y], a[z]), (b[x], b[y], a[z]), (b[x], b[y], b[z]), (b[x], a[y], b[z])],
+         # vertices of XY 2 faces
+         [(a[x], a[y], a[z]), (b[x], a[y], a[z]), (b[x], b[y], a[z]), (a[x], b[y], a[z])],
+         [(a[x], a[y], b[z]), (b[x], a[y], b[z]), (b[x], b[y], b[z]), (a[x], b[y], b[z])],
+      ]
+
+      ax.plot([a[x], b[x]], [a[y], b[y]], [a[z], b[z]], '-r', alpha=0) # blank, but could not work without
+      ax.add_collection3d(Poly3DCollection(
+         vertices, facecolors='cyan', linewidths=1, edgecolors='k', alpha=.1))
+
+   plt.show()
+   return
+
 if __name__ == "__main__":
    plt.style.use('seaborn') # sono gusti
    rng = np.random.default_rng() # new random number generator
 
-   df = pd.read_csv("../test5.csv")
+   dataset = "test5"
+   df = pd.read_csv("../"+dataset+".csv")
    values = np.unique(df.iloc[:,1:-1].values, axis=0) # check for duplicate rows
 
    if(len(df)>100):
@@ -122,6 +172,11 @@ if __name__ == "__main__":
    ax.set_ylabel(colnames[d[1]], fontweight='bold')
    ax.set_zlabel(colnames[d[2]], fontweight='bold')
    plt.show()
+
+   # legge bounding boxes
+   hboxes = []
+   bbox3d()
+   plotBboxes()
 
    # check for point in a cluster
    c0points = point_indices[labels_true == 0]

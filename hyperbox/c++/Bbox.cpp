@@ -43,8 +43,12 @@ int Bbox::bboxHeu(string fpath, string dataFileName)
    {  domain.min.push_back(X[0][dim]);
       domain.max.push_back(X[0][dim]);
       for (i = 0; i < n; i++)
-      {  if (X[i][dim] < domain.min[dim]) domain.min[dim] = X[i][dim];
-         if (X[i][dim] > domain.max[dim]) domain.max[dim] = X[i][dim];
+      {  if (X[i][dim] > domain.max[dim]) domain.max[dim] = X[i][dim];
+         if (X[i][dim] < domain.min[dim]) domain.min[dim] = X[i][dim];
+         if (domain.min[dim] < 1)
+         {  cout << "domain.min < 1: unfeasible for this implementation" << endl; // dimensioni devono valere almeno 1, v. initializeBox
+            goto l0; // aborting
+         }
       }
    }
    removeNonParetian(domain);
@@ -62,7 +66,7 @@ int Bbox::bboxHeu(string fpath, string dataFileName)
 
    cout << "n. box: " << AABBstack.size() << endl;
    writeHboxes(dataFileName);
-   return 0;
+l0:return 0;
 }
 
 // writes out the final boxes
@@ -351,9 +355,9 @@ void Bbox::initializeBox(int idx, AABB& box, hbox domain)
    for (int dim = 0; dim < this->ndim; dim++)
    {
       box.hiIn[dim] = X[idx][dim];
-      box.hiOut[dim] = domain.max[dim]+1; // sennò un punto non sta dentro il suo box
+      box.hiOut[dim] = domain.max[dim]+1; // sennò un punto non sta dentro il suo box (boundary esclusi)
       box.loIn[dim] = X[idx][dim];
-      box.loOut[dim] = domain.min[dim]-1;
+      box.loOut[dim] = domain.min[dim]-1; // sennò un punto non sta dentro il suo box (boundary esclusi)
    }
    box.id = this->AABBstack.size();
    box.classe = Y[idx];
