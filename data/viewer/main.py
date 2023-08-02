@@ -46,26 +46,32 @@ def bbox3d():
       elem = line.strip().split()
       if(elem[0]== "Hyperbox"):
          numBox += 1
+         idClass = int(elem[3])
          idLine = 0 # della tripletta di valori
       elif (idLine==0):
          coordmin = [float(x) for x in elem] # from string to float
          idLine = 1
       elif (idLine==1):
          coordmax = [float(x) for x in elem]
-         hboxes.append([coordmin,coordmax])
+         hboxes.append([coordmin,coordmax,idClass])
          idLine = 2 # inutile
    print(f"Read {numBox} hyperboxes")
    f.close()
    return
 
-def plotBboxes():
+def plotBboxes(list_colours):
    x, y, z = 0, 1, 2 # dimensinos to plot
    fig = plt.figure()
    ax = fig.add_subplot(111, projection='3d')
 
+   scatter_plot = ax.scatter3D(xp, yp, zp, c=cluster_colors, marker='o')
+   for i in np.arange(len(xp)):
+      ax.text(xp[i],yp[i],zp[i],i)
+
    for i in np.arange(len(hboxes)):
       a = hboxes[i][0]  # min coords
       b = hboxes[i][1]  # max coords
+      idClass = hboxes[i][2] # hbox class
 
       vertices = [
          # vertices of XZ 2 faces
@@ -81,7 +87,7 @@ def plotBboxes():
 
       ax.plot([a[x], b[x]], [a[y], b[y]], [a[z], b[z]], '-r', alpha=0) # blank, but could not work without
       ax.add_collection3d(Poly3DCollection(
-         vertices, facecolors='cyan', linewidths=1, edgecolors='k', alpha=.1))
+         vertices, facecolors=list_colours[idClass], linewidths=1, edgecolors='k', alpha=.1))
 
    plt.show()
    return
@@ -115,16 +121,16 @@ if __name__ == "__main__":
    # plot the clusters
    d = [0,1,2]  # dimensions to plot
 
-   x, y, z = X[:, d[0]], X[:, d[1]], X[:, d[2]]   # point coords (3d)
+   xp, yp, zp = X[:, d[0]], X[:, d[1]], X[:, d[2]]   # point coords (3d)
    fig = plt.figure(figsize=(9, 6), facecolor="w")
    ax  = plt.axes(projection="3d")
-   scatter_plot = ax.scatter3D(x, y, z, c=cluster_colors, marker='o')
+   scatter_plot = ax.scatter3D(xp, yp, zp, c=cluster_colors, marker='o')
    plt.title("The whole dataset", fontsize=20)
    ax.set_xlabel(colnames[d[0]], fontweight='bold')
    ax.set_ylabel(colnames[d[1]], fontweight='bold')
    ax.set_zlabel(colnames[d[2]], fontweight='bold')
-   for i in np.arange(len(x)):
-      ax.text(x[i],y[i],z[i],i)
+   for i in np.arange(len(xp)):
+      ax.text(xp[i],yp[i],zp[i],i)
    plt.show()
 
    # -------------------------------- convex hulls
@@ -137,9 +143,9 @@ if __name__ == "__main__":
    fig = plt.figure(figsize=(9,6), facecolor="w")
    plt.title("Convex hulls")
    ax = plt.axes(projection="3d")
-   scatter_plot = ax.scatter3D(x, y, z, c=cluster_colors, marker='o')
-   for i in np.arange(len(x)):
-      ax.text(x[i],y[i],z[i],i)
+   scatter_plot = ax.scatter3D(xp, yp, zp, c=cluster_colors, marker='o')
+   for i in np.arange(len(xp)):
+      ax.text(xp[i],yp[i],zp[i],i)
 
    # plotting each hull
    for i in np.arange(len(clusters)):
@@ -173,10 +179,10 @@ if __name__ == "__main__":
    ax.set_zlabel(colnames[d[2]], fontweight='bold')
    plt.show()
 
-   # legge bounding boxes
+   # legge e plotta bounding boxes
    hboxes = []
    bbox3d()
-   plotBboxes()
+   plotBboxes(list_colours)
 
    # check for point in a cluster
    c0points = point_indices[labels_true == 0]

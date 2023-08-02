@@ -9,14 +9,14 @@ class MIPmodel:
       return
    def colAttributes(self,ncol,ndim,lstAABB,colattr):
       for i in np.arange(ncol):
-         ibox = i // (2*ndim)
-         idim = (i - ibox*2*ndim) // 2
-         hilo = (i - ibox*2*ndim - idim*2)
+         ibox = i // (2*ndim)  # external index (id box)
+         hilo = (i - ibox*2*ndim) // ndim # middle index (min / max)
+         idim = (i - ibox*2*ndim - hilo*ndim) # internal index (dim)
          if(len(lstAABB[0][0])== ndim):
             if(hilo==0):
-               xcut = lstAABB[ibox][idim][0]
+               xcut = lstAABB[ibox][0][idim]
             else:
-               xcut = lstAABB[ibox][idim][1]
+               xcut = lstAABB[ibox][1][idim]
          else:
             if(hilo==0):
                xcut = (lstAABB[ibox][idim,0]+lstAABB[ibox][idim,1])/2

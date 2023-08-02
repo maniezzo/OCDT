@@ -92,6 +92,7 @@ void Bbox::writeHboxes(string dataFileName)
 void Bbox::writeFinals(vector<int> lstIdBox, string dataFileName)
 {  int i,j,k,dim;
 
+   vector<int> boxClass;
    for (i = 0; i < lstIdBox.size(); i++)
       for (j = 0; j < lstIdBox.size(); j++) // è asimmetrico
          if(i!=j && !AABBstack[lstIdBox[j]].removed && !AABBstack[lstIdBox[i]].removed)
@@ -117,14 +118,14 @@ void Bbox::writeFinals(vector<int> lstIdBox, string dataFileName)
          maxVal[dim] = (AABBstack[i].hiIn[dim] + AABBstack[i].hiOut[dim])/2;
       }
       hbox hb = {minVal, maxVal};
-      finalBoxes.push_back(hb);
+      finalBoxes.push_back(hb);     // the hboxes written on file
+      boxClass.push_back(AABBstack[i].classe);
    }
 
    // writing output file
    ofstream f("hyperboxes_"+ dataFileName +".txt");
    for (i = 0; i < finalBoxes.size(); i++)
-   {
-      f << "Hyperbox " << i << endl;
+   {  f << "Hyperbox " << i << " class " << boxClass[i] << endl;
       for (dim = 0; dim < ndim; dim++) f << finalBoxes[i].min[dim] << " "; f << endl;
       for (dim = 0; dim < ndim; dim++) f << finalBoxes[i].max[dim] << " "; f << endl;
    }

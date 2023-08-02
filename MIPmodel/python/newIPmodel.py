@@ -229,7 +229,7 @@ def computeAABB():
 if __name__ == "__main__":
    fGoFromScratch = False # compute all AABB, do not rad them from file
    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-   dataFileName = "iris_setosa"
+   dataFileName = "test5"
    if(dataFileName == "iris_setosa"):
       df = pd.read_csv("..\\..\\data\\Iris_setosa.csv",usecols=["Id","SepalWidthCm","PetalLengthCm","class"])
    else:
