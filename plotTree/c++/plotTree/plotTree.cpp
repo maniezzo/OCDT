@@ -7,7 +7,7 @@ void Tree::goTree()
    ptClass.push_back(dummy); // row 0, class 0 points
    ptClass.push_back(dummy); // row 1, class 1 points
 
-   string dataFileName = "iris_setosa";
+   string dataFileName = "test5";
    readData(dataFileName);
    regionBitmasks();
    DFS(0);
