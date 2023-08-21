@@ -18,5 +18,13 @@
     <ClCompile Include="MIPcutChooser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="MIPmodel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="MIPmodel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
