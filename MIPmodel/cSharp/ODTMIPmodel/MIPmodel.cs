@@ -111,11 +111,16 @@ namespace ODTMIPmodel
          // constraint section, range of feasible values
          numConstr = npoints*(npoints-1)/2;
          Constraint[] cuts = new Constraint[numConstr];
-         for (j = 0; j < numConstr; j++)
-         {
-            cuts[j] = solver.MakeConstraint(1, double.PositiveInfinity);
+         int p1,p2;
+         for (k = 0; k < numConstr; k++)
+         {  cuts[k] = solver.MakeConstraint(1, double.PositiveInfinity, $"geq{k}");
             for (i = 0; i < numVar; i++)
-               cuts[j].SetCoefficient(x[i], 1);
+            {  int n = npoints;
+               p1 = (int) (n - 1 - Math.Sqrt(Math.Pow((n - 1),2) - 4 * (n * (n - 1) / 2 - k))); // suggested by chatgpt
+               p2 = k - i * (n - i - 1) + i + 1;                                        // suggested by chatgpt
+               if (separates(p1,p2,lstCuts,k))
+                  cuts[k].SetCoefficient(x[i], 1);
+            }
          }
 
          Console.WriteLine("Number of variables = " + solver.NumVariables());
