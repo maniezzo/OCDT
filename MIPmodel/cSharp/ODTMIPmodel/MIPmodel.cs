@@ -109,17 +109,24 @@ namespace ODTMIPmodel
          objective.SetMinimization();
 
          // constraint section, range of feasible values
-         numConstr = npoints*(npoints-1)/2;
-         Constraint[] cuts = new Constraint[numConstr];
+         numConstr = 0;
+         int n2 = npoints*(npoints-1)/2;
+         Constraint[] cuts = new Constraint[n2]; // one cut for each pair of points
          int p1,p2;
-         for (k = 0; k < numConstr; k++)
-         {  cuts[k] = solver.MakeConstraint(1, double.PositiveInfinity, $"geq{k}");
-            for (i = 0; i < numVar; i++)
-            {  int n = npoints;
-               p1 = (int) (n - 1 - Math.Sqrt(Math.Pow((n - 1),2) - 4 * (n * (n - 1) / 2 - k))); // suggested by chatgpt
-               p2 = k - i * (n - i - 1) + i + 1;                                        // suggested by chatgpt
-               if (separates(p1,p2,lstCuts,k))
-                  cuts[k].SetCoefficient(x[i], 1);
+         int n = npoints;
+         for (k = 0; k < n2; k++)
+         {  // computes all pairs of points
+            p1 = (int) (0.5*(2*n+1-Math.Sqrt(4*n*n + 4*n - 8*k + 1))); 
+            p2 = (int) (k - (p1*n - 0.5*p1*p1 - 0.5*p1));
+            Console.WriteLine($"Coppia {p1} - {p2}");
+            // checks all cuts to see which ones separate
+            if(p1!=p2)
+            {  // k in the names tells the point pair
+               cuts[numConstr] = solver.MakeConstraint(1, double.PositiveInfinity, $"geq{k}");
+               for (i=0;i<lstCuts.Count;i++)
+                  if (separates(p1,p2,lstCuts,i))
+                     cuts[numConstr].SetCoefficient(x[i], 1);
+               numConstr++;
             }
          }
 
