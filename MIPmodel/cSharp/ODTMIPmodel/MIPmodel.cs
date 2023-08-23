@@ -71,21 +71,26 @@ namespace ODTMIPmodel
 
       private void lpModel(String solverType)
       {
-         int i, j, k, d;
+         int i, j, k, d, cont;
          List<Tuple<int,double>> lstCuts = new List<Tuple<int, double>>();
          Console.WriteLine($"---- Linear programming example with {solverType} ----");
 
+         cont = 0;
          for(i=0;i<npoints-1;i++) 
             for(j=i+1;j<npoints;j++)
-               for(d=0;d<ndim;d++)
-               {  double m = (coord[i][d] + coord[j][d])/2.0;
-                  if(m != coord[i][d]) 
-                  {
-                     Tuple<int, double> t = new Tuple<int, double>(d, m);
-                     if (!lstCuts.Contains(t))
-                        lstCuts.Add(t);
+               if (classe[i] != classe[j])
+                  for(d=0;d<ndim;d++)
+                  {  double m = (coord[i][d] + coord[j][d])/2.0;
+                     if(m != coord[i][d]) 
+                     {
+                        Tuple<int, double> t = new Tuple<int, double>(d, m);
+                        if (!lstCuts.Contains(t))
+                        {  lstCuts.Add(t);
+                           Console.WriteLine($"Cut {cont} {t.Item1}->{t.Item2}");
+                           cont++;
+                        }
+                     }
                   }
-               }
 
          numVar = lstCuts.Count;
 
@@ -110,7 +115,7 @@ namespace ODTMIPmodel
 
          // constraint section, range of feasible values
          numConstr = 0;
-         int n2 = npoints*(npoints-1)/2;
+         int n2 = npoints*(npoints+1)/2;
          Constraint[] cuts = new Constraint[n2]; // one cut for each pair of points
          int p1,p2;
          int n = npoints;
