@@ -29,6 +29,9 @@ namespace ODTMIPmodel
          string fpath = "c:\\git\\ODT\\data\\test1.csv";
          read_data(fpath);
 
+         double[] a = new double[] {1,3,2,5,4};
+         int[] idx = idxBBsort(a);
+
          lpModel("GLOP");
       }
 
@@ -188,6 +191,20 @@ namespace ODTMIPmodel
              (coord[p2][d]<cutval && coord[p1][d]>cutval))
             res = true;
          return res;
+      }
+
+      // restituisce gli indici ordinati per valori crescenti di a
+      private int[] idxBBsort(double[] a)
+      {  int i,j,n;
+         int[] idx = new int[a.Length];  // indici dell'array a
+         for (i = 0;i < a.Length;i++) idx[i] = i;
+
+         n = a.Length;
+         for(i=0;i<n;i++)
+            for(j=0;j<n-1;j++)
+               if (a[idx[j]] > a[idx[j+1]])
+                  (idx[j], idx[j+1]) = (idx[j+1], idx[j]);
+         return idx;
       }
    }
 }
