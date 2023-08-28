@@ -29,9 +29,6 @@ namespace ODTMIPmodel
          string fpath = "c:\\git\\ODT\\data\\test1.csv";
          read_data(fpath);
 
-         double[] a = new double[] {1,3,2,5,4};
-         int[] idx = idxBBsort(a);
-
          lpModel("GLOP");
       }
 
@@ -131,7 +128,7 @@ namespace ODTMIPmodel
             p2 = (int) (k - (p1*n - 0.5*p1*p1 - 0.5*p1));
             Console.WriteLine($"Coppia {p1} - {p2}");
             // checks all cuts to see which ones separate
-            if(p1!=p2)
+            if(p1!=p2 && classe[p1] != classe[p2])
             {  // k in the names tells the point pair
                cuts[numConstr] = solver.MakeConstraint(1, double.PositiveInfinity, $"geq{k}");
                for (i=0;i<lstCuts.Count;i++)
