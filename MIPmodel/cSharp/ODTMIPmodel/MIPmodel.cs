@@ -79,22 +79,25 @@ namespace ODTMIPmodel
          Console.WriteLine($"---- Linear programming example with {solverType} ----");
 
          cont = 0;
-         for(i=0;i<npoints-1;i++) 
-            for(j=i+1;j<npoints;j++)
-               if (classe[i] != classe[j])
-                  for(d=0;d<ndim;d++)
-                  {  double m = (coord[i][d] + coord[j][d])/2.0;
-                     if(m != coord[i][d]) 
-                     {
-                        Tuple<int, double> t = new Tuple<int, double>(d, m);
-                        if (!lstCuts.Contains(t))
-                        {  lstCuts.Add(t);
-                           Console.WriteLine($"Cut {cont} {t.Item1}->{t.Item2}");
-                           cont++;
-                        }
+         int[] idx    = new int[npoints];
+         double[] coo = new double[npoints]; 
+         for (d = 0; d < ndim; d++)
+         {  for(int ii=0;ii<npoints; ii++) coo[ii] = coord[ii][d];
+            idx = idxBBsort(coo);
+            for (i=0;i<npoints-1;i++) 
+               if (classe[idx[i]] != classe[idx[i+1]])
+               {  double m = (coord[idx[i]][d] + coord[idx[i+1]][d])/2.0;
+                  if(m != coord[idx[i]][d]) 
+                  {
+                     Tuple<int, double> t = new Tuple<int, double>(d, m);
+                     if (!lstCuts.Contains(t))
+                     {  lstCuts.Add(t);
+                        Console.WriteLine($"Cut {cont} {t.Item1}->{t.Item2}");
+                        cont++;
                      }
                   }
-
+               }
+         }
          numVar = lstCuts.Count;
 
          Solver solver = Solver.CreateSolver(solverType);
