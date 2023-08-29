@@ -124,13 +124,12 @@ namespace ODTMIPmodel
          int n = npoints;
          for (k = 0; k < n2; k++)
          {  // computes all pairs of points
-            p1 = (int) (0.5*(2*n+1-Math.Sqrt(4*n*n + 4*n - 8*k + 1))); 
-            p2 = (int) (k - (p1*n - 0.5*p1*p1 - 0.5*p1));
-            Console.WriteLine($"Coppia {p1} - {p2}");
+            p1 = (int) (0.5*(2*n+1-Math.Sqrt(4*n*n + 4*n - 8*k + 1)));  // my own! from linera to upper triangular indices
+            p2 = (int) (k - (p1*n - 0.5*p1*p1 - 0.5*p1));               // my own!
+            // Console.WriteLine($"Coppia {p1} - {p2} vincolo {k}");
             // checks all cuts to see which ones separate
             if(p1!=p2 && classe[p1] != classe[p2])
-            {  // k in the names tells the point pair
-               cuts[numConstr] = solver.MakeConstraint(1, double.PositiveInfinity, $"geq{k}");
+            {  cuts[numConstr] = solver.MakeConstraint(1, double.PositiveInfinity, $"geq{p1}_{p2}");
                for (i=0;i<lstCuts.Count;i++)
                   if (separates(p1,p2,lstCuts,i))
                      cuts[numConstr].SetCoefficient(x[i], 1);
@@ -149,8 +148,7 @@ namespace ODTMIPmodel
 
          // Check that the problem has an optimal solution.
          if (resultStatus != Solver.ResultStatus.OPTIMAL)
-         {
-            Console.WriteLine("The problem does not have an optimal solution!");
+         {  Console.WriteLine("The problem does not have an optimal solution!");
             return;
          }
 
@@ -174,8 +172,7 @@ namespace ODTMIPmodel
 
          // dual variables
          for (j = 0; j < numConstr; j++)
-         {
-            Console.WriteLine("c0: dual value = " + cuts[j].DualValue());
+         {  Console.WriteLine("c0: dual value = " + cuts[j].DualValue());
             Console.WriteLine("    activity = " + activities[cuts[j].Index()]);
          }
       }
