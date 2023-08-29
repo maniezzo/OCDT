@@ -82,6 +82,7 @@ namespace ODTMIPmodel
          {  for(int ii=0;ii<npoints; ii++) coo[ii] = coord[ii][d];
             idx = idxBBsort(coo);
             for (i=0;i<npoints-1;i++) 
+               // trova il primo dell'altra classe che non è allineato con i
                if (classe[idx[i]] != classe[idx[i+1]])
                {  double m = (coord[idx[i]][d] + coord[idx[i+1]][d])/2.0;
                   if(m != coord[idx[i]][d]) 
