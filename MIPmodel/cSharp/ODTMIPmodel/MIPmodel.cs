@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
 using Google.OrTools;
@@ -26,10 +27,11 @@ namespace ODTMIPmodel
       public void run_MIP()
       {
          Console.WriteLine("MIP model");
-         string fpath = "c:\\git\\ODT\\data\\test1.csv";
+         string dataset = "test1";
+         string fpath = $"c:\\git\\ODT\\data\\{dataset}.csv";
          read_data(fpath);
 
-         lpModel("GLOP");
+         lpModel("GLOP",fpath);
       }
 
       private void read_data(string fpath)
@@ -69,7 +71,7 @@ namespace ODTMIPmodel
          npoints = classe.Length;
       }
 
-      private void lpModel(String solverType)
+      private void lpModel(String solverType, string fpath)
       {
          int i, j, k, d, cont;
          List<Tuple<int,double>> lstCuts = new List<Tuple<int, double>>();
@@ -81,10 +83,24 @@ namespace ODTMIPmodel
          for (d = 0; d < ndim; d++)
          {  for(int ii=0;ii<npoints; ii++) coo[ii] = coord[ii][d];
             idx = idxBBsort(coo);
+            // i e j sono indici, non punti !!
             for (i=0;i<npoints-1;i++) 
-               // trova il primo dell'altra classe che non è allineato con i
-               if (classe[idx[i]] != classe[idx[i+1]])
-               {  double m = (coord[idx[i]][d] + coord[idx[i+1]][d])/2.0;
+            {  // trova il primo dell'altra classe che non è allineato con i
+               j=i+1;
+               while(j<npoints) 
+               {  if (classe[idx[i]] != classe[idx[j]] && 
+                      coord[idx[i]][d] != coord[idx[j]][d])
+                     break;
+                  // se c'è un punto dopo stessa classe passa a quello
+                  if (classe[idx[i]] == classe[idx[j]] &&
+                      coord[idx[i]][d] != coord[idx[j]][d] && j < npoints-1 &&
+                      coord[idx[j]][d] < coord[idx[j+1]][d]) // a meno che non sia allineato a uno altra classe
+                     goto l0;
+                  j++;
+               }
+               if (j == npoints) continue; // passa al punto successivo
+               else // crea il cut
+               {  double m = (coord[idx[i]][d] + coord[idx[j]][d])/2.0;
                   if(m != coord[idx[i]][d]) 
                   {
                      Tuple<int, double> t = new Tuple<int, double>(d, m);
@@ -95,6 +111,8 @@ namespace ODTMIPmodel
                      }
                   }
                }
+l0:            continue;
+            }
          }
          numVar = lstCuts.Count;
 
@@ -159,8 +177,16 @@ namespace ODTMIPmodel
          Console.WriteLine("Optimal objective value = " + solver.Objective().Value());
 
          // The value of each variable in the solution.
+         StreamWriter fout = new StreamWriter(fpath.Replace(".csv","_cuts.txt"));
          for (i = 0; i < numVar; ++i)
-            Console.WriteLine($"x{i} = " + x[i].SolutionValue());
+         {  Console.WriteLine($"x{i} = " + x[i].SolutionValue());
+            if(x[i].SolutionValue()>0.01)
+            {
+               Console.WriteLine($"dim {lstCuts[i].Item1} pos {lstCuts[i].Item2}");
+               fout.WriteLine($"dim {lstCuts[i].Item1} pos {lstCuts[i].Item2}");
+            }
+         }
+         fout.Close();
 
          Console.WriteLine("Advanced usage:");
          double[] activities = solver.ComputeConstraintActivities();
@@ -173,8 +199,7 @@ namespace ODTMIPmodel
 
          // dual variables
          for (j = 0; j < numConstr; j++)
-         {  Console.WriteLine("c0: dual value = " + cuts[j].DualValue());
-            Console.WriteLine("    activity = " + activities[cuts[j].Index()]);
+         {  Console.WriteLine($"c0: dual value = {cuts[j].DualValue()} activity = {activities[cuts[j].Index()]}");
          }
       }
 

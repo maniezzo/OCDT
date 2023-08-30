@@ -7,7 +7,7 @@ void Tree::goTree()
    ptClass.push_back(dummy); // row 0, class 0 points
    ptClass.push_back(dummy); // row 1, class 1 points
 
-   string dataFileName = "test5";
+   string dataFileName = "test1";
    readData(dataFileName);
    regionBitmasks();
    DFS(0);
@@ -256,7 +256,7 @@ void Tree::readData(string dataFileName)
 
    // leggo i tagli
    ifstream f;
-   f.open("..//..//..//MIPmodel//python//cuts_"+ dataFileName +".txt");
+   f.open("..//..//..//data//"+ dataFileName +"_cuts.txt");
    if (f.is_open())
    {  cont = 0;
       while (getline(f, line))
