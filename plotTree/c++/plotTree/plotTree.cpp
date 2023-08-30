@@ -1,13 +1,29 @@
 #include "plotTree.h"
 #include <windows.h>    // GetModuleFileName
 #include <stack>
+#include <algorithm>    // remove, erase
 
 void Tree::goTree()
 {  vector<int> dummy;
    ptClass.push_back(dummy); // row 0, class 0 points
    ptClass.push_back(dummy); // row 1, class 1 points
 
-   string dataFileName = "test1";
+   string line, dataFileName = "test1";
+   ifstream fconf;
+   vector<string> elem;
+   fconf.open("config.json");
+   if (fconf.is_open())
+   {
+      getline(fconf, line);
+      getline(fconf, line);
+      elem = split(line, ':');
+      dataFileName = elem[1];
+      dataFileName.erase(remove(dataFileName.begin(), dataFileName.end(), '"'), dataFileName.end());
+      dataFileName.erase(remove_if(dataFileName.begin(), dataFileName.end(), isspace), dataFileName.end());
+      cout << dataFileName << endl;;
+      fconf.close();
+   }
+
    readData(dataFileName);
    regionBitmasks();
    DFS(0);
