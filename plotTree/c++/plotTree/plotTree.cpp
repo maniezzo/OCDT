@@ -2,6 +2,7 @@
 #include <windows.h>    // GetModuleFileName
 #include <stack>
 #include <algorithm>    // remove, erase
+#include "json.h"
 
 void Tree::goTree()
 {  vector<int> dummy;
@@ -16,10 +17,8 @@ void Tree::goTree()
    {
       getline(fconf, line);
       getline(fconf, line);
-      elem = split(line, ':');
-      dataFileName = elem[1];
-      dataFileName.erase(remove(dataFileName.begin(), dataFileName.end(), '"'), dataFileName.end());
-      dataFileName.erase(remove_if(dataFileName.begin(), dataFileName.end(), isspace), dataFileName.end());
+      json::Value JSV = json::Deserialize(line);
+      dataFileName = JSV["datafile"];
       cout << dataFileName << endl;;
       fconf.close();
    }
