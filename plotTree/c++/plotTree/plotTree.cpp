@@ -10,18 +10,15 @@ void Tree::goTree()
    ptClass.push_back(dummy); // row 1, class 1 points
 
    string line, dataFileName = "test1";
-   ifstream fconf;
    vector<string> elem;
-   fconf.open("config.json");
-   if (fconf.is_open())
-   {
-      getline(fconf, line);
-      getline(fconf, line);
-      json::Value JSV = json::Deserialize(line);
-      dataFileName = JSV["datafile"];
-      cout << dataFileName << endl;;
-      fconf.close();
-   }
+
+   ifstream fconf("config.json");
+   stringstream buffer;
+   buffer << fconf.rdbuf();
+   line = buffer.str();
+   json::Value JSV = json::Deserialize(line);
+   dataFileName = JSV["datafile"];
+   cout << dataFileName << endl;;
 
    readData(dataFileName);
    regionBitmasks();
@@ -270,27 +267,24 @@ void Tree::readData(string dataFileName)
    cout << "Running from " << exePath() << endl;
 
    // leggo i tagli
-   ifstream f;
-   f.open("..//..//..//data//"+ dataFileName +"_cuts.txt");
-   if (f.is_open())
-   {  cont = 0;
-      while (getline(f, line))
-      {  cout << line << endl;
-         elem = split(line, ' ');
-         i = atoi(elem[1].c_str());
-         d = atof(elem[3].c_str());
-         Cutline c;
-         c.dim = i;      // dimensione in cui agisce il taglio
-         c.cutval = d;   // posizione del taglio
-         cutlines[cont] = c;
-         cont++;
-      }
-      ncuts = cont;
-      f.close();
+   ifstream fin("..//..//..//data//" + dataFileName + "_cuts.json");
+   stringstream buffer;
+   buffer << fin.rdbuf();
+   line = buffer.str();
+   json::Value JSV = json::Deserialize(line);
+   json::Array fdim = (json::Array)JSV["dim"];
+   json::Array fpos = (json::Array)JSV["pos"];
+
+   for(cont = 0;cont<fdim.size();cont++)
+   {  Cutline c;
+      c.dim = fdim[cont];      // dimensione in cui agisce il taglio
+      c.cutval = fpos[cont];   // posizione del taglio
+      cutlines[cont] = c;
    }
-   else cout << "Cannot open cuts input file\n";
+   ncuts = cont;
 
    // leggo i punti
+   ifstream f;
    string dataSetFile = "..//..//..//data//" + dataFileName + ".csv";
    f.open(dataSetFile);
    if (f.is_open())
