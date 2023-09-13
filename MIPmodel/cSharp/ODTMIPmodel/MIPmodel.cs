@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Google.OrTools;
 using Google.OrTools.LinearSolver;
 using System.Text.Json.Nodes;
+using Google.OrTools.Sat;
 
 namespace ODTMIPmodel
 {
@@ -79,53 +80,63 @@ namespace ODTMIPmodel
          npoints = classe.Length;
       }
 
-      private void lpModel(String solverType, string fpath, string dataset)
-      {
-         int i, j, k, d, cont, numConstrOld;
-         List<Tuple<int,double>> lstCuts = new List<Tuple<int, double>>();
-         Console.WriteLine($"---- Linear programming example with {solverType} ----");
+      // trova tutti i possibili cut, tagli fra due punti ordinati che devono essere separati
+      private void findCuts(List<Tuple<int, double>> lstCuts)
+      {  int cont,i,j,d;
 
-         // trova tutti i possibili cut, tagli fra due punti ordinati che devono essere separati
          cont = 0;
-         int[] idx    = new int[npoints];
-         double[] coo = new double[npoints]; 
+         int[] idx = new int[npoints];
+         double[] coo = new double[npoints];
          for (d = 0; d < ndim; d++)
-         {  for(int ii=0;ii<npoints; ii++) coo[ii] = coord[ii][d];
+         {
+            for (int ii = 0; ii < npoints; ii++) coo[ii] = coord[ii][d];
             idx = idxBBsort(coo);
             // i e j sono indici, non punti !!
-            for (i=0;i<npoints-1;i++) 
+            for (i = 0; i < npoints - 1; i++)
             {  // trova il primo dell'altra classe che non è allineato con i
-               j=i+1;
-               while(j<npoints) 
-               {  if (classe[idx[i]] != classe[idx[j]] && 
+               j = i + 1;
+               while (j < npoints)
+               {
+                  if (classe[idx[i]] != classe[idx[j]] &&
                       coord[idx[i]][d] != coord[idx[j]][d])
                      break;
                   // se c'è un punto dopo stessa classe passa a quello
                   if (classe[idx[i]] == classe[idx[j]] &&
-                      coord[idx[i]][d] != coord[idx[j]][d] && j < npoints-1 &&
-                      coord[idx[j]][d] < coord[idx[j+1]][d]) // a meno che non sia allineato a uno altra classe
+                      coord[idx[i]][d] != coord[idx[j]][d] && j < npoints - 1 &&
+                      coord[idx[j]][d] < coord[idx[j + 1]][d]) // a meno che non sia allineato a uno altra classe
                      goto l0;
                   j++;
                }
                if (j == npoints) continue; // passa al punto successivo
                else // crea il cut
-               {  double m = (coord[idx[i]][d] + coord[idx[j]][d])/2.0;
-                  if(m != coord[idx[i]][d]) 
+               {
+                  double m = (coord[idx[i]][d] + coord[idx[j]][d]) / 2.0;
+                  if (m != coord[idx[i]][d])
                   {
                      Tuple<int, double> t = new Tuple<int, double>(d, m);
                      if (!lstCuts.Contains(t))
-                     {  lstCuts.Add(t);
+                     {
+                        lstCuts.Add(t);
                         Console.WriteLine($"Cut {cont} {t.Item1}->{t.Item2}");
                         cont++;
                      }
                   }
                }
-l0:            continue;
+l0: continue;
             }
          }
+      }
+
+      private void lpModel(String solverType, string fpath, string dataset)
+      {
+         int i, j, k, d, cont, numConstrOld;
+
+         List<Tuple<int,double>> lstCuts = new List<Tuple<int, double>>();
+         findCuts(lstCuts);  // costruisce lista lstCuts
          numVar = lstCuts.Count;
 
-         // da qui modello MIP
+         // da qui modello LP
+         Console.WriteLine($"---- Linear programming model with {solverType} ----");
          Solver solver = Solver.CreateSolver(solverType);
          if (solver == null)
          {  Console.WriteLine("Could not create linear solver " + solverType);
@@ -181,6 +192,20 @@ l0:            continue;
          string lp_text = solver.ExportModelAsLpFormat(false);
          using (StreamWriter out_f = new StreamWriter($"{dataset}.lp"))
             out_f.Write(lp_text);
+
+
+         Console.WriteLine($"---- Integer programming model with {solverType} ----");
+         Solver Isolver = Solver.CreateSolver(solverType);
+         if (Isolver == null)
+         {  Console.WriteLine("Could not create integer solver " + solverType);
+            return;
+         }
+         // continuous 0/1 variables, if cut is used
+         BoolVar[] xi = new BoolVar[numVar];
+         for (i = 0; i < numVar; i++)
+            xi[i] = Isolver.MakeBoolVar($"xi{i}");
+
+         xi[0].set
 
          resultStatus = solver.Solve();
 
