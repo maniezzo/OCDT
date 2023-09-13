@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection.Metadata.Ecma335;
+using System.Text.Json;
 using System.Text;
 using System.Threading.Tasks;
 using Google.OrTools;
 using Google.OrTools.LinearSolver;
+using System.Text.Json.Nodes;
 
 namespace ODTMIPmodel
 {
@@ -27,11 +28,18 @@ namespace ODTMIPmodel
       public void run_MIP()
       {
          Console.WriteLine("MIP model");
-         string dataset = "test1";
-         string fpath = $"c:\\git\\ODT\\data\\{dataset}.csv";
+
+         StreamReader fconf = new StreamReader("config.json");
+         string jconf = fconf.ReadToEnd();
+         fconf.Close();
+         JsonNode jobj = JsonSerializer.Deserialize<JsonNode>(jconf)!;
+
+         string dataset  = jobj["datafile"].GetValue<string>();
+         string datapath = jobj["datapath"].GetValue<string>();
+         string fpath = $"{datapath}{dataset}.csv";
          read_data(fpath);
 
-         lpModel("GLOP",fpath);
+         lpModel("GLOP",fpath, dataset);
       }
 
       private void read_data(string fpath)
@@ -71,12 +79,13 @@ namespace ODTMIPmodel
          npoints = classe.Length;
       }
 
-      private void lpModel(String solverType, string fpath)
+      private void lpModel(String solverType, string fpath, string dataset)
       {
-         int i, j, k, d, cont;
+         int i, j, k, d, cont, numConstrOld;
          List<Tuple<int,double>> lstCuts = new List<Tuple<int, double>>();
          Console.WriteLine($"---- Linear programming example with {solverType} ----");
 
+         // trova tutti i possibili cut, tagli fra due punti ordinati che devono essere separati
          cont = 0;
          int[] idx    = new int[npoints];
          double[] coo = new double[npoints]; 
@@ -116,11 +125,13 @@ l0:            continue;
          }
          numVar = lstCuts.Count;
 
+         // da qui modello MIP
          Solver solver = Solver.CreateSolver(solverType);
          if (solver == null)
          {  Console.WriteLine("Could not create linear solver " + solverType);
             return;
          }
+         Solver.ResultStatus resultStatus;
 
          // continuous 0/1 variables, if cut is used
          Variable[] x = new Variable[numVar];
@@ -136,34 +147,42 @@ l0:            continue;
          objective.SetMinimization();
 
          // constraint section, range of feasible values
-         numConstr = 0;
+         numConstr = numConstrOld = 0;
          int n2 = npoints*(npoints+1)/2;
          Constraint[] cuts = new Constraint[n2]; // one cut for each pair of points
          int p1,p2;
          int n = npoints;
+         // for all pairs of points (n2)
          for (k = 0; k < n2; k++)
-         {  // computes all pairs of points
-            p1 = (int) (0.5*(2*n+1-Math.Sqrt(4*n*n + 4*n - 8*k + 1)));  // my own! from linera to upper triangular indices
+         {  p1 = (int) (0.5*(2*n+1-Math.Sqrt(4*n*n + 4*n - 8*k + 1)));  // my own! from linear to upper triangular indices
             p2 = (int) (k - (p1*n - 0.5*p1*p1 - 0.5*p1));               // my own!
-            // Console.WriteLine($"Coppia {p1} - {p2} vincolo {k}");
-            // checks all cuts to see which ones separate
+            // Console.WriteLine($"Coppia {p1} - {p2} test {k}");
             if(p1!=p2 && classe[p1] != classe[p2])
             {  cuts[numConstr] = solver.MakeConstraint(1, double.PositiveInfinity, $"geq{p1}_{p2}");
+               // checks all cuts to see which ones separate p1 from p2
                for (i=0;i<lstCuts.Count;i++)
                   if (separates(p1,p2,lstCuts,i))
                      cuts[numConstr].SetCoefficient(x[i], 1);
                numConstr++;
             }
+            if(numConstr > numConstrOld && numConstr%10==0)
+            {
+               Console.WriteLine("Number of variables  = " + solver.NumVariables());
+               Console.WriteLine("Number of constraints = " + solver.NumConstraints());
+               resultStatus = solver.Solve();
+               Console.WriteLine("Optimal objective value = " + solver.Objective().Value());
+               numConstrOld = numConstr;
+            }
          }
 
-         Console.WriteLine("Number of variables = " + solver.NumVariables());
-         Console.WriteLine("Number of constraints = " + solver.NumConstraints());
+         Console.WriteLine("Final number of variables  = " + solver.NumVariables());
+         Console.WriteLine("Final number of constraints = " + solver.NumConstraints());
 
          string lp_text = solver.ExportModelAsLpFormat(false);
-         using (StreamWriter out_f = new StreamWriter("test.lp"))
+         using (StreamWriter out_f = new StreamWriter($"{dataset}.lp"))
             out_f.Write(lp_text);
 
-         Solver.ResultStatus resultStatus = solver.Solve();
+         resultStatus = solver.Solve();
 
          // Check that the problem has an optimal solution.
          if (resultStatus != Solver.ResultStatus.OPTIMAL)
@@ -176,16 +195,22 @@ l0:            continue;
          // The objective value of the solution.
          Console.WriteLine("Optimal objective value = " + solver.Objective().Value());
 
+         List<int> lstDim = new List<int>();
+         List<double> lstPos = new List<double>();
          // The value of each variable in the solution.
-         StreamWriter fout = new StreamWriter(fpath.Replace(".csv","_cuts.txt"));
          for (i = 0; i < numVar; ++i)
          {  Console.WriteLine($"x{i} = " + x[i].SolutionValue());
             if(x[i].SolutionValue()>0.01)
-            {
-               Console.WriteLine($"dim {lstCuts[i].Item1} pos {lstCuts[i].Item2}");
-               fout.WriteLine($"dim {lstCuts[i].Item1} pos {lstCuts[i].Item2}");
+            {  Console.WriteLine($"dim {lstCuts[i].Item1} pos {lstCuts[i].Item2}");
+               lstDim.Add(lstCuts[i].Item1);
+               lstPos.Add(lstCuts[i].Item2);
             }
          }
+         StreamWriter fout = new StreamWriter(fpath.Replace(".csv", "_cuts.json"));
+         fout.WriteLine("{");
+         fout.WriteLine($"\"dim\" : [{string.Join(",", lstDim)}],");
+         fout.WriteLine($"\"pos\" : [{string.Join(",", lstPos)}]");
+         fout.WriteLine("}");
          fout.Close();
 
          Console.WriteLine("Advanced usage:");

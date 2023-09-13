@@ -6,7 +6,11 @@ import os, json
 # This just plots the cuts over the data points. See c++ for true tree
 if __name__ == '__main__':
    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-   dataFileName = "test1"
+   # read configuration
+   fconf = open('config.json')
+   conf = json.load(fconf)
+
+   dataFileName = conf["datafile"]
    if(dataFileName == "iris_setosa"):
       df = pd.read_csv("..\\..\\data\\Iris_setosa.csv",usecols=["Id","SepalWidthCm","PetalLengthCm","class"])
    else:
