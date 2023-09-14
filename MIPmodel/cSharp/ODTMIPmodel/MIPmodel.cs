@@ -7,7 +7,8 @@ using System.Threading.Tasks;
 using Google.OrTools;
 using Google.OrTools.LinearSolver;
 using System.Text.Json.Nodes;
-using Google.OrTools.Sat;
+//using Google.OrTools.ConstraintSolver;
+using static Google.OrTools.LinearSolver.Solver;
 
 namespace ODTMIPmodel
 {
@@ -40,7 +41,9 @@ namespace ODTMIPmodel
          string fpath = $"{datapath}{dataset}.csv";
          read_data(fpath);
 
-         lpModel("GLOP",fpath, dataset);
+         string LPsolver = jobj["LPsolver"].GetValue<string>();
+         string IPsolver = jobj["IPsolver"].GetValue<string>();
+         lpModel(LPsolver, IPsolver, fpath, dataset);   // linear model
       }
 
       private void read_data(string fpath)
@@ -127,19 +130,19 @@ l0: continue;
          }
       }
 
-      private void lpModel(String solverType, string fpath, string dataset)
+      private void lpModel(String LPsolver, string IPsolver, string fpath, string dataset)
       {
-         int i, j, k, d, cont, numConstrOld;
+         int i, j, k, d, numConstrOld;
 
          List<Tuple<int,double>> lstCuts = new List<Tuple<int, double>>();
          findCuts(lstCuts);  // costruisce lista lstCuts
          numVar = lstCuts.Count;
 
          // da qui modello LP
-         Console.WriteLine($"---- Linear programming model with {solverType} ----");
-         Solver solver = Solver.CreateSolver(solverType);
+         Console.WriteLine($"---- Linear programming model with {LPsolver} ----");
+         Solver solver = Solver.CreateSolver(LPsolver);
          if (solver == null)
-         {  Console.WriteLine("Could not create linear solver " + solverType);
+         {  Console.WriteLine("Could not create linear solver " + LPsolver);
             return;
          }
          Solver.ResultStatus resultStatus;
@@ -147,7 +150,9 @@ l0: continue;
          // continuous 0/1 variables, if cut is used
          Variable[] x = new Variable[numVar];
          for (i = 0; i < numVar; i++)
-            x[i] = solver.MakeNumVar(0.0, 1.0, $"x{i}");
+         {  x[i] = solver.MakeNumVar(0.0, 1.0, $"x{i}");
+            x[i].SetInteger(false);
+         }
 
          // objective function
          Objective objective = solver.Objective();
@@ -160,7 +165,7 @@ l0: continue;
          // constraint section, range of feasible values
          numConstr = numConstrOld = 0;
          int n2 = npoints*(npoints+1)/2;
-         Constraint[] cuts = new Constraint[n2]; // one cut for each pair of points
+         Google.OrTools.LinearSolver.Constraint[] cuts = new Google.OrTools.LinearSolver.Constraint[n2]; // one cut for each pair of points
          int p1,p2;
          int n = npoints;
          // for all pairs of points (n2)
@@ -193,20 +198,7 @@ l0: continue;
          using (StreamWriter out_f = new StreamWriter($"{dataset}.lp"))
             out_f.Write(lp_text);
 
-
-         Console.WriteLine($"---- Integer programming model with {solverType} ----");
-         Solver Isolver = Solver.CreateSolver(solverType);
-         if (Isolver == null)
-         {  Console.WriteLine("Could not create integer solver " + solverType);
-            return;
-         }
-         // continuous 0/1 variables, if cut is used
-         BoolVar[] xi = new BoolVar[numVar];
-         for (i = 0; i < numVar; i++)
-            xi[i] = Isolver.MakeBoolVar($"xi{i}");
-
-         xi[0].set
-
+         // ------------------------------------ SOLVE
          resultStatus = solver.Solve();
 
          // Check that the problem has an optimal solution.
@@ -220,7 +212,7 @@ l0: continue;
          // The objective value of the solution.
          Console.WriteLine("Optimal objective value = " + solver.Objective().Value());
 
-         List<int> lstDim = new List<int>();
+         List<int>    lstDim = new List<int>();
          List<double> lstPos = new List<double>();
          // The value of each variable in the solution.
          for (i = 0; i < numVar; ++i)
@@ -249,8 +241,48 @@ l0: continue;
 
          // dual variables
          for (j = 0; j < numConstr; j++)
-         {  Console.WriteLine($"c0: dual value = {cuts[j].DualValue()} activity = {activities[cuts[j].Index()]}");
+            Console.WriteLine($"c0: dual value = {cuts[j].DualValue()} activity = {activities[cuts[j].Index()]}");
+
+         // GO INTEGER
+         IPmodel(IPsolver);                   // integer model
+      }
+
+      private void IPmodel(String IPsolver)
+      {  int i;
+
+         // -------------------------------------------- integer solution
+         Solver Isolver = Solver.CreateSolver(IPsolver);
+
+         // integer 0/1 variables, if cut is used
+         Variable[] xi = Isolver.MakeBoolVarArray(numVar, "xi");
+         for (i = 0; i < numVar; i++) xi[0].SetInteger(true);
+
+         Objective objective = Isolver.Objective();
+         objective.SetMinimization();
+         for (i = 0; i < numVar; i++) objective.SetCoefficient(xi[i], 1);
+
+         ResultStatus resultStatus = Isolver.Solve();
+
+         // Check that the problem has an optimal solution.
+         if (resultStatus != ResultStatus.OPTIMAL)
+         {  Console.WriteLine("The integer problem does not have an optimal solution!");
+            return;
          }
+
+         Console.WriteLine("Problem solved in " + Isolver.WallTime() + " milliseconds");
+
+         // The objective value of the solution.
+         Console.WriteLine("Optimal objective value = " + Isolver.Objective().Value());
+
+         for (i = 0; i < numVar; i++)
+         {
+            if (xi[i].SolutionValue() > 0.0001)
+               Console.WriteLine($"xi{i} = {xi[i].SolutionValue()}");
+         }
+         Console.WriteLine("Problem solved in " + Isolver.WallTime() + " milliseconds");
+         Console.WriteLine("Problem solved in " + Isolver.Iterations() + " iterations");
+         Console.WriteLine("Problem solved in " + Isolver.Nodes() + " branch-and-bound nodes");
+
       }
 
       // se il cut idcut separa il punto p1 dal punto p2
