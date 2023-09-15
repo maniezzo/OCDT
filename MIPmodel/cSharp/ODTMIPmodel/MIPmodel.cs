@@ -9,6 +9,7 @@ using Google.OrTools.LinearSolver;
 using System.Text.Json.Nodes;
 //using Google.OrTools.ConstraintSolver;
 using static Google.OrTools.LinearSolver.Solver;
+//using Google.OrTools.ConstraintSolver;
 
 namespace ODTMIPmodel
 {
@@ -133,6 +134,9 @@ l0: continue;
       private void lpModel(String LPsolver, string IPsolver, string fpath, string dataset)
       {
          int i, j, k, d, numConstrOld;
+         List<int> lstCols; // il cut che verrà costruito e testato
+         List<int> lstHash = new List<int>(); // un hashcode per ogni riga del tableau
+         List<List<int>> lstTableauRows = new List<List<int>>(); // cut accettati, riche del tableau
 
          List<Tuple<int,double>> lstCuts = new List<Tuple<int, double>>();
          findCuts(lstCuts);  // costruisce lista lstCuts
@@ -166,7 +170,7 @@ l0: continue;
          numConstr = numConstrOld = 0;
          int n2 = npoints*(npoints+1)/2;
          Google.OrTools.LinearSolver.Constraint[] cuts = new Google.OrTools.LinearSolver.Constraint[n2]; // one cut for each pair of points
-         int p1,p2;
+         int p1,p2,hash;
          int n = npoints;
          // for all pairs of points (n2)
          for (k = 0; k < n2; k++)
@@ -174,12 +178,27 @@ l0: continue;
             p2 = (int) (k - (p1*n - 0.5*p1*p1 - 0.5*p1));               // my own!
             // Console.WriteLine($"Coppia {p1} - {p2} test {k}");
             if(p1!=p2 && classe[p1] != classe[p2])
-            {  cuts[numConstr] = solver.MakeConstraint(1, double.PositiveInfinity, $"geq{p1}_{p2}");
+            {  lstCols = new List<int>();
                // checks all cuts to see which ones separate p1 from p2
                for (i=0;i<lstCuts.Count;i++)
                   if (separates(p1,p2,lstCuts,i))
-                     cuts[numConstr].SetCoefficient(x[i], 1);
+                     lstCols.Add(i);
+               hash = getRowhash(lstCols);
+               for(i=0;i<numConstr;i++)
+                  if(hash == lstHash[i] && lstCols.Count() == lstTableauRows[i].Count())
+                  {  for(j=0;j<lstCols.Count;j++)
+                        if (lstCols[j] != lstTableauRows[i][j])
+                           break;
+                     Console.WriteLine($">>> Cut {i} duplicato");
+                     goto l0;
+                  }
+               lstHash.Add(hash);
+               lstTableauRows.Add(lstCols);
+               cuts[numConstr] = solver.MakeConstraint(1, double.PositiveInfinity, $"geq{p1}_{p2}");
+               for(i=0;i<lstCols.Count;i++)
+                  cuts[numConstr].SetCoefficient(x[lstCols[i]], 1);
                numConstr++;
+l0:            continue;
             }
             if(numConstr > numConstrOld && numConstr%10==0)
             {
@@ -212,23 +231,10 @@ l0: continue;
          // The objective value of the solution.
          Console.WriteLine("Optimal objective value = " + solver.Objective().Value());
 
-         List<int>    lstDim = new List<int>();
-         List<double> lstPos = new List<double>();
          // The value of each variable in the solution.
          for (i = 0; i < numVar; ++i)
-         {  Console.WriteLine($"x{i} = " + x[i].SolutionValue());
             if(x[i].SolutionValue()>0.01)
-            {  Console.WriteLine($"dim {lstCuts[i].Item1} pos {lstCuts[i].Item2}");
-               lstDim.Add(lstCuts[i].Item1);
-               lstPos.Add(lstCuts[i].Item2);
-            }
-         }
-         StreamWriter fout = new StreamWriter(fpath.Replace(".csv", "_cuts.json"));
-         fout.WriteLine("{");
-         fout.WriteLine($"\"dim\" : [{string.Join(",", lstDim)}],");
-         fout.WriteLine($"\"pos\" : [{string.Join(",", lstPos)}]");
-         fout.WriteLine("}");
-         fout.Close();
+               Console.WriteLine($"x{i} = " + x[i].SolutionValue());
 
          Console.WriteLine("Advanced usage:");
          double[] activities = solver.ComputeConstraintActivities();
@@ -237,18 +243,21 @@ l0: continue;
 
          // reduced costs
          for (i = 0; i < numVar; i++)
-            Console.WriteLine($"x{i}: reduced cost = " + x[i].ReducedCost());
+            if(x[i].ReducedCost() > 0.0001)
+               Console.WriteLine($"x{i}: reduced cost = " + x[i].ReducedCost());
 
          // dual variables
          for (j = 0; j < numConstr; j++)
-            Console.WriteLine($"c0: dual value = {cuts[j].DualValue()} activity = {activities[cuts[j].Index()]}");
+            if(cuts[j].DualValue() > 0.0001)
+               Console.WriteLine($"c0: dual value = {cuts[j].DualValue()} activity = {activities[cuts[j].Index()]}");
 
          // GO INTEGER
-         IPmodel(IPsolver);                   // integer model
+         IPmodel(IPsolver, lstTableauRows, lstCuts, fpath);                   
       }
 
-      private void IPmodel(String IPsolver)
-      {  int i;
+      // integer model
+      private void IPmodel(String IPsolver, List<List<int>> lstTableauRows, List<Tuple<int, double>> lstCuts, string fpath)
+      {  int i,j;
 
          // -------------------------------------------- integer solution
          Solver Isolver = Solver.CreateSolver(IPsolver);
@@ -261,6 +270,17 @@ l0: continue;
          objective.SetMinimization();
          for (i = 0; i < numVar; i++) objective.SetCoefficient(xi[i], 1);
 
+         // Constraint section
+         int numConstr = lstTableauRows.Count;
+         Google.OrTools.LinearSolver.Constraint[] cuts = new Google.OrTools.LinearSolver.Constraint[numConstr]; 
+         for (i=0;i< numConstr; i++)
+         {
+            cuts[i] = Isolver.MakeConstraint(1, double.PositiveInfinity, $"geq{i}");
+            for (j = 0; j < lstTableauRows[i].Count; j++)
+               cuts[i].SetCoefficient(xi[lstTableauRows[i][j]], 1);
+         }
+
+         // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> SOLVE
          ResultStatus resultStatus = Isolver.Solve();
 
          // Check that the problem has an optimal solution.
@@ -269,20 +289,29 @@ l0: continue;
             return;
          }
 
-         Console.WriteLine("Problem solved in " + Isolver.WallTime() + " milliseconds");
-
-         // The objective value of the solution.
-         Console.WriteLine("Optimal objective value = " + Isolver.Objective().Value());
-
-         for (i = 0; i < numVar; i++)
-         {
-            if (xi[i].SolutionValue() > 0.0001)
-               Console.WriteLine($"xi{i} = {xi[i].SolutionValue()}");
-         }
-         Console.WriteLine("Problem solved in " + Isolver.WallTime() + " milliseconds");
+         Console.WriteLine("Integer problem solved in " + Isolver.WallTime() + " milliseconds");
          Console.WriteLine("Problem solved in " + Isolver.Iterations() + " iterations");
          Console.WriteLine("Problem solved in " + Isolver.Nodes() + " branch-and-bound nodes");
 
+         // The objective value of the solution.
+         Console.WriteLine("Optimal integer objective value = " + Isolver.Objective().Value());
+
+         List<int> lstDim = new List<int>();
+         List<double> lstPos = new List<double>();
+         for (i = 0; i < numVar; i++)
+         {  if (xi[i].SolutionValue() > 0.0001)
+            {  Console.WriteLine($"xi{i} = {xi[i].SolutionValue()}");
+               Console.WriteLine($"dim {lstCuts[i].Item1} pos {lstCuts[i].Item2}");
+               lstDim.Add(lstCuts[i].Item1);
+               lstPos.Add(lstCuts[i].Item2);
+            }
+         }
+         StreamWriter fout = new StreamWriter(fpath.Replace(".csv", "_cuts.json"));
+         fout.WriteLine("{");
+         fout.WriteLine($"\"dim\" : [{string.Join(",", lstDim)}],");
+         fout.WriteLine($"\"pos\" : [{string.Join(",", lstPos)}]");
+         fout.WriteLine("}");
+         fout.Close();
       }
 
       // se il cut idcut separa il punto p1 dal punto p2
@@ -310,6 +339,14 @@ l0: continue;
                if (a[idx[j]] > a[idx[j+1]])
                   (idx[j], idx[j+1]) = (idx[j+1], idx[j]);
          return idx;
+      }
+
+      // calcola un hashcode di una riga del tableau
+      private int getRowhash(List<int> cut)
+      {  int i,hash=0;
+         for(i=0;i<cut.Count();i++)
+            hash = hash + 13 + (17 * cut[i] * cut[i]);
+         return hash;
       }
    }
 }
