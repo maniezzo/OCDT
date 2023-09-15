@@ -64,7 +64,7 @@ void Tree::DFS(int s)
 
    // Push the source node, points are id of all points
    vector<int> v(Y.size());
-   for(i=0;i<v.size();i++) v[i]=i;
+   for(i=0;i<v.size();i++) v[i]=i; // i punti associati al nodo radice (tutti)
    nodePoints.push_back(v);
    newNode(s,0);
    pointsLeftSon(s);  // lista leftPoints, punti a sinistra del cut del nodo, saranno nel figlio sx
@@ -80,6 +80,7 @@ void Tree::DFS(int s)
       stack.pop();
       s          = si.idnode;
       cutBitMask = si.bitMaskCuts;
+      cout << "Pop node " << s << endl;
 
       // Stack may contain same vertex twice. So
       // we need to print the popped item only if it is not visited.
@@ -87,34 +88,40 @@ void Tree::DFS(int s)
       {  cout << "Expanding node " << s << " bpoints " << nodePoints[s].size() << endl;
          decTree[s].visited = true;
 
-         if(!sameClass(s))
+         if(!sameClass(s)) // se punti non della stessa classe genero due figli
          {  // Get all adjacent vertices of the popped vertex s
             int l = decTree[s].left;  // id del figlio sinistro (ancora da riempire)
             if (l>0 && (decTree.size() <= l || !decTree[l].visited))
             {  newNode(l, cutBitMask);
-               if(decTree[l].idCut >= 0)
+               if(decTree[l].idCut >= 0) // internl points need to be cut
                {  cutBM = cutBitMask;
                   cutBM |= (1 << decTree[l].idCut);  // mette a 1 il *-esimo bit DA DESTRA
                   pointsLeftSon(l);
                   pointsRightSon(l);
-                  si = {l,cutBM};
-                  stack.push(si);
                }
+               else
+                  cutBM = -1; // will be leaf
+               si = {l,cutBM};
+               stack.push(si);
+               cout << "Push node " << l << endl;
             }
             int r = decTree[s].right;  // id del figlio destro (ancora da riempire)
             if (r>0 && (decTree.size() <= r || !decTree[r].visited))
             {  newNode(r, cutBitMask);
-               if (decTree[r].idCut >= 0)
+               if (decTree[r].idCut >= 0) // internl points need to be cut
                {  cutBM = cutBitMask;
                   cutBM |= (1 << decTree[r].idCut);  // mette a 1 il *-esimo bit DA DESTRA
                   pointsLeftSon(r);
                   pointsRightSon(r);
-                  si = {r,cutBM};
-                  stack.push(si);
                }
+               else
+                  cutBM = -1; // will be leaf
+               si = {r,cutBM};
+               stack.push(si);
+               cout << "Push node " << r << endl;
             }
          }
-         else // leaf node
+         else // leaf node, all points of the same class
             decTree[s].idCut = -1;
       }
    }
