@@ -21,7 +21,7 @@ void Tree::goTree()
    cout << dataFileName << endl;;
 
    readData(dataFileName);
-   regionBitmasks();
+   regionBitmasks();  // bitmasks, identificatori bitmask delle regioni del dominio
    DFS(0);
    writeTree(dataFileName);
 }
@@ -67,10 +67,10 @@ void Tree::DFS(int s)
    for(i=0;i<v.size();i++) v[i]=i;
    nodePoints.push_back(v);
    newNode(s,0);
-   pointsLeftSon(s);
-   pointsRightSon(s);
-   cutBM |= (1 << decTree[0].idCut);  // mette a 1 il *-esimo bit DA DESTRA
-   si = {s,cutBM };
+   pointsLeftSon(s);  // lista leftPoints, punti a sinistra del cut del nodo, saranno nel figlio sx
+   pointsRightSon(s); // lista rightPoints, punti a destra del cut del nodo, saranno nel figlio dx
+   cutBM |= (1 << decTree[0].idCut);  // mette a 1 il *-esimo bit DA DESTRA nell'identificatore bitmask del cut associato al nodo
+   si = {s,cutBM };   // id nodo e cut associato
    stack.push(si);
 
    while (!stack.empty())
@@ -89,7 +89,7 @@ void Tree::DFS(int s)
 
          if(!sameClass(s))
          {  // Get all adjacent vertices of the popped vertex s
-            int l = decTree[s].left;
+            int l = decTree[s].left;  // id del figlio sinistro (ancora da riempire)
             if (l>0 && (decTree.size() <= l || !decTree[l].visited))
             {  newNode(l, cutBitMask);
                if(decTree[l].idCut >= 0)
@@ -101,7 +101,7 @@ void Tree::DFS(int s)
                   stack.push(si);
                }
             }
-            int r = decTree[s].right;
+            int r = decTree[s].right;  // id del figlio destro (ancora da riempire)
             if (r>0 && (decTree.size() <= r || !decTree[r].visited))
             {  newNode(r, cutBitMask);
                if (decTree[r].idCut >= 0)
@@ -160,11 +160,12 @@ void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode, int cutBitMa
    double h,maxh = -1;
    bool isSameCLass = false;
 
-   if(sameClass(idnode))
+   if(sameClass(idnode)) // tutti i punti della stessa classe
    {  isSameCLass = true;
       goto l0;
    }
 
+   // contingency table e taglio di entropia massima
    for (i = 0; i < ncuts; i++)
    {
       bool is_set = (cutBitMask & (1 << i)) != 0; // check if i-th bit is set
