@@ -22,9 +22,10 @@ class Node
       int id;
       int idCut;        // cut associato al nodo
       int cutDim;       // dimension where the cut acts
-      double cutValue;  // calue of the cut
+      double cutValue;  // value of the cut
       bool visited;     // used by the DFS
       int idClass;      // in case of a node, class of all points
+      int idNodePoints; // row of nodePoints array cotaining the points of the node
       int left, right;  // pointers to left and right offspring
 };
 
@@ -35,14 +36,14 @@ class Tree
 
    private:
       struct stackItem {int idnode; int bitMaskCuts;}; // the node and the cuts used so far
-      struct Cutline {int dim; double cutval;};
+      struct Cutline   {int dim; double cutval;};
       map<int, Cutline> cutlines;  // dictionary dei tagli
       vector<vector<int>> ptClass; // indices of the two classes
       vector<vector<float>> X;     // features
       vector<int> Y;               // classes
       map<unsigned long, vector<int>> clusters; // points of each cluster
       vector<unsigned long> myCluster;          // cluster of each point
-      vector<unsigned long> bitmasks;           // list of bitmasks encoding regions of attribute space ndim-dimensional
+      vector<unsigned long> bitMaskRegion;      // list of bitmasks encoding regions of attribute space ndim-dimensional
 
       int ndim;  // num dimensions
       int n;     // num points

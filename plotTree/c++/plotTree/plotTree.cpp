@@ -21,6 +21,10 @@ void Tree::goTree()
    cout << dataFileName << endl;;
 
    readData(dataFileName);
+   if (ncuts > 60) // troppi cut, non stanno in un long, niente bitmask
+   {  cout << "Too many cuts, exiting" << endl;
+      exit(1);
+   }
    regionBitmasks();  // bitmasks, identificatori bitmask delle regioni del dominio
    DFS(0);
    writeTree(dataFileName);
@@ -67,8 +71,7 @@ void Tree::DFS(int s)
    for(i=0;i<v.size();i++) v[i]=i; // i punti associati al nodo radice (tutti)
    nodePoints.push_back(v);
    newNode(s,0);
-   pointsLeftSon(s);  // lista leftPoints, punti a sinistra del cut del nodo, saranno nel figlio sx
-   pointsRightSon(s); // lista rightPoints, punti a destra del cut del nodo, saranno nel figlio dx
+   decTree[0].idNodePoints = 0;
    cutBM |= (1 << decTree[0].idCut);  // mette a 1 il *-esimo bit DA DESTRA nell'identificatore bitmask del cut associato al nodo
    si = {s,cutBM };   // id nodo e cut associato
    stack.push(si);
@@ -85,19 +88,19 @@ void Tree::DFS(int s)
       // Stack may contain same vertex twice. So
       // we need to print the popped item only if it is not visited.
       if (!decTree[s].visited)
-      {  cout << "Expanding node " << s << " bpoints " << nodePoints[s].size() << endl;
+      {  cout << "Expanding node " << s << " num.points " << nodePoints[s].size() << endl;
          decTree[s].visited = true;
 
          if(!sameClass(s)) // se punti non della stessa classe genero due figli
-         {  // Get all adjacent vertices of the popped vertex s
+         {  // split node points
+
+            pointsLeftSon(s);  // lista leftPoints, punti a sinistra del cut del nodo, saranno nel figlio sx
             int l = decTree[s].left;  // id del figlio sinistro (ancora da riempire)
             if (l>0 && (decTree.size() <= l || !decTree[l].visited))
             {  newNode(l, cutBitMask);
                if(decTree[l].idCut >= 0) // internl points need to be cut
                {  cutBM = cutBitMask;
                   cutBM |= (1 << decTree[l].idCut);  // mette a 1 il *-esimo bit DA DESTRA
-                  pointsLeftSon(l);
-                  pointsRightSon(l);
                }
                else
                   cutBM = -1; // will be leaf
@@ -105,14 +108,14 @@ void Tree::DFS(int s)
                stack.push(si);
                cout << "Push node " << l << endl;
             }
+
+            pointsRightSon(s); // lista rightPoints, punti a destra del cut del nodo, saranno nel figlio dx
             int r = decTree[s].right;  // id del figlio destro (ancora da riempire)
             if (r>0 && (decTree.size() <= r || !decTree[r].visited))
             {  newNode(r, cutBitMask);
                if (decTree[r].idCut >= 0) // internl points need to be cut
                {  cutBM = cutBitMask;
                   cutBM |= (1 << decTree[r].idCut);  // mette a 1 il *-esimo bit DA DESTRA
-                  pointsLeftSon(r);
-                  pointsRightSon(r);
                }
                else
                   cutBM = -1; // will be leaf
@@ -146,11 +149,11 @@ void Tree::newNode(int idnode, int cutBitMask)
    vector<vector<vector<int>>> freq (ncuts, vector<vector<int>>(2,vector<int>(2,0)));
    
    // contingency table (num regions per cut, per attr. value (above/below cut), per class
-   for (i = 0; i < bitmasks.size(); i++) // for each bitmask (region)
-   {  ptClass = Y[clusters[bitmasks[i]][0]]; // class 0 or 1 of the region. Bitmasks encode regions
+   for (i = 0; i < bitMaskRegion.size(); i++) // for each bitmask (region)
+   {  ptClass = Y[clusters[bitMaskRegion[i]][0]]; // class 0 or 1 of the region. Bitmasks encode regions
       for (j = 0; j < ncuts; j++)
       {  //dim = cutlines[j].dim;
-         if(bitmasks[i]&(1 << j)) // region bitmask (NOT CUT)
+         if(bitMaskRegion[i]&(1 << j)) // region bitmask (NOT CUT)
             freq[j][1][ptClass]++;
          else
             freq[j][0][ptClass]++;
@@ -211,15 +214,17 @@ l0:Node N;
    N.right    = -1;
    N.visited  = false;
    N.idClass  = (isSameCLass ? Y[nodePoints[idnode][0]] : INT_MIN);
+   N.idNodePoints  = nodePoints.size() -1;
    decTree[idnode] = (N);
 }
 
-// points smaller than cut
+// points smaller than cut, sets parent left pointer
 void Tree::pointsLeftSon(int idnode)
-{  int i;
+{  int i,inp;
    vector<int> leftpoints;
-   Node* N = &decTree[decTree.size() - 1]; // parent node
-   for (i = 0; i < nodePoints[idnode].size(); i++)
+   Node* N = &decTree[idnode]; // parent node
+   inp = N->idNodePoints;
+   for (i = 0; i < nodePoints[inp].size(); i++)
       if (X[nodePoints[idnode][i]][N->cutDim] < N->cutValue)
          leftpoints.push_back(nodePoints[idnode][i]);
 
@@ -229,12 +234,13 @@ void Tree::pointsLeftSon(int idnode)
    }
 }
 
-// points bigger than cut
+// points bigger than cut, sets parent right pointer
 void Tree::pointsRightSon(int idnode)
-{  int i;
+{  int i,inp;
    vector<int> rightpoints;
-   Node* N = &decTree[decTree.size() - 1]; // parent node
-   for (i = 0; i < nodePoints[idnode].size(); i++)
+   Node* N = &decTree[idnode]; // parent node
+   inp = N->idNodePoints;
+   for (i = 0; i < nodePoints[inp].size(); i++)
       if (X[nodePoints[idnode][i]][N->cutDim] > N->cutValue)
          rightpoints.push_back(nodePoints[idnode][i]);
 
@@ -244,13 +250,13 @@ void Tree::pointsRightSon(int idnode)
    }
 }
 
-// bitmask identifier of all domain partitions
+// bitmask identifier of all domain partitions, 0/1, below or above each cut
 void Tree::regionBitmasks()
 {  int i,j,dim;
    double val;
    unsigned long bitmask;
 
-   for(i=0;i<n;i++)
+   for(i=0;i<n;i++) // chech there are no empty regions (for each point, where it lays)
    {  bitmask=0;
       for(j=0;j<ncuts;j++)
       {  dim = cutlines[j].dim;
@@ -258,10 +264,10 @@ void Tree::regionBitmasks()
          if(X[i][dim]>val)
             bitmask |= (1 << j);  // mette a 1 il j-esimo bit da destra (i cut sarammo da dx a sx !!!!)
       }
-      myCluster.push_back(bitmask);   // cluster in cui cade ogni punto
+      myCluster.push_back(bitmask);   // cluster in cui cade il punto i
       clusters[bitmask].push_back(i); // punti dentro ogni cluster
-      if(find(bitmasks.begin(), bitmasks.end(), bitmask) == bitmasks.end())
-         bitmasks.push_back(bitmask); // bitmask dei cluster
+      if(find(bitMaskRegion.begin(), bitMaskRegion.end(), bitmask) == bitMaskRegion.end()) // se non c'è già'
+         bitMaskRegion.push_back(bitmask); // aggiungi bitmask dei cluster
    }
 }
 
@@ -307,7 +313,7 @@ void Tree::readData(string dataFileName)
          elem = split(line, ',');
          id = stoi(elem[0]);
          //if (id > 40 && !(id > 100 && id < 141)) goto l0;
-         cout << id << endl;
+         cout << "Read node " << id << endl;
          for (i = 1; i < 1 + ndim; i++)         // FILTERING DATA for iris_setosa
          if(dataFileName != "iris_setosa" || (i==2 || i==3))
          {  d = stof(elem[i]);
