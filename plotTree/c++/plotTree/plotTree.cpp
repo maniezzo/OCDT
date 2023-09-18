@@ -285,7 +285,7 @@ void Tree::readData(string dataFileName)
    stringstream buffer;
    buffer << fin.rdbuf();
    line = buffer.str();
-   json::Value JSV = json::Deserialize(line);
+   json::Value JSV  = json::Deserialize(line);
    json::Array fdim = (json::Array)JSV["dim"];
    json::Array fpos = (json::Array)JSV["pos"];
 
@@ -311,15 +311,15 @@ void Tree::readData(string dataFileName)
          cont = 0;
          val.clear();
          elem = split(line, ',');
-         id = stoi(elem[0]);
+         id   = stoi(elem[0]);
          //if (id > 40 && !(id > 100 && id < 141)) goto l0;
          cout << "Read node " << id << endl;
-         for (i = 1; i < 1 + ndim; i++)         // FILTERING DATA for iris_setosa
-         if(dataFileName != "iris_setosa" || (i==2 || i==3))
-         {  d = stof(elem[i]);
-            d = round(100.0 * d) / 100.0;     // rounded to 2nd decimal
-            val.push_back(d);
-         }
+         for (i = 1; i < 1 + ndim; i++)         
+            if(dataFileName != "iris_setosa") // || (i==2 || i==3))  // FILTERING DATA for iris_setosa
+            {  d = stof(elem[i]);
+               //d = round(100.0 * d) / 100.0;     // rounded to 2nd decimal
+               val.push_back(d);
+            }
          X.push_back(val);
          j = stoi(elem[ndim + 1]);
          Y.push_back(j);

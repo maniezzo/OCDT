@@ -1,5 +1,5 @@
 { 
-   "datafile" : "nath_jones", 
+   "datafile" : "tic-tac-toe_raw", 
    "datapath" : "c:\\git\\ODT\\data\\",
 	"LPsolver" : "GLOP",
 	"IPsolver" : "SCIP"
