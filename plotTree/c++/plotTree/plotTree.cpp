@@ -225,10 +225,10 @@ void Tree::pointsLeftSon(int idnode)
    Node* N = &decTree[idnode]; // parent node
    inp = N->idNodePoints;
    for (i = 0; i < nodePoints[inp].size(); i++)
-      if (X[nodePoints[idnode][i]][N->cutDim] < N->cutValue)
-         leftpoints.push_back(nodePoints[idnode][i]);
+      if (X[nodePoints[inp][i]][N->cutDim] < N->cutValue)
+         leftpoints.push_back(nodePoints[inp][i]);
 
-   if (leftpoints.size() > 0 && leftpoints.size() < nodePoints[idnode].size())
+   if (leftpoints.size() > 0 && leftpoints.size() < nodePoints[inp].size())
    {  nodePoints.push_back(leftpoints);
       N->left = nodePoints.size() - 1;
    }
@@ -241,10 +241,10 @@ void Tree::pointsRightSon(int idnode)
    Node* N = &decTree[idnode]; // parent node
    inp = N->idNodePoints;
    for (i = 0; i < nodePoints[inp].size(); i++)
-      if (X[nodePoints[idnode][i]][N->cutDim] > N->cutValue)
-         rightpoints.push_back(nodePoints[idnode][i]);
+      if (X[nodePoints[inp][i]][N->cutDim] > N->cutValue)
+         rightpoints.push_back(nodePoints[inp][i]);
 
-   if (rightpoints.size() > 0 && rightpoints.size() < nodePoints[idnode].size())
+   if (rightpoints.size() > 0 && rightpoints.size() < nodePoints[inp].size())
    {  nodePoints.push_back(rightpoints);
       N->right = nodePoints.size() - 1;
    }
