@@ -325,7 +325,7 @@ void Tree::readData(string dataFileName)
          X.push_back(val);
          j = stoi(elem[ndim + 1]);
          Y.push_back(j);
-         if(j>(nclasses+1)) nclasses = j+1;
+         if(j>(nclasses-1)) nclasses = j+1;
          ptClass[j].push_back(Y.size() - 1); // starts at 0
 l0:      cont++;
       }

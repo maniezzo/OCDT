@@ -184,13 +184,15 @@ l0: continue;
                      lstCols.Add(i);
                hash = getRowhash(lstCols);
                for(i=0;i<numConstr;i++)
-                  if(hash == lstHash[i] && lstCols.Count() == lstTableauRows[i].Count())
+               {  if(hash == lstHash[i] && lstCols.Count() == lstTableauRows[i].Count())
                   {  for(j=0;j<lstCols.Count;j++)
                         if (lstCols[j] != lstTableauRows[i][j])
-                           break;
+                           goto l1; // try next cut, check if it dominates
                      Console.WriteLine($">>> Cut {i} duplicato");
-                     goto l0;
+                     goto l0;  // cut dominated, do not add
                   }
+l1:               continue;
+               }
                lstHash.Add(hash);
                lstTableauRows.Add(lstCols);
                cuts[numConstr] = solver.MakeConstraint(1, double.PositiveInfinity, $"geq{p1}_{p2}");
