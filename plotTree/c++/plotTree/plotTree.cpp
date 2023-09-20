@@ -8,6 +8,7 @@ void Tree::goTree()
 {  vector<int> dummy;
    ptClass.push_back(dummy); // row 0, class 0 points
    ptClass.push_back(dummy); // row 1, class 1 points
+   ptClass.push_back(dummy); // row 2, class 2 points, if any
 
    string line, dataFileName = "test1";
    vector<string> elem;
@@ -146,11 +147,11 @@ bool Tree::sameClass(int node)
 // 3D contingency table, number of cases per cut and per value. Works on the regions not on the points
 void Tree::newNode(int idnode, int cutBitMask)
 {  int i,j,ptClass;
-   vector<vector<vector<int>>> freq (ncuts, vector<vector<int>>(2,vector<int>(2,0)));
+   vector<vector<vector<int>>> freq (ncuts, vector<vector<int>>(2,vector<int>(nclasses,0))); // 3D: ncuts, region bit, class
    
    // contingency table (num regions per cut, per attr. value (above/below cut), per class
-   for (i = 0; i < bitMaskRegion.size(); i++) // for each bitmask (region)
-   {  ptClass = Y[clusters[bitMaskRegion[i]][0]]; // class 0 or 1 of the region. Bitmasks encode regions
+   for (i = 0; i < bitMaskRegion.size(); i++)     // for each bitmask (region)
+   {  ptClass = Y[clusters[bitMaskRegion[i]][0]]; // class of the region. Bitmasks encode regions
       for (j = 0; j < ncuts; j++)
       {  //dim = cutlines[j].dim;
          if(bitMaskRegion[i]&(1 << j)) // region bitmask (NOT CUT)
@@ -305,6 +306,7 @@ void Tree::readData(string dataFileName)
    {  getline(f, line);  // headers
       elem = split(line, ',');
       ndim = elem.size() - 2;
+      nclasses = 0;
 
       while (getline(f, line))
       {  //read data from file object and put it into string.
@@ -323,8 +325,8 @@ void Tree::readData(string dataFileName)
          X.push_back(val);
          j = stoi(elem[ndim + 1]);
          Y.push_back(j);
-         if (j == 0) ptClass[0].push_back(Y.size() - 1); // starts at 0
-         else        ptClass[1].push_back(Y.size() - 1);
+         if(j>(nclasses+1)) nclasses = j+1;
+         ptClass[j].push_back(Y.size() - 1); // starts at 0
 l0:      cont++;
       }
       f.close();

@@ -38,16 +38,17 @@ class Tree
       struct stackItem {int idnode; int bitMaskCuts;}; // the node and the cuts used so far
       struct Cutline   {int dim; double cutval;};
       map<int, Cutline> cutlines;  // dictionary dei tagli
-      vector<vector<int>> ptClass; // indices of the two classes
+      vector<vector<int>> ptClass; // indices of the classes
       vector<vector<float>> X;     // features
       vector<int> Y;               // classes
       map<unsigned long, vector<int>> clusters; // points of each cluster
       vector<unsigned long> myCluster;          // cluster of each point
       vector<unsigned long> bitMaskRegion;      // list of bitmasks encoding regions of attribute space ndim-dimensional
 
-      int ndim;  // num dimensions
-      int n;     // num points
-      int ncuts; // num of cuts
+      int ndim;     // num dimensions
+      int n;        // num points
+      int ncuts;    // num of cuts
+      int nclasses; // num of classes
       map<int,Node> decTree;          // the resulting decision tree (dict of id / nodes, id is the index in nodepoints)
       vector<vector<int>> nodePoints; // subset of points associated with each node of the decision tree
 
