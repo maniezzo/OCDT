@@ -166,9 +166,9 @@ void Tree::newNode(int idnode, int cutBitMask)
 // puts node in the decision tree
 void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode, int cutBitMask)
 {  int i,j,k,minval = INT_MAX;
-   int idCut = -1, idmax = -1;
+   int idCut = -1, idm = -1;
    double sum;
-   double h,maxh = -1;
+   double h,maxh = -1, minh=DBL_MAX;
    bool isSameCLass = false;
 
    if(sameClass(idnode)) // tutti i punti della stessa classe
@@ -176,7 +176,8 @@ void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode, int cutBitMa
       goto l0;
    }
 
-   // contingency table e taglio di entropia massima
+   // contingency table e taglio di entropia massima/minima
+   // cerco il cut che sparpaglia di più/meno i punti nelle varie regioni
    for (i = 0; i < ncuts; i++)
    {
       bool is_set = (cutBitMask & (1 << i)) != 0; // check if i-th bit is set
@@ -184,14 +185,8 @@ void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode, int cutBitMa
       {  h = -1;   // this cut has already been used, discard from consideration
          continue;
       }
-      for (j = 0; j < 2; j++)
-         for (k = 0; k < nclasses; k++)
-            if (freq[i][j][k] < minval) 
-            {  minval = freq[i][j][k]; 
-               idCut = i; 
-            }
-
-      if(minval > 0) // avoid log(0), force h. Makes sense only for binary clustering
+      
+      if(minval > 0) // mettere sameclass
       {  sum = 0;
          for(j=0;j<2;j++)
             for (k = 0; k < nclasses; k++)
@@ -199,22 +194,27 @@ void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode, int cutBitMa
          h = 0;   // entropia del cut
          for (j = 0; j < 2; j++)
             for(k=0;k<nclasses;k++)
-               h += -(freq[i][j][k] / sum) * log(freq[i][j][k] / sum);
+               h += -(freq[i][j][k] / sum) * (freq[i][j][k]>0 ? log(freq[i][j][k]) : 0) / sum;
       }
       else
          h = DBL_MAX;
 
       if (h > maxh)
-      {  maxh  = h;
-         idmax = i; // cut di entropia massima
+      {  maxh = h;
+         idm = i; // cut di entropia massima
+      }
+
+      if (h < minh && i<0)  // disabled
+      {  minh = h;
+         idm = i; // cut di entropia minima
       }
    }
 
 l0:Node N;
    N.id = decTree.size();
-   N.idCut    = (isSameCLass ? -1 : idmax);
-   N.cutDim   = (isSameCLass ? -1 : cutlines[idmax].dim);
-   N.cutValue = (isSameCLass ? -1 : cutlines[idmax].cutval);
+   N.idCut    = (isSameCLass ? -1 : idm);
+   N.cutDim   = (isSameCLass ? -1 : cutlines[idm].dim);
+   N.cutValue = (isSameCLass ? -1 : cutlines[idm].cutval);
    N.left     = -1;
    N.right    = -1;
    N.visited  = false;
