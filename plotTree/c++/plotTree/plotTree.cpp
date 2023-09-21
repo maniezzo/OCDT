@@ -165,7 +165,7 @@ void Tree::newNode(int idnode, int cutBitMask)
 
 // puts node in the decision tree
 void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode, int cutBitMask)
-{  int i,minval = INT_MAX;
+{  int i,j,k,minval = INT_MAX;
    int idCut = -1, idmax = -1;
    double sum;
    double h,maxh = -1;
@@ -181,21 +181,25 @@ void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode, int cutBitMa
    {
       bool is_set = (cutBitMask & (1 << i)) != 0; // check if i-th bit is set
       if (is_set)
-      {  h = -1;
+      {  h = -1;   // this cut has already been used, discard from consideration
          continue;
       }
-      if (freq[i][0][0] < minval) { minval = freq[i][0][0]; idCut = i; }
-      if (freq[i][0][1] < minval) { minval = freq[i][0][1]; idCut = i; }
-      if (freq[i][1][0] < minval) { minval = freq[i][1][0]; idCut = i; }
-      if (freq[i][1][1] < minval) { minval = freq[i][1][1]; idCut = i; }
+      for (j = 0; j < 2; j++)
+         for (k = 0; k < nclasses; k++)
+            if (freq[i][j][k] < minval) 
+            {  minval = freq[i][j][k]; 
+               idCut = i; 
+            }
 
-      if(minval > 0)
-      {  sum = freq[i][0][0] + freq[i][0][1] + freq[i][1][0] + freq[i][1][1];
+      if(minval > 0) // avoid log(0), force h. Makes sense only for binary clustering
+      {  sum = 0;
+         for(j=0;j<2;j++)
+            for (k = 0; k < nclasses; k++)
+               sum += freq[i][j][k];
          h = 0;   // entropia del cut
-         h += -(freq[i][0][0] / sum) * log(freq[i][0][0] / sum);
-         h += -(freq[i][0][1] / sum) * log(freq[i][0][1] / sum);
-         h += -(freq[i][1][0] / sum) * log(freq[i][1][0] / sum);
-         h += -(freq[i][1][1] / sum) * log(freq[i][1][1] / sum);
+         for (j = 0; j < 2; j++)
+            for(k=0;k<nclasses;k++)
+               h += -(freq[i][j][k] / sum) * log(freq[i][j][k] / sum);
       }
       else
          h = DBL_MAX;
