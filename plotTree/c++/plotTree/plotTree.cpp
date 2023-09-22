@@ -148,26 +148,25 @@ bool Tree::sameClass(int node)
 void Tree::newNode(int idnode, int cutBitMask)
 {  int i,j,k,ptClass;
    vector<vector<vector<int>>> freq (ncuts, vector<vector<int>>(2,vector<int>(nclasses,0))); // 3D: ncuts, region bit, class
-   vector<int> lstNodeClust();
+   vector<int> lstNodeClust;
    
    for (i = 0; i < nodePoints[decTree[idnode].idNodePoints].size(); i++)
    {
       j = nodePoints[decTree[idnode].idNodePoints][i];   // punto del nodo
-      for (k = 0; k < ptCluster[j]; k++)
-      {
-
-      }
+      if (find(lstNodeClust.begin(), lstNodeClust.end(), ptCluster[j]) == lstNodeClust.end())
+         lstNodeClust.push_back(ptCluster[j]); // se non c'è già
    }
+
    // contingency table (num regions per cut, per attr. value (above/below cut), per class
    // in freq adesso numero di regioni significative che vengono discriminate dal cut
-   for (i = 0; i < bitMaskRegion.size(); i++)     // for each bitmask (region)
+   for (i = 0; i < lstNodeClust.size(); i++)     // for each bitmask (region)
    {  ptClass = Y[regCluster[bitMaskRegion[i]][0]]; // class of the region. Bitmasks encode regions. In regCluster points of each region
       for (j = 0; j < ncuts; j++)
       {  //dim = cutlines[j].dim;
          if(bitMaskRegion[i]&(1 << j)) // region bitmask (NOT CUT)
-            freq[j][1][ptClass]++; // oppure += regCluster[bitMaskRegion[i]].size() se voglio il numero di punti
+            freq[j][1][ptClass] += regCluster[bitMaskRegion[i]].size(); // numero di punti
          else
-            freq[j][0][ptClass]++;
+            freq[j][0][ptClass] += regCluster[bitMaskRegion[i]].size(); // numero di punti
       }
    }
    defineNode(freq,idnode, cutBitMask);
