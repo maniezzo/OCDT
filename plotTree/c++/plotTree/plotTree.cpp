@@ -146,16 +146,26 @@ bool Tree::sameClass(int node)
 
 // 3D contingency table, number of cases per cut and per value. Works on the regions not on the points
 void Tree::newNode(int idnode, int cutBitMask)
-{  int i,j,ptClass;
+{  int i,j,k,ptClass;
    vector<vector<vector<int>>> freq (ncuts, vector<vector<int>>(2,vector<int>(nclasses,0))); // 3D: ncuts, region bit, class
+   vector<int> lstNodeClust();
    
+   for (i = 0; i < nodePoints[decTree[idnode].idNodePoints].size(); i++)
+   {
+      j = nodePoints[decTree[idnode].idNodePoints][i];   // punto del nodo
+      for (k = 0; k < ptCluster[j]; k++)
+      {
+
+      }
+   }
    // contingency table (num regions per cut, per attr. value (above/below cut), per class
+   // in freq adesso numero di regioni significative che vengono discriminate dal cut
    for (i = 0; i < bitMaskRegion.size(); i++)     // for each bitmask (region)
-   {  ptClass = Y[clusters[bitMaskRegion[i]][0]]; // class of the region. Bitmasks encode regions
+   {  ptClass = Y[regCluster[bitMaskRegion[i]][0]]; // class of the region. Bitmasks encode regions. In regCluster points of each region
       for (j = 0; j < ncuts; j++)
       {  //dim = cutlines[j].dim;
          if(bitMaskRegion[i]&(1 << j)) // region bitmask (NOT CUT)
-            freq[j][1][ptClass]++;
+            freq[j][1][ptClass]++; // oppure += regCluster[bitMaskRegion[i]].size() se voglio il numero di punti
          else
             freq[j][0][ptClass]++;
       }
@@ -165,11 +175,12 @@ void Tree::newNode(int idnode, int cutBitMask)
 
 // puts node in the decision tree
 void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode, int cutBitMask)
-{  int i,j,k,minval = INT_MAX;
+{  int i,j,k;
    int idCut = -1, idm = -1;
    double sum;
-   double h,maxh = -1, minh=DBL_MAX;
-   bool isSameCLass = false;
+   double h=0,maxh = -1, minh=DBL_MAX;
+   bool isSameCLass = false;  // all points of the same class
+   bool isMinimal = true;     // true: minimal entropy, false: maximal entropy
 
    if(sameClass(idnode)) // tutti i punti della stessa classe
    {  isSameCLass = true;
@@ -186,7 +197,7 @@ void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode, int cutBitMa
          continue;
       }
       
-      if(minval > 0) // mettere sameclass
+      if(h >= -1) // mettere sameclass, adesso fake
       {  sum = 0;
          for(j=0;j<2;j++)
             for (k = 0; k < nclasses; k++)
@@ -194,19 +205,20 @@ void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode, int cutBitMa
          h = 0;   // entropia del cut
          for (j = 0; j < 2; j++)
             for(k=0;k<nclasses;k++)
-               h += -(freq[i][j][k] / sum) * (freq[i][j][k]>0 ? log(freq[i][j][k]) : 0) / sum;
+               h += -(freq[i][j][k] / sum) * (freq[i][j][k]>0 ? log(freq[i][j][k] / sum) : 0);
       }
       else
          h = DBL_MAX;
 
-      if (h > maxh)
-      {  maxh = h;
-         idm = i; // cut di entropia massima
-      }
-
-      if (h < minh && i<0)  // disabled
+      if (isMinimal && h < minh)  // min entropy
       {  minh = h;
          idm = i; // cut di entropia minima
+      }
+
+      if (!isMinimal && h > maxh) // max entropy
+      {
+         maxh = h;
+         idm = i; // cut di entropia massima
       }
    }
 
@@ -237,6 +249,8 @@ void Tree::pointsLeftSon(int idnode)
    {  nodePoints.push_back(leftpoints);
       N->left = nodePoints.size() - 1;
    }
+   else
+      cout << "WARNING: I did not separate anything" << endl;
 }
 
 // points bigger than cut, sets parent right pointer
@@ -261,7 +275,7 @@ void Tree::regionBitmasks()
    double val;
    unsigned long bitmask;
 
-   for(i=0;i<n;i++) // chech there are no empty regions (for each point, where it lays)
+   for(i=0;i<n;i++) // check there are no empty regions (for each point, the region where it lays)
    {  bitmask=0;
       for(j=0;j<ncuts;j++)
       {  dim = cutlines[j].dim;
@@ -269,8 +283,8 @@ void Tree::regionBitmasks()
          if(X[i][dim]>val)
             bitmask |= (1 << j);  // mette a 1 il j-esimo bit da destra (i cut sarammo da dx a sx !!!!)
       }
-      myCluster.push_back(bitmask);   // cluster in cui cade il punto i
-      clusters[bitmask].push_back(i); // punti dentro ogni cluster
+      ptCluster.push_back(bitmask);     // cluster in cui cade il punto i
+      regCluster[bitmask].push_back(i); // punti dentro ogni cluster
       if(find(bitMaskRegion.begin(), bitMaskRegion.end(), bitmask) == bitMaskRegion.end()) // se non c'è già'
          bitMaskRegion.push_back(bitmask); // aggiungi bitmask dei cluster
    }

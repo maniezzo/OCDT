@@ -41,9 +41,9 @@ class Tree
       vector<vector<int>> ptClass; // indices of the classes
       vector<vector<float>> X;     // features
       vector<int> Y;               // classes
-      map<unsigned long, vector<int>> clusters; // points of each cluster
-      vector<unsigned long> myCluster;          // cluster of each point
-      vector<unsigned long> bitMaskRegion;      // list of bitmasks encoding regions of attribute space ndim-dimensional
+      map<unsigned long, vector<int>> regCluster; // points of each cluster
+      vector<unsigned long> ptCluster;            // cluster of each point
+      vector<unsigned long> bitMaskRegion;        // list of bitmasks encoding regions of attribute space ndim-dimensional
 
       int ndim;     // num dimensions
       int n;        // num points
