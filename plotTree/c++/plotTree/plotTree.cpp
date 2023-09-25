@@ -107,7 +107,7 @@ void Tree::DFS(int s)
                   cutBM = -1; // will be leaf
                si = {l,cutBM};
                stack.push(si);
-               cout << "Push node " << l << endl;
+               cout << "Push node " << l << " num.points " << nodePoints[decTree[l].idNodePoints].size() << endl;
             }
 
             pointsRightSon(s); // lista rightPoints, punti a destra del cut del nodo, saranno nel figlio dx
@@ -122,7 +122,7 @@ void Tree::DFS(int s)
                   cutBM = -1; // will be leaf
                si = {r,cutBM};
                stack.push(si);
-               cout << "Push node " << r << endl;
+               cout << "Push node " << r << " num.points " << nodePoints[decTree[r].idNodePoints].size() << endl;
             }
          }
          else // leaf node, all points of the same class
@@ -222,7 +222,7 @@ void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode, int cutBitMa
    }
 
 l0:Node N;
-   N.id = decTree.size();
+   N.id       = decTree.size()-1;
    N.idCut    = (isSameCLass ? -1 : idm);
    N.cutDim   = (isSameCLass ? -1 : cutlines[idm].dim);
    N.cutValue = (isSameCLass ? -1 : cutlines[idm].cutval);
@@ -318,6 +318,7 @@ void Tree::readData(string dataFileName)
    // leggo i punti
    ifstream f;
    string dataSetFile = "..//..//..//data//" + dataFileName + ".csv";
+   cout << "Opening datafile " << dataSetFile << endl;
    f.open(dataSetFile);
    if (f.is_open())
    {  getline(f, line);  // headers
@@ -332,7 +333,7 @@ void Tree::readData(string dataFileName)
          elem = split(line, ',');
          id   = stoi(elem[0]);
          //if (id > 40 && !(id > 100 && id < 141)) goto l0;
-         cout << "Read node " << id << endl;
+         //cout << "Read node " << id << endl;
          for (i = 1; i < 1 + ndim; i++)         
             if(dataFileName != "iris_setosa") // || (i==2 || i==3))  // FILTERING DATA for iris_setosa
             {  d = stof(elem[i]);
