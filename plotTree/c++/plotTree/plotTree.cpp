@@ -181,17 +181,13 @@ void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode, int cutBitMa
    double h=0,maxh = -1, minh=DBL_MAX;
    bool isSameCLass = false;  // all points of the same class
    bool isMinimal = true;     // true: minimal entropy, false: maximal entropy
-   double dummy0; // valora da dare all'entropia con prob 0
 
    if(sameClass(idnode)) // tutti i punti della stessa classe
    {  isSameCLass = true;
       goto l0;
    }
 
-   if (isMinimal)
-      dummy0 = DBL_MAX/2;
-   else
-      dummy0 = 0;
+   sum = nodePoints[idnode].size();
 
    // contingency table e taglio di entropia massima/minima
    // cerco il cut che sparpaglia di più/meno i punti nelle varie regioni
@@ -203,22 +199,22 @@ void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode, int cutBitMa
          continue;
       }
       
-      if(h >= -1) // mettere sameclass, adesso fake
+      int sum0 = 0, sum1 = 0;  // num punti sotto / sopra il cut
+      for (k = 0; k < nclasses; k++)
+      {  sum0 += freq[i][0][k];
+         sum1 += freq[i][1][k];
+      }
+
+      if(sum0==0 || sum1==0) continue;
+      else
       {  sum = 0;
          for(j=0;j<2;j++)
             for (k = 0; k < nclasses; k++)
                sum += freq[i][j][k];
          h = 0;   // entropia del cut, su num punti sopra / sotto cut
-         int sum0=0,sum1=0;  // num punti sotto / sopra il cut
-         for(k=0;k<nclasses;k++)
-         {  sum0 += freq[i][0][k];
-            sum1 += freq[i][1][k];
-         }
-         h += -(sum0 / sum) * (sum0 > 0 ? log(sum0 / sum) : dummy0) 
-              -(sum1 / sum) * (sum1 > 0 ? log(sum1 / sum) : dummy0);
+         h += -(sum0 / sum) * (sum0 > 0 ? log(sum0 / sum) : 0) 
+              -(sum1 / sum) * (sum1 > 0 ? log(sum1 / sum) : 0);
       }
-      else
-         h = DBL_MAX;
 
       if (isMinimal && h < minh)  // min entropy
       {  minh = h;
@@ -226,8 +222,7 @@ void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode, int cutBitMa
       }
 
       if (!isMinimal && h > maxh) // max entropy
-      {
-         maxh = h;
+      {  maxh = h;
          idm = i; // cut di entropia massima
       }
    }
