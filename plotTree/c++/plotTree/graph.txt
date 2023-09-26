@@ -2,32 +2,44 @@ digraph G {
 graph[fontname = "helvetica"]
 node[fontname = "helvetica"]
 edge[fontname = "helvetica"]
-0 [label = "1 (cut 2) 
+0 [label = "0 (cut 2) 
 dim 0 val. 5.5"]
-1 [label = "2 (cut 4) 
-dim 1 val. 5.5"]
-2 [shape = box label = "3
+1 [label = "1 (cut 6) 
+dim 1 val. 8.5"]
+2 [shape = box label = "2
  class 1"]
-3 [label = "4 (cut 3) 
-dim 1 val. 3.5"]
-4 [label = "5 (cut 3) 
-dim 1 val. 3.5"]
-5 [shape = box label = "6
- class 0"]
-6 [label = "7 (cut 1) 
+3 [label = "3 (cut 1) 
 dim 0 val. 4.5"]
-7 [shape = box label = "8
+4 [label = "4 (cut 3) 
+dim 1 val. 3.5"]
+5 [label = "5 (cut 5) 
+dim 1 val. 6.5"]
+6 [label = "6 (cut 0) 
+dim 0 val. 3.5"]
+7 [label = "7 (cut 0) 
+dim 0 val. 3.5"]
+8 [label = "8 (cut 3) 
+dim 1 val. 3.5"]
+9 [label = "9 (cut 4) 
+dim 1 val. 5.5"]
+10 [shape = box label = "10
  class 0"]
-8 [shape = box label = "9
+11 [shape = box label = "11
+ class 0"]
+12 [shape = box label = "12
  class 2"]
-1 -> 1
-1 -> 2
-2 -> 3
-2 -> 4
-4 -> 5
-4 -> 6
-7 -> 7
-7 -> 8
+0 -> 1
+0 -> 2
+1 -> 3
+1 -> 4
+3 -> 5
+3 -> 6
+5 -> 7
+5 -> 8
+7 -> 9
+7 -> 10
+9 -> 11
+9 -> 12
 labelloc = "t"
 label = "test6"
 }

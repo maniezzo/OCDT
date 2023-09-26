@@ -146,27 +146,28 @@ bool Tree::sameClass(int node)
 
 // 3D contingency table, number of cases per cut and per value. Works on the regions not on the points
 void Tree::newNode(int idnode, int cutBitMask)
-{  int i,j,k,ptClass;
+{  int i,j,k,dim,ptClass;
    vector<vector<vector<int>>> freq (ncuts, vector<vector<int>>(2,vector<int>(nclasses,0))); // 3D: ncuts, region bit, class
    vector<int> lstNodeClust;
    
-   for (i = 0; i < nodePoints[decTree[idnode].idNodePoints].size(); i++)
-   {
-      j = nodePoints[decTree[idnode].idNodePoints][i];   // punto del nodo
+   // DISATTIVO I CLUSTER, questo loop non serve. Forse c'è un errore
+   for (i = 0; i < nodePoints[idnode].size(); i++)
+   {  j = nodePoints[idnode][i];   // punto del nodo
       if (find(lstNodeClust.begin(), lstNodeClust.end(), ptCluster[j]) == lstNodeClust.end())
          lstNodeClust.push_back(ptCluster[j]); // se non c'è già
    }
 
-   // contingency table (num regions per cut, per attr. value (above/below cut), per class
-   // in freq adesso numero di regioni significative che vengono discriminate dal cut
-   for (i = 0; i < lstNodeClust.size(); i++)     // for each bitmask (region)
-   {  ptClass = Y[regCluster[bitMaskRegion[i]][0]]; // class of the region. Bitmasks encode regions. In regCluster points of each region
+   // >>> contingency table: 1-num regions per cut 2-per attr. value (above/below cut) 3-per class <<<
+   // for (i = 0; i < lstNodeClust.size(); i++)     // DISATTIVATO, for each bitmask (region), se attivo bisogna cambiare sotto con bitMaskRegion[i]
+   for (i = 0; i < nodePoints[idnode].size(); i++)
+   {  ptClass = Y[nodePoints[idnode][i]];  //[regCluster[bitMaskRegion[i]][0]]; // class of the region. Bitmasks encode regions. In regCluster points of each region
       for (j = 0; j < ncuts; j++)
-      {  //dim = cutlines[j].dim;
-         if(bitMaskRegion[i]&(1 << j)) // region bitmask (NOT CUT)
-            freq[j][1][ptClass] += regCluster[bitMaskRegion[i]].size(); // numero di punti
+      {  dim = cutlines[j].dim;
+         //if(bitMaskRegion[i]&(1 << j)) // region bitmask (NOT CUT)
+         if(X[nodePoints[idnode][i]][dim] > cutlines[j].cutval)
+            freq[j][1][ptClass] += 1; //regCluster[bitMaskRegion[i]].size(); // numero di punti sopra il cut
          else
-            freq[j][0][ptClass] += regCluster[bitMaskRegion[i]].size(); // numero di punti
+            freq[j][0][ptClass] += 1; //regCluster[bitMaskRegion[i]].size(); // numero di punti sotto al cut
       }
    }
    defineNode(freq,idnode, cutBitMask);
@@ -180,11 +181,17 @@ void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode, int cutBitMa
    double h=0,maxh = -1, minh=DBL_MAX;
    bool isSameCLass = false;  // all points of the same class
    bool isMinimal = true;     // true: minimal entropy, false: maximal entropy
+   double dummy0; // valora da dare all'entropia con prob 0
 
    if(sameClass(idnode)) // tutti i punti della stessa classe
    {  isSameCLass = true;
       goto l0;
    }
+
+   if (isMinimal)
+      dummy0 = DBL_MAX/2;
+   else
+      dummy0 = 0;
 
    // contingency table e taglio di entropia massima/minima
    // cerco il cut che sparpaglia di più/meno i punti nelle varie regioni
@@ -201,10 +208,14 @@ void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode, int cutBitMa
          for(j=0;j<2;j++)
             for (k = 0; k < nclasses; k++)
                sum += freq[i][j][k];
-         h = 0;   // entropia del cut
-         for (j = 0; j < 2; j++)
-            for(k=0;k<nclasses;k++)
-               h += -(freq[i][j][k] / sum) * (freq[i][j][k]>0 ? log(freq[i][j][k] / sum) : 0);
+         h = 0;   // entropia del cut, su num punti sopra / sotto cut
+         int sum0=0,sum1=0;  // num punti sotto / sopra il cut
+         for(k=0;k<nclasses;k++)
+         {  sum0 += freq[i][0][k];
+            sum1 += freq[i][1][k];
+         }
+         h += -(sum0 / sum) * (sum0 > 0 ? log(sum0 / sum) : dummy0) 
+              -(sum1 / sum) * (sum1 > 0 ? log(sum1 / sum) : dummy0);
       }
       else
          h = DBL_MAX;
@@ -222,7 +233,7 @@ void Tree::defineNode(vector<vector<vector<int>>> freq, int idnode, int cutBitMa
    }
 
 l0:Node N;
-   N.id       = decTree.size()-1;
+   N.id       = decTree.size();
    N.idCut    = (isSameCLass ? -1 : idm);
    N.cutDim   = (isSameCLass ? -1 : cutlines[idm].dim);
    N.cutValue = (isSameCLass ? -1 : cutlines[idm].cutval);
