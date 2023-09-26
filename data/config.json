@@ -1,5 +1,5 @@
 { 
-   "datafile" : "test6", 
+   "datafile" : "iris", 
    "datapath" : "c:\\git\\ODT\\data\\",
 	"LPsolver" : "GLOP",
 	"IPsolver" : "SCIP"
