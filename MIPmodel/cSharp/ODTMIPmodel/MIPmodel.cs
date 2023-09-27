@@ -24,8 +24,7 @@ namespace ODTMIPmodel
       int[] classe;
 
       public MIPmodel()
-      {
-         coord = null;
+      {  coord = null;
       }
       public void run_MIP()
       {

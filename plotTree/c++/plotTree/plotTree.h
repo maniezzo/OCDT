@@ -63,4 +63,5 @@ class Tree
       void pointsLeftSon(int idnode);      // points smaller than cut
       void pointsRightSon(int idnode);     // points bigger than cut
       void writeTree(string dataFileName); // writes the tree on a file, input for graphviz
+      void checkSol();                     // checks the correctness of the tree
 };

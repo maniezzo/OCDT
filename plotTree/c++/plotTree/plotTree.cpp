@@ -29,6 +29,29 @@ void Tree::goTree()
    regionBitmasks();  // bitmasks, identificatori bitmask delle regioni del dominio
    DFS(0);
    writeTree(dataFileName);
+   checkSol();
+}
+
+// checks the correctness of the tree
+void Tree::checkSol()
+{  int i,j,idNode;
+
+   for (i = 0; i < n; i++)
+   {
+      idNode=0;
+      while (decTree[idNode].cutDim >= 0)
+      {
+         if(X[i][decTree[idNode].cutDim] < decTree[idNode].cutValue)
+            idNode = decTree[idNode].left;
+         else
+            idNode = decTree[idNode].right;
+      }
+      if (decTree[idNode].idClass != Y[i])
+      {  cout << "ERROR, misclassified record " << i << endl;
+         return;
+      }
+   }
+   cout << "checkSol: solution is ok";
 }
 
 // writes the tree on a file, input for graphviz
