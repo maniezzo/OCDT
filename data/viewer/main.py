@@ -91,14 +91,41 @@ def plotBboxes(list_colours):
 
    plt.show()
    return
+def checkUnique(toRemove,toAdapt):
+   # checks for duplicated rows in the dataset
+   values = np.unique(df.iloc[:, 1:-1].values, axis=0)  # check for duplicate rows
+   if(len(df) != len(values)):
+      print(f"Duplicated rows! num {len(df) - len(values)}")
+   else:
+      print("No duplicated rows")
+   for i1 in range(len(df)-1):
+      for i2 in range(i1+1,len(df)):
+         isEqual = True
+         for d in range(1,len(df.columns)-1):
+            if (df.iloc[i1,d] != df.iloc[i2,d]):
+               isEqual = False
+               break
+         if(isEqual):
+            if(df.iloc[i1,-1] == df.iloc[i2,-1]):
+               toRemove[i2] = 1;
+            else:
+               toAdapt[i1] = 1;
+               toAdapt[i2] = 1;
+               print(f"Records {i1} and {i2} are equal, classes {df.iloc[i1,-1]} and {df.iloc[i2,-1]}")
+      if(i1%100==0):
+         print(f"i1 = {i1}")
+   return toRemove,toAdapt
 
 if __name__ == "__main__":
    plt.style.use('seaborn') # sono gusti
    rng = np.random.default_rng() # new random number generator
 
-   dataset = "test5"
+   dataset = "inliers"
    df = pd.read_csv("../"+dataset+".csv")
-   values = np.unique(df.iloc[:,1:-1].values, axis=0) # check for duplicate rows
+   toRemove = np.zeros(len(df))
+   toAdapt  = np.zeros(len(df))
+   toRemove,toAdapt = checkUnique(toRemove,toAdapt)
+   np.savetxt("toAdapt.csv",toAdapt,delimiter=',')
 
    if(len(df)>100):
       dfSmall = df.iloc[df.index%10==1]  # sampling, 1 in 10
