@@ -124,8 +124,29 @@ if __name__ == "__main__":
    df = pd.read_csv("../"+dataset+".csv")
    toRemove = np.zeros(len(df))
    toAdapt  = np.zeros(len(df))
-   toRemove,toAdapt = checkUnique(toRemove,toAdapt)
-   np.savetxt("toAdapt.csv",toAdapt,delimiter=',')
+   fReadFiles = True
+   if(fReadFiles):
+      toAdapt = np.loadtxt("toAdapt.csv",delimiter=',')
+   else:
+      toRemove,toAdapt = checkUnique(toRemove,toAdapt)
+      np.savetxt("toAdapt.csv",toAdapt,delimiter=',')
+   dfAdapt = df[ toAdapt > 0 ]
+   i=0
+   row = list( dfAdapt.iloc[i,1:-1].values )
+   # Create a boolean mask for equality
+   mask = (df.iloc[:,1:-1].values == row).all(axis=1)
+   # Filter the DataFrame based on the mask
+   filteredRows = df[mask]
+   # find if the filtered rows have more 0s or 1s
+   num0 = len (filteredRows[ filteredRows['class']==0])
+   num1 = len (filteredRows[ filteredRows['class']==1])
+   # Create a set of unique 'id' values from filteredRows for efficient lookup
+   id_set = set(filteredRows['id'])
+   if(num0>num1):
+      # Update 'class' column in df to 0 where 'id' is in filteredRows
+      df.loc[df['id'].isin(id_set), 'class'] = 0
+   else:
+      df.loc[df['id'].isin(id_set), 'class'] = 1
 
    if(len(df)>100):
       dfSmall = df.iloc[df.index%10==1]  # sampling, 1 in 10
