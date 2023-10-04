@@ -122,32 +122,50 @@ if __name__ == "__main__":
 
    dataset = "inliers"
    df = pd.read_csv("../"+dataset+".csv")
+
+   fReadFiles = True  # data from file or computed from dataset
    toRemove = np.zeros(len(df))
    toAdapt  = np.zeros(len(df))
-   fReadFiles = True
    if(fReadFiles):
       toAdapt = np.loadtxt("toAdapt.csv",delimiter=',')
    else:
       toRemove,toAdapt = checkUnique(toRemove,toAdapt)
-      np.savetxt("toAdapt.csv",toAdapt,delimiter=',')
+      np.savetxt("toAdapt.csv",  toAdapt,  delimiter=',')
+      np.savetxt("toRemove.csv", toRemove, delimiter=',')
    dfAdapt = df[ toAdapt > 0 ]
-   i=0
-   row = list( dfAdapt.iloc[i,1:-1].values )
-   # Create a boolean mask for equality
-   mask = (df.iloc[:,1:-1].values == row).all(axis=1)
-   # Filter the DataFrame based on the mask
-   filteredRows = df[mask]
-   # find if the filtered rows have more 0s or 1s
-   num0 = len (filteredRows[ filteredRows['class']==0])
-   num1 = len (filteredRows[ filteredRows['class']==1])
-   # Create a set of unique 'id' values from filteredRows for efficient lookup
-   id_set = set(filteredRows['id'])
-   if(num0>num1):
-      # Update 'class' column in df to 0 where 'id' is in filteredRows
-      df.loc[df['id'].isin(id_set), 'class'] = 0
-   else:
-      df.loc[df['id'].isin(id_set), 'class'] = 1
 
+   for i in range(len(dfAdapt)):
+      row = list( dfAdapt.iloc[i,1:-1].values )
+      # Create a boolean mask of all rows equal to the reference one
+      mask = (df.iloc[:,1:-1].values == row).all(axis=1)
+      # Filter the DataFrame based on the mask
+      filteredRows = df[mask]
+      # find if the filtered rows have more 0s or 1s
+      num0 = len (filteredRows[ filteredRows['class']==0])
+      num1 = len (filteredRows[ filteredRows['class']==1])
+      # Create a set of unique 'id' values from filteredRows for efficient lookup
+      id_set = set(filteredRows['id'])
+      if(num0>num1):
+         # Update 'class' column in df to 0 where 'id' is in filteredRows
+         df.loc[df['id'].isin(id_set), 'class'] = 0
+      else:
+         df.loc[df['id'].isin(id_set), 'class'] = 1
+
+   if(fReadFiles):
+      toRemove = np.loadtxt("toRemove.csv",delimiter=',')
+   else:
+      toAdapt  = np.zeros(len(df))
+      toRemove = np.zeros(len(df))
+      toRemove,toAdapt = checkUnique(toRemove,toAdapt)
+      np.savetxt("toRemove.csv", toRemove, delimiter=',')
+
+   # remove all duplicate rows
+   df = df.drop_duplicates(subset=df.columns[1:-1])
+   toRemove = np.zeros(len(df))
+   toRemove, toAdapt = checkUnique(toRemove, toAdapt)
+   df.to_csv("inliers2.csv")
+
+   exit()
    if(len(df)>100):
       dfSmall = df.iloc[df.index%10==1]  # sampling, 1 in 10
       dfSmall.reset_index(drop=True,inplace=True) # does not insert old index as a column
