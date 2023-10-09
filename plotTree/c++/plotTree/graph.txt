@@ -2,68 +2,1166 @@ digraph G {
 graph[fontname = "helvetica"]
 node[fontname = "helvetica"]
 edge[fontname = "helvetica"]
-0 [label = "0 (cut 0) 
-dim 0 val. 6.75"]
-1 [label = "1 (cut 3) 
-dim 2 val. 4.95"]
-2 [label = "2 (cut 3) 
-dim 2 val. 4.95"]
-3 [shape = box label = "3
- class 1"]
-4 [shape = box label = "4
- class 2"]
-5 [label = "5 (cut 5) 
-dim 3 val. 1.75"]
-6 [label = "6 (cut 4) 
-dim 3 val. 1.55"]
-7 [shape = box label = "7
- class 2"]
-8 [label = "8 (cut 5) 
-dim 3 val. 1.75"]
+0 [label = "0 (cut 4) 
+dim 1 val. 7.85"]
+1 [shape = box label = "1
+ class 0"]
+2 [label = "2 (cut 5) 
+dim 1 val. 8.98"]
+3 [label = "3 (cut 0) 
+dim 0 val. 1.5"]
+4 [label = "4 (cut 6) 
+dim 1 val. 11.7"]
+5 [shape = box label = "5
+ class 0"]
+6 [label = "6 (cut 7) 
+dim 1 val. 16.32"]
+7 [label = "7 (cut 57) 
+dim 2 val. 3.5"]
+8 [label = "8 (cut 8) 
+dim 1 val. 16.81"]
 9 [shape = box label = "9
  class 1"]
-10 [shape = box label = "10
- class 2"]
-11 [label = "11 (cut 4) 
-dim 3 val. 1.55"]
-12 [label = "12 (cut 1) 
-dim 1 val. 3.05"]
+10 [label = "10 (cut 54) 
+dim 1 val. 19446.2"]
+11 [label = "11 (cut 74) 
+dim 5 val. 24.5"]
+12 [label = "12 (cut 55) 
+dim 2 val. 1.5"]
 13 [shape = box label = "13
- class 2"]
-14 [shape = box label = "14
- class 1"]
-15 [label = "15 (cut 2) 
-dim 2 val. 2.45"]
-16 [label = "16 (cut 1) 
-dim 1 val. 3.05"]
+ class 0"]
+14 [label = "14 (cut 57) 
+dim 2 val. 3.5"]
+15 [shape = box label = "15
+ class 0"]
+16 [label = "16 (cut 61) 
+dim 4 val. 0.18375"]
 17 [shape = box label = "17
- class 2"]
-18 [shape = box label = "18
- class 1"]
+ class 0"]
+18 [label = "18 (cut 0) 
+dim 0 val. 1.5"]
 19 [shape = box label = "19
  class 0"]
-20 [shape = box label = "20
+20 [label = "20 (cut 63) 
+dim 4 val. 0.58875"]
+21 [shape = box label = "21
+ class 0"]
+22 [label = "22 (cut 2) 
+dim 0 val. 5.5"]
+23 [shape = box label = "23
+ class 0"]
+24 [label = "24 (cut 73) 
+dim 5 val. 11.5"]
+25 [shape = box label = "25
  class 1"]
+26 [label = "26 (cut 3) 
+dim 0 val. 10.5"]
+27 [shape = box label = "27
+ class -2147483648"]
+28 [label = "28 (cut 65) 
+dim 4 val. 1.24969"]
+29 [shape = box label = "29
+ class 0"]
+30 [label = "30 (cut 59) 
+dim 3 val. 43.5"]
+31 [shape = box label = "31
+ class 0"]
+32 [label = "32 (cut 58) 
+dim 2 val. 7.5"]
+33 [label = "33 (cut 74) 
+dim 5 val. 24.5"]
+34 [label = "34 (cut 74) 
+dim 5 val. 24.5"]
+35 [shape = box label = "35
+ class -2147483648"]
+36 [shape = box label = "36
+ class 0"]
+37 [shape = box label = "37
+ class -2147483648"]
+38 [shape = box label = "38
+ class 1"]
+39 [label = "39 (cut 67) 
+dim 4 val. 12.0044"]
+40 [label = "40 (cut 3) 
+dim 0 val. 10.5"]
+41 [shape = box label = "41
+ class 0"]
+42 [label = "42 (cut 47) 
+dim 1 val. 1349.25"]
+43 [shape = box label = "43
+ class 0"]
+44 [label = "44 (cut 48) 
+dim 1 val. 1564"]
+45 [shape = box label = "45
+ class 0"]
+46 [label = "46 (cut 49) 
+dim 1 val. 2139"]
+47 [shape = box label = "47
+ class 0"]
+48 [label = "48 (cut 51) 
+dim 1 val. 3214"]
+49 [shape = box label = "49
+ class 1"]
+50 [label = "50 (cut 55) 
+dim 2 val. 1.5"]
+51 [shape = box label = "51
+ class 1"]
+52 [label = "52 (cut 52) 
+dim 1 val. 4752"]
+53 [label = "53 (cut 58) 
+dim 2 val. 7.5"]
+54 [label = "54 (cut 56) 
+dim 2 val. 2.5"]
+55 [label = "55 (cut 53) 
+dim 1 val. 7732"]
+56 [label = "56 (cut 57) 
+dim 2 val. 3.5"]
+57 [shape = box label = "57
+ class 0"]
+58 [label = "58 (cut 58) 
+dim 2 val. 7.5"]
+59 [label = "59 (cut 53) 
+dim 1 val. 7732"]
+60 [label = "60 (cut 53) 
+dim 1 val. 7732"]
+61 [shape = box label = "61
+ class 0"]
+62 [shape = box label = "62
+ class -2147483648"]
+63 [shape = box label = "63
+ class -2147483648"]
+64 [shape = box label = "64
+ class 0"]
+65 [shape = box label = "65
+ class -2147483648"]
+66 [shape = box label = "66
+ class 1"]
+67 [label = "67 (cut 57) 
+dim 2 val. 3.5"]
+68 [shape = box label = "68
+ class 0"]
+69 [label = "69 (cut 56) 
+dim 2 val. 2.5"]
+70 [shape = box label = "70
+ class 0"]
+71 [shape = box label = "71
+ class 0"]
+72 [shape = box label = "72
+ class 1"]
+73 [label = "73 (cut 59) 
+dim 3 val. 43.5"]
+74 [label = "74 (cut 46) 
+dim 1 val. 847.55"]
+75 [shape = box label = "75
+ class 1"]
+76 [label = "76 (cut 48) 
+dim 1 val. 1564"]
+77 [shape = box label = "77
+ class 0"]
+78 [label = "78 (cut 0) 
+dim 0 val. 1.5"]
+79 [shape = box label = "79
+ class 0"]
+80 [label = "80 (cut 1) 
+dim 0 val. 2.5"]
+81 [shape = box label = "81
+ class 0"]
+82 [label = "82 (cut 2) 
+dim 0 val. 5.5"]
+83 [shape = box label = "83
+ class 0"]
+84 [label = "84 (cut 49) 
+dim 1 val. 2139"]
+85 [shape = box label = "85
+ class 1"]
+86 [label = "86 (cut 55) 
+dim 2 val. 1.5"]
+87 [label = "87 (cut 52) 
+dim 1 val. 4752"]
+88 [label = "88 (cut 59) 
+dim 3 val. 43.5"]
+89 [shape = box label = "89
+ class -2147483648"]
+90 [label = "90 (cut 51) 
+dim 1 val. 3214"]
+91 [shape = box label = "91
+ class 0"]
+92 [label = "92 (cut 73) 
+dim 5 val. 11.5"]
+93 [shape = box label = "93
+ class 1"]
+94 [label = "94 (cut 57) 
+dim 2 val. 3.5"]
+95 [shape = box label = "95
+ class 1"]
+96 [label = "96 (cut 52) 
+dim 1 val. 4752"]
+97 [shape = box label = "97
+ class 0"]
+98 [label = "98 (cut 53) 
+dim 1 val. 7732"]
+99 [label = "99 (cut 58) 
+dim 2 val. 7.5"]
+100 [label = "100 (cut 58) 
+dim 2 val. 7.5"]
+101 [shape = box label = "101
+ class 0"]
+102 [shape = box label = "102
+ class -2147483648"]
+103 [shape = box label = "103
+ class -2147483648"]
+104 [shape = box label = "104
+ class 1"]
+105 [shape = box label = "105
+ class 0"]
+106 [shape = box label = "106
+ class 1"]
+107 [label = "107 (cut 58) 
+dim 2 val. 7.5"]
+108 [label = "108 (cut 58) 
+dim 2 val. 7.5"]
+109 [label = "109 (cut 66) 
+dim 4 val. 2.22938"]
+110 [shape = box label = "110
+ class 0"]
+111 [shape = box label = "111
+ class 0"]
+112 [label = "112 (cut 53) 
+dim 1 val. 7732"]
+113 [label = "113 (cut 55) 
+dim 2 val. 1.5"]
+114 [label = "114 (cut 55) 
+dim 2 val. 1.5"]
+115 [shape = box label = "115
+ class 1"]
+116 [shape = box label = "116
+ class 0"]
+117 [shape = box label = "117
+ class 0"]
+118 [label = "118 (cut 52) 
+dim 1 val. 4752"]
+119 [label = "119 (cut 56) 
+dim 2 val. 2.5"]
+120 [shape = box label = "120
+ class 0"]
+121 [label = "121 (cut 47) 
+dim 1 val. 1349.25"]
+122 [label = "122 (cut 73) 
+dim 5 val. 11.5"]
+123 [shape = box label = "123
+ class 1"]
+124 [label = "124 (cut 47) 
+dim 1 val. 1349.25"]
+125 [shape = box label = "125
+ class 1"]
+126 [label = "126 (cut 49) 
+dim 1 val. 2139"]
+127 [shape = box label = "127
+ class 0"]
+128 [shape = box label = "128
+ class 1"]
+129 [shape = box label = "129
+ class 0"]
+130 [shape = box label = "130
+ class 1"]
+131 [label = "131 (cut 53) 
+dim 1 val. 7732"]
+132 [label = "132 (cut 15) 
+dim 1 val. 44.97"]
+133 [shape = box label = "133
+ class 0"]
+134 [label = "134 (cut 16) 
+dim 1 val. 49.48"]
+135 [shape = box label = "135
+ class 1"]
+136 [label = "136 (cut 29) 
+dim 1 val. 92.57"]
+137 [shape = box label = "137
+ class 1"]
+138 [label = "138 (cut 41) 
+dim 1 val. 375.5"]
+139 [label = "139 (cut 62) 
+dim 4 val. 0.371875"]
+140 [label = "140 (cut 43) 
+dim 1 val. 485.5"]
+141 [shape = box label = "141
+ class 0"]
+142 [label = "142 (cut 62) 
+dim 4 val. 0.371875"]
+143 [shape = box label = "143
+ class 0"]
+144 [label = "144 (cut 63) 
+dim 4 val. 0.58875"]
+145 [shape = box label = "145
+ class 0"]
+146 [label = "146 (cut 0) 
+dim 0 val. 1.5"]
+147 [label = "147 (cut 46) 
+dim 1 val. 847.55"]
+148 [label = "148 (cut 46) 
+dim 1 val. 847.55"]
+149 [shape = box label = "149
+ class 0"]
+150 [label = "150 (cut 1) 
+dim 0 val. 2.5"]
+151 [shape = box label = "151
+ class 0"]
+152 [label = "152 (cut 49) 
+dim 1 val. 2139"]
+153 [shape = box label = "153
+ class 0"]
+154 [label = "154 (cut 53) 
+dim 1 val. 7732"]
+155 [label = "155 (cut 66) 
+dim 4 val. 2.22938"]
+156 [shape = box label = "156
+ class 0"]
+157 [label = "157 (cut 52) 
+dim 1 val. 4752"]
+158 [shape = box label = "158
+ class 1"]
+159 [shape = box label = "159
+ class -2147483648"]
+160 [shape = box label = "160
+ class 1"]
+161 [shape = box label = "161
+ class 1"]
+162 [shape = box label = "162
+ class 0"]
+163 [shape = box label = "163
+ class 0"]
+164 [label = "164 (cut 63) 
+dim 4 val. 0.58875"]
+165 [shape = box label = "165
+ class 1"]
+166 [shape = box label = "166
+ class 0"]
+167 [label = "167 (cut 9) 
+dim 1 val. 29"]
+168 [label = "168 (cut 60) 
+dim 4 val. 0.0796875"]
+169 [label = "169 (cut 0) 
+dim 0 val. 1.5"]
+170 [label = "170 (cut 61) 
+dim 4 val. 0.18375"]
+171 [label = "171 (cut 1) 
+dim 0 val. 2.5"]
+172 [label = "172 (cut 0) 
+dim 0 val. 1.5"]
+173 [label = "173 (cut 55) 
+dim 2 val. 1.5"]
+174 [label = "174 (cut 1) 
+dim 0 val. 2.5"]
+175 [label = "175 (cut 62) 
+dim 4 val. 0.371875"]
+176 [label = "176 (cut 62) 
+dim 4 val. 0.371875"]
+177 [label = "177 (cut 56) 
+dim 2 val. 2.5"]
+178 [label = "178 (cut 55) 
+dim 2 val. 1.5"]
+179 [label = "179 (cut 2) 
+dim 0 val. 5.5"]
+180 [label = "180 (cut 56) 
+dim 2 val. 2.5"]
+181 [shape = box label = "181
+ class 0"]
+182 [label = "182 (cut 63) 
+dim 4 val. 0.58875"]
+183 [shape = box label = "183
+ class 0"]
+184 [label = "184 (cut 73) 
+dim 5 val. 11.5"]
+185 [label = "185 (cut 66) 
+dim 4 val. 2.22938"]
+186 [label = "186 (cut 57) 
+dim 2 val. 3.5"]
+187 [shape = box label = "187
+ class 0"]
+188 [label = "188 (cut 66) 
+dim 4 val. 2.22938"]
+189 [shape = box label = "189
+ class 1"]
+190 [shape = box label = "190
+ class 0"]
+191 [label = "191 (cut 57) 
+dim 2 val. 3.5"]
+192 [label = "192 (cut 57) 
+dim 2 val. 3.5"]
+193 [shape = box label = "193
+ class -2147483648"]
+194 [shape = box label = "194
+ class 0"]
+195 [shape = box label = "195
+ class -2147483648"]
+196 [shape = box label = "196
+ class -2147483648"]
+197 [shape = box label = "197
+ class 1"]
+198 [shape = box label = "198
+ class 0"]
+199 [shape = box label = "199
+ class 0"]
+200 [label = "200 (cut 57) 
+dim 2 val. 3.5"]
+201 [shape = box label = "201
+ class 0"]
+202 [shape = box label = "202
+ class 1"]
+203 [shape = box label = "203
+ class 1"]
+204 [shape = box label = "204
+ class 0"]
+205 [shape = box label = "205
+ class 1"]
+206 [shape = box label = "206
+ class 0"]
+207 [label = "207 (cut 0) 
+dim 0 val. 1.5"]
+208 [shape = box label = "208
+ class 1"]
+209 [label = "209 (cut 56) 
+dim 2 val. 2.5"]
+210 [shape = box label = "210
+ class 0"]
+211 [shape = box label = "211
+ class 0"]
+212 [shape = box label = "212
+ class 1"]
+213 [shape = box label = "213
+ class 0"]
+214 [shape = box label = "214
+ class 1"]
+215 [label = "215 (cut 1) 
+dim 0 val. 2.5"]
+216 [label = "216 (cut 11) 
+dim 1 val. 31"]
+217 [label = "217 (cut 0) 
+dim 0 val. 1.5"]
+218 [label = "218 (cut 12) 
+dim 1 val. 32.5"]
+219 [shape = box label = "219
+ class 1"]
+220 [label = "220 (cut 13) 
+dim 1 val. 38"]
+221 [label = "221 (cut 62) 
+dim 4 val. 0.371875"]
+222 [label = "222 (cut 14) 
+dim 1 val. 39.495"]
+223 [label = "223 (cut 0) 
+dim 0 val. 1.5"]
+224 [label = "224 (cut 15) 
+dim 1 val. 44.97"]
+225 [label = "225 (cut 2) 
+dim 0 val. 5.5"]
+226 [label = "226 (cut 16) 
+dim 1 val. 49.48"]
+227 [label = "227 (cut 57) 
+dim 2 val. 3.5"]
+228 [label = "228 (cut 17) 
+dim 1 val. 56"]
+229 [label = "229 (cut 57) 
+dim 2 val. 3.5"]
+230 [label = "230 (cut 18) 
+dim 1 val. 60.45"]
+231 [label = "231 (cut 0) 
+dim 0 val. 1.5"]
+232 [label = "232 (cut 19) 
+dim 1 val. 61.45"]
+233 [shape = box label = "233
+ class 1"]
+234 [label = "234 (cut 20) 
+dim 1 val. 63.2"]
+235 [shape = box label = "235
+ class 0"]
+236 [label = "236 (cut 23) 
+dim 1 val. 67.5"]
+237 [label = "237 (cut 0) 
+dim 0 val. 1.5"]
+238 [label = "238 (cut 24) 
+dim 1 val. 79.5"]
+239 [shape = box label = "239
+ class 0"]
+240 [label = "240 (cut 25) 
+dim 1 val. 82"]
+241 [shape = box label = "241
+ class 1"]
+242 [label = "242 (cut 28) 
+dim 1 val. 91.5"]
+243 [label = "243 (cut 63) 
+dim 4 val. 0.58875"]
+244 [label = "244 (cut 29) 
+dim 1 val. 92.57"]
+245 [label = "245 (cut 0) 
+dim 0 val. 1.5"]
+246 [label = "246 (cut 30) 
+dim 1 val. 98.42"]
+247 [label = "247 (cut 65) 
+dim 4 val. 1.24969"]
+248 [label = "248 (cut 31) 
+dim 1 val. 102.5"]
+249 [label = "249 (cut 0) 
+dim 0 val. 1.5"]
+250 [label = "250 (cut 32) 
+dim 1 val. 108.95"]
+251 [shape = box label = "251
+ class 0"]
+252 [label = "252 (cut 33) 
+dim 1 val. 110.98"]
+253 [shape = box label = "253
+ class -2147483648"]
+254 [label = "254 (cut 34) 
+dim 1 val. 146.9"]
+255 [shape = box label = "255
+ class -2147483648"]
+256 [shape = box label = "256
+ class -2147483648"]
+257 [shape = box label = "257
+ class -2147483648"]
+258 [shape = box label = "258
+ class 0"]
+259 [label = "259 (cut 64) 
+dim 4 val. 0.823438"]
+260 [shape = box label = "260
+ class 1"]
+261 [label = "261 (cut 63) 
+dim 4 val. 0.58875"]
+262 [shape = box label = "262
+ class 0"]
+263 [shape = box label = "263
+ class -2147483648"]
+264 [shape = box label = "264
+ class 0"]
+265 [shape = box label = "265
+ class 1"]
+266 [shape = box label = "266
+ class 0"]
+267 [label = "267 (cut 61) 
+dim 4 val. 0.18375"]
+268 [shape = box label = "268
+ class 0"]
+269 [label = "269 (cut 1) 
+dim 0 val. 2.5"]
+270 [shape = box label = "270
+ class 0"]
+271 [label = "271 (cut 0) 
+dim 0 val. 1.5"]
+272 [shape = box label = "272
+ class 0"]
+273 [shape = box label = "273
+ class -2147483648"]
+274 [shape = box label = "274
+ class 0"]
+275 [label = "275 (cut 60) 
+dim 4 val. 0.0796875"]
+276 [shape = box label = "276
+ class 0"]
+277 [shape = box label = "277
+ class -2147483648"]
+278 [shape = box label = "278
+ class 0"]
+279 [shape = box label = "279
+ class 0"]
+280 [shape = box label = "280
+ class 1"]
+281 [label = "281 (cut 1) 
+dim 0 val. 2.5"]
+282 [shape = box label = "282
+ class 0"]
+283 [label = "283 (cut 56) 
+dim 2 val. 2.5"]
+284 [shape = box label = "284
+ class 0"]
+285 [label = "285 (cut 62) 
+dim 4 val. 0.371875"]
+286 [shape = box label = "286
+ class 0"]
+287 [label = "287 (cut 61) 
+dim 4 val. 0.18375"]
+288 [shape = box label = "288
+ class 1"]
+289 [label = "289 (cut 55) 
+dim 2 val. 1.5"]
+290 [shape = box label = "290
+ class 1"]
+291 [label = "291 (cut 60) 
+dim 4 val. 0.0796875"]
+292 [shape = box label = "292
+ class 0"]
+293 [shape = box label = "293
+ class 0"]
+294 [label = "294 (cut 0) 
+dim 0 val. 1.5"]
+295 [shape = box label = "295
+ class -2147483648"]
+296 [shape = box label = "296
+ class 0"]
+297 [label = "297 (cut 55) 
+dim 2 val. 1.5"]
+298 [shape = box label = "298
+ class 1"]
+299 [label = "299 (cut 62) 
+dim 4 val. 0.371875"]
+300 [shape = box label = "300
+ class 1"]
+301 [label = "301 (cut 61) 
+dim 4 val. 0.18375"]
+302 [shape = box label = "302
+ class 1"]
+303 [label = "303 (cut 1) 
+dim 0 val. 2.5"]
+304 [shape = box label = "304
+ class 0"]
+305 [label = "305 (cut 0) 
+dim 0 val. 1.5"]
+306 [label = "306 (cut 60) 
+dim 4 val. 0.0796875"]
+307 [shape = box label = "307
+ class 1"]
+308 [shape = box label = "308
+ class 0"]
+309 [shape = box label = "309
+ class 0"]
+310 [shape = box label = "310
+ class 1"]
+311 [label = "311 (cut 62) 
+dim 4 val. 0.371875"]
+312 [shape = box label = "312
+ class 0"]
+313 [label = "313 (cut 61) 
+dim 4 val. 0.18375"]
+314 [shape = box label = "314
+ class 1"]
+315 [label = "315 (cut 56) 
+dim 2 val. 2.5"]
+316 [shape = box label = "316
+ class 0"]
+317 [label = "317 (cut 55) 
+dim 2 val. 1.5"]
+318 [shape = box label = "318
+ class 0"]
+319 [label = "319 (cut 60) 
+dim 4 val. 0.0796875"]
+320 [shape = box label = "320
+ class 0"]
+321 [label = "321 (cut 0) 
+dim 0 val. 1.5"]
+322 [shape = box label = "322
+ class -2147483648"]
+323 [shape = box label = "323
+ class -2147483648"]
+324 [shape = box label = "324
+ class 0"]
+325 [shape = box label = "325
+ class 1"]
+326 [shape = box label = "326
+ class 0"]
+327 [label = "327 (cut 55) 
+dim 2 val. 1.5"]
+328 [shape = box label = "328
+ class 0"]
+329 [label = "329 (cut 61) 
+dim 4 val. 0.18375"]
+330 [shape = box label = "330
+ class 0"]
+331 [label = "331 (cut 1) 
+dim 0 val. 2.5"]
+332 [shape = box label = "332
+ class 0"]
+333 [shape = box label = "333
+ class 0"]
+334 [shape = box label = "334
+ class -2147483648"]
+335 [label = "335 (cut 55) 
+dim 2 val. 1.5"]
+336 [shape = box label = "336
+ class 0"]
+337 [label = "337 (cut 60) 
+dim 4 val. 0.0796875"]
+338 [shape = box label = "338
+ class 0"]
+339 [shape = box label = "339
+ class -2147483648"]
+340 [shape = box label = "340
+ class 0"]
+341 [label = "341 (cut 57) 
+dim 2 val. 3.5"]
+342 [label = "342 (cut 55) 
+dim 2 val. 1.5"]
+343 [shape = box label = "343
+ class 0"]
+344 [shape = box label = "344
+ class 1"]
+345 [label = "345 (cut 61) 
+dim 4 val. 0.18375"]
+346 [shape = box label = "346
+ class 0"]
+347 [label = "347 (cut 56) 
+dim 2 val. 2.5"]
+348 [label = "348 (cut 0) 
+dim 0 val. 1.5"]
+349 [shape = box label = "349
+ class 0"]
+350 [shape = box label = "350
+ class 1"]
+351 [label = "351 (cut 55) 
+dim 2 val. 1.5"]
+352 [shape = box label = "352
+ class 0"]
+353 [shape = box label = "353
+ class 0"]
+354 [label = "354 (cut 0) 
+dim 0 val. 1.5"]
+355 [label = "355 (cut 60) 
+dim 4 val. 0.0796875"]
+356 [label = "356 (cut 60) 
+dim 4 val. 0.0796875"]
+357 [shape = box label = "357
+ class 1"]
+358 [shape = box label = "358
+ class 0"]
+359 [shape = box label = "359
+ class 1"]
+360 [shape = box label = "360
+ class 0"]
+361 [label = "361 (cut 62) 
+dim 4 val. 0.371875"]
+362 [shape = box label = "362
+ class 1"]
+363 [label = "363 (cut 61) 
+dim 4 val. 0.18375"]
+364 [shape = box label = "364
+ class 0"]
+365 [label = "365 (cut 0) 
+dim 0 val. 1.5"]
+366 [shape = box label = "366
+ class 1"]
+367 [label = "367 (cut 56) 
+dim 2 val. 2.5"]
+368 [label = "368 (cut 55) 
+dim 2 val. 1.5"]
+369 [shape = box label = "369
+ class 0"]
+370 [label = "370 (cut 60) 
+dim 4 val. 0.0796875"]
+371 [shape = box label = "371
+ class 0"]
+372 [shape = box label = "372
+ class 1"]
+373 [label = "373 (cut 55) 
+dim 2 val. 1.5"]
+374 [shape = box label = "374
+ class 1"]
+375 [label = "375 (cut 60) 
+dim 4 val. 0.0796875"]
+376 [label = "376 (cut 60) 
+dim 4 val. 0.0796875"]
+377 [shape = box label = "377
+ class 1"]
+378 [shape = box label = "378
+ class 0"]
+379 [shape = box label = "379
+ class 0"]
+380 [shape = box label = "380
+ class 1"]
+381 [label = "381 (cut 55) 
+dim 2 val. 1.5"]
+382 [shape = box label = "382
+ class 0"]
+383 [label = "383 (cut 60) 
+dim 4 val. 0.0796875"]
+384 [shape = box label = "384
+ class 0"]
+385 [shape = box label = "385
+ class 1"]
+386 [shape = box label = "386
+ class 0"]
 0 -> 1
 0 -> 2
-1 -> 5
-1 -> 6
 2 -> 3
 2 -> 4
-5 -> 11
-5 -> 12
+3 -> 381
+3 -> 382
+4 -> 5
+4 -> 6
 6 -> 7
 6 -> 8
+7 -> 361
+7 -> 362
 8 -> 9
 8 -> 10
-11 -> 15
-11 -> 16
+10 -> 11
+10 -> 12
+11 -> 39
+11 -> 40
 12 -> 13
 12 -> 14
-15 -> 19
-15 -> 20
+14 -> 15
+14 -> 16
 16 -> 17
 16 -> 18
+18 -> 19
+18 -> 20
+20 -> 21
+20 -> 22
+22 -> 23
+22 -> 24
+24 -> 25
+24 -> 26
+26 -> 27
+26 -> 28
+28 -> 29
+28 -> 30
+30 -> 31
+30 -> 32
+32 -> 33
+32 -> 34
+33 -> 37
+33 -> 38
+34 -> 35
+34 -> 36
+39 -> 73
+39 -> 74
+40 -> 41
+40 -> 42
+42 -> 43
+42 -> 44
+44 -> 45
+44 -> 46
+46 -> 47
+46 -> 48
+48 -> 49
+48 -> 50
+50 -> 51
+50 -> 52
+52 -> 53
+52 -> 54
+53 -> 67
+53 -> 68
+54 -> 55
+54 -> 56
+55 -> 65
+55 -> 66
+56 -> 57
+56 -> 58
+58 -> 59
+58 -> 60
+59 -> 63
+59 -> 64
+60 -> 61
+60 -> 62
+67 -> 69
+67 -> 70
+69 -> 71
+69 -> 72
+73 -> 107
+73 -> 108
+74 -> 75
+74 -> 76
+76 -> 77
+76 -> 78
+78 -> 79
+78 -> 80
+80 -> 81
+80 -> 82
+82 -> 83
+82 -> 84
+84 -> 85
+84 -> 86
+86 -> 87
+86 -> 88
+87 -> 105
+87 -> 106
+88 -> 89
+88 -> 90
+90 -> 91
+90 -> 92
+92 -> 93
+92 -> 94
+94 -> 95
+94 -> 96
+96 -> 97
+96 -> 98
+98 -> 99
+98 -> 100
+99 -> 103
+99 -> 104
+100 -> 101
+100 -> 102
+107 -> 131
+107 -> 132
+108 -> 109
+108 -> 110
+109 -> 111
+109 -> 112
+112 -> 113
+112 -> 114
+113 -> 117
+113 -> 118
+114 -> 115
+114 -> 116
+118 -> 119
+118 -> 120
+119 -> 121
+119 -> 122
+121 -> 129
+121 -> 130
+122 -> 123
+122 -> 124
+124 -> 125
+124 -> 126
+126 -> 127
+126 -> 128
+131 -> 167
+131 -> 168
+132 -> 133
+132 -> 134
+134 -> 135
+134 -> 136
+136 -> 137
+136 -> 138
+138 -> 139
+138 -> 140
+139 -> 163
+139 -> 164
+140 -> 141
+140 -> 142
+142 -> 143
+142 -> 144
+144 -> 145
+144 -> 146
+146 -> 147
+146 -> 148
+147 -> 161
+147 -> 162
+148 -> 149
+148 -> 150
+150 -> 151
+150 -> 152
+152 -> 153
+152 -> 154
+154 -> 155
+154 -> 156
+155 -> 157
+155 -> 158
+157 -> 159
+157 -> 160
+164 -> 165
+164 -> 166
+167 -> 215
+167 -> 216
+168 -> 169
+168 -> 170
+169 -> 213
+169 -> 214
+170 -> 171
+170 -> 172
+171 -> 207
+171 -> 208
+172 -> 173
+172 -> 174
+173 -> 205
+173 -> 206
+174 -> 175
+174 -> 176
+175 -> 203
+175 -> 204
+176 -> 177
+176 -> 178
+177 -> 199
+177 -> 200
+178 -> 179
+178 -> 180
+179 -> 197
+179 -> 198
+180 -> 181
+180 -> 182
+182 -> 183
+182 -> 184
+184 -> 185
+184 -> 186
+185 -> 191
+185 -> 192
+186 -> 187
+186 -> 188
+188 -> 189
+188 -> 190
+191 -> 195
+191 -> 196
+192 -> 193
+192 -> 194
+200 -> 201
+200 -> 202
+207 -> 209
+207 -> 210
+209 -> 211
+209 -> 212
+215 -> 341
+215 -> 342
+216 -> 217
+216 -> 218
+217 -> 335
+217 -> 336
+218 -> 219
+218 -> 220
+220 -> 221
+220 -> 222
+221 -> 327
+221 -> 328
+222 -> 223
+222 -> 224
+223 -> 325
+223 -> 326
+224 -> 225
+224 -> 226
+225 -> 311
+225 -> 312
+226 -> 227
+226 -> 228
+227 -> 297
+227 -> 298
+228 -> 229
+228 -> 230
+229 -> 281
+229 -> 282
+230 -> 231
+230 -> 232
+231 -> 279
+231 -> 280
+232 -> 233
+232 -> 234
+234 -> 235
+234 -> 236
+236 -> 237
+236 -> 238
+237 -> 275
+237 -> 276
+238 -> 239
+238 -> 240
+240 -> 241
+240 -> 242
+242 -> 243
+242 -> 244
+243 -> 267
+243 -> 268
+244 -> 245
+244 -> 246
+245 -> 265
+245 -> 266
+246 -> 247
+246 -> 248
+247 -> 259
+247 -> 260
+248 -> 249
+248 -> 250
+249 -> 257
+249 -> 258
+250 -> 251
+250 -> 252
+252 -> 253
+252 -> 254
+254 -> 255
+254 -> 256
+259 -> 261
+259 -> 262
+261 -> 263
+261 -> 264
+267 -> 269
+267 -> 270
+269 -> 271
+269 -> 272
+271 -> 273
+271 -> 274
+275 -> 277
+275 -> 278
+281 -> 283
+281 -> 284
+283 -> 285
+283 -> 286
+285 -> 287
+285 -> 288
+287 -> 289
+287 -> 290
+289 -> 291
+289 -> 292
+291 -> 293
+291 -> 294
+294 -> 295
+294 -> 296
+297 -> 299
+297 -> 300
+299 -> 301
+299 -> 302
+301 -> 303
+301 -> 304
+303 -> 305
+303 -> 306
+305 -> 309
+305 -> 310
+306 -> 307
+306 -> 308
+311 -> 313
+311 -> 314
+313 -> 315
+313 -> 316
+315 -> 317
+315 -> 318
+317 -> 319
+317 -> 320
+319 -> 321
+319 -> 322
+321 -> 323
+321 -> 324
+327 -> 329
+327 -> 330
+329 -> 331
+329 -> 332
+331 -> 333
+331 -> 334
+335 -> 337
+335 -> 338
+337 -> 339
+337 -> 340
+341 -> 345
+341 -> 346
+342 -> 343
+342 -> 344
+345 -> 347
+345 -> 348
+347 -> 351
+347 -> 352
+348 -> 349
+348 -> 350
+351 -> 353
+351 -> 354
+354 -> 355
+354 -> 356
+355 -> 359
+355 -> 360
+356 -> 357
+356 -> 358
+361 -> 363
+361 -> 364
+363 -> 365
+363 -> 366
+365 -> 367
+365 -> 368
+367 -> 373
+367 -> 374
+368 -> 369
+368 -> 370
+370 -> 371
+370 -> 372
+373 -> 375
+373 -> 376
+375 -> 379
+375 -> 380
+376 -> 377
+376 -> 378
+381 -> 383
+381 -> 384
+383 -> 385
+383 -> 386
 labelloc = "t"
-label = "iris"
+label = "inliers2"
 }

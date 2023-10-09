@@ -1,16 +1,14 @@
 # ODT
 optimal decision tree
 
-From linear k indices to upper triangular i-j indices
-Given n (num rows/columns), i = 0, ..., n-1, j = i+1, ... , n-1, k linear index (starts at 0)
-k = in - i(i-1)/2
-2k = 2in - i^2 + i
-i^2 - (2n+1)i + 2k = 0
-i = 1/2( 2n+1 +- sqr( (2n+1)^2 - 8k ) )
-i = 1/2( 2n+1 +- sqr( 4n^2 + 4n - 8k +1 ) )
-j = k - ( in - i(i+1)/2 )
+Lots of up to date work and old leftovers
 
-n = k(k-1)/2
-2n = k^2 - k
-k^2 - k - 2n = 0
-k = 1/2( 1 +- sqr(1 + 8n) )
+Directories:
+convexhull: old, just a 3d view of a dataset
+data: all datasets. Also a viewer like that in convexhul with a filter for inliers dataset.
+github_cart: a cart from github
+hyperbox: hyperbox AABB clustering. Python older, c++ newer. Works only on small datasets
+interpretableAI: their solution, needs licensing
+MIPmodel: minimal covering cuts. Python older, c++ unfinished stub, c# the real thing, with ortools
+plotTree: reads the cuts and plots the tree. Python older, c++ binary tree, c# nonbinary tree
+

@@ -22,7 +22,9 @@ void Tree::goTree()
    cout << dataFileName << endl;;
 
    readData(dataFileName);
-   if (ncuts > 60) // troppi cut, non stanno in un long, niente bitmask
+   if (ncuts > 60)
+      cout << "Too many cuts: " << ncuts << " > 60, I cannot fit them in a long bitmask. Mybe there will be errors" << endl;
+   if (ncuts > 75) // sarebbe 60, troppi cut, non stanno in un long, niente bitmask
    {  cout << "Too many cuts, exiting" << endl;
       exit(1);
    }

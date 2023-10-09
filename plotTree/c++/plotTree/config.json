@@ -1,5 +1,5 @@
 { 
-   "datafile" : "iris", 
+   "datafile" : "inliers2", 
    "datapath" : "c:\\git\\ODT\\data\\",
 	"LPsolver" : "GLOP",
 	"IPsolver" : "SCIP"
