@@ -18,6 +18,7 @@ namespace PlotTreeCsharp
       private string[]  dataColumns;
       private double[,] X;
       private int[]     Y;
+      private int numcol;
 
       public TreePlotter() { }
       public void run_plotter()
@@ -25,6 +26,7 @@ namespace PlotTreeCsharp
          Console.WriteLine("Plotting");
          string dataset = readConfig();
          readData(dataset); // gets the X and Y matrices (data and class)
+         makeTree();
       }
 
       private string readConfig()
@@ -54,6 +56,7 @@ namespace PlotTreeCsharp
             StreamReader fin = new StreamReader(dataset + ".csv");
             line = fin.ReadLine();
             dataColumns = line.Split(',');
+            numcol = dataColumns.Length - 2; // data column, excluding id (first) and class (last)
             List<double[]> X1 = new List<double[]>();
             List<int> Y1 = new List<int>();
             i = 0;
@@ -69,10 +72,10 @@ namespace PlotTreeCsharp
                Y1.Add(Convert.ToInt32(elem[elem.Length-1]) );
             }
             fin.Close();
-            X = new double[Y1.Count(), dataColumns.Count()-1];
+            X = new double[Y1.Count(), numcol];
             for(i=0;i<X1.Count();i++)
-               for(j=0;j<dataColumns.Count()-1;j++)
-                  X[i,j] = X1[i][j];
+               for(j=0;j<numcol;j++)
+                  X[i,j] = X1[i][j+1]; // removing id column
             Y = Y1.ToArray();
          }
          catch(Exception ex)
@@ -91,6 +94,15 @@ namespace PlotTreeCsharp
          }
          catch (Exception ex)
          { Console.WriteLine(ex.Message); }
+      }
+
+      private void makeTree()
+      {  int i,j;
+         List<int>[] dimCuts = new List<int>[numcol]; // which cuts for ech dim
+         for(i=0;i<numcol;i++)
+            dimCuts[i] = new List<int>();
+         for(i=0;i<cutdim.Length;i++)
+            dimCuts[cutdim[i]].Add(i);
       }
    }
 }
