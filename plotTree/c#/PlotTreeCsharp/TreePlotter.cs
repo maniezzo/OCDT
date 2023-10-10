@@ -40,9 +40,10 @@ namespace PlotTreeCsharp
       private string[]  dataColumns;
       private double[,] X;
       private int[]     Y;
-      private int numcol,ndim; // num dimensions (attributes, columns of X)
-      private int n, nclasses; // num of records, num of classes
+      private int numcol,ndim;  // num dimensions (attributes, columns of X)
+      private int n, nclasses;  // num of records, num of classes
       private List<Node> decTree;
+      private string splitRule; // criterium for node plitting
 
       public TreePlotter() 
       {
@@ -66,6 +67,7 @@ namespace PlotTreeCsharp
          try
          {  string path = Convert.ToString(config.datapath);
             string file = Convert.ToString(config.datafile);
+            splitRule   = Convert.ToString(config.splitRule);
             dataset = path + file;
          }
          catch (Exception ex)
@@ -142,17 +144,87 @@ namespace PlotTreeCsharp
       // initializes fields of a new node
       private void fillNode(Node currNode, int[,] idx)
       {  int i,j,d,pt;
+         int[] ptslice;
+         double h,minh; // split criterium value
 
          for (i = 0; i < currNode.npoints; i++)
          {  pt = currNode.lstPoints[i];
             currNode.nPointClass[Y[pt]]++;
          }
-         for (d=0;d<ndim;d++)
+         minh = double.MaxValue;
+         for (d=0;d<ndim;d++)  // for each dimension upon which we could separate
          {
             if (currNode.isUsedDim[d]) continue;
-            int[] nptclass = new int[nclasses];
+            List<int[]> lstNptson = new List<int[]> (); // for each value range, how many of each class
+            bool[] fOut = new bool[currNode.npoints]; // point already considered
+            for(j=0;j<cutdim.Length;j++)  // for each cut acting on that dimension
+            {
+               if (cutdim[j]!=d) continue;
+               ptslice = new int[nclasses];
+               for (i = 0; i < currNode.npoints; i++)
+               {  pt = currNode.lstPoints[i];
+                  if (!fOut[pt] && X[pt,d] < cutval[j]) 
+                  {  ptslice[Y[pt]]++;
+                     fOut[pt] = true;
+                  }
+               }
+               lstNptson.Add (ptslice);
+            }
+            // points after the biggest cut
+            ptslice = new int[nclasses];
+            for (i = 0; i < currNode.npoints; i++)
+            {  pt = currNode.lstPoints[i];
+               if (!fOut[pt])
+               {  ptslice[Y[pt]]++;
+                  fOut[pt] = true;
+               }
+            }
+            lstNptson.Add(ptslice);
+            switch(splitRule)
+            {  case "entropy": 
+                  h = computeEntropy(lstNptson);
+                  if(h<minh) minh = h;
+                  break;
+               case "infoGain":
+                  Console.WriteLine("Split rule not implemented");
+                  Environment.Exit(0);
+                  break;
+               case "variance":
+                  Console.WriteLine("Split rule not implemented");
+                  Environment.Exit(0);
+                  break;
+               case "gini":
+                  Console.WriteLine("Split rule not implemented");
+                  Environment.Exit(0);
+                  break;
+               default:
+                  Console.WriteLine("Split rule not defined");
+                  Environment.Exit(0);
+                  break;
+            }
          }
 
+      }
+
+      // entropy at the node, on number of points in each son
+      private double computeEntropy(List<int[]> lstNptson)
+      {  int i,j;
+         double tot=0;
+         double[] sums;
+         double h = 0;
+
+         sums = new double[lstNptson.Count];
+         for(i=0;i<lstNptson.Count;i++)
+         {
+            sums[i] = 0.0;
+            for (j=0;j<nclasses;j++)
+               sums[i] += lstNptson[i][j];
+            tot += sums[i];
+         }
+         for (i = 0; i < lstNptson.Count; i++)
+            h += (sums[i]/tot)*Math.Log(sums[i] / tot);
+
+         return h;
       }
 
       // Depth-first construction
