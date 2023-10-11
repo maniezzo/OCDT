@@ -30,7 +30,7 @@ namespace PlotTreeCsharp
       public bool[] isUsedDim;    // dimensions already used in the path to the node
       public List<int> lstPoints; // list of points clustered in the node (length = npoints)
       public List<int> lstCuts;   // id of the cuts associated with the node (see arrays cutdim and cutval)
-      public List<int> lstSons;   // id of each offspring, in array decTree
+      public List<int> lstSons;   // id of each offspring, in array decTree. If null, node is a leaf
    }
 
    internal class TreePlotter
@@ -143,47 +143,37 @@ namespace PlotTreeCsharp
 
       // initializes fields of a new node
       private void fillNode(Node currNode, int[,] idx)
-      {  int i,j,d,pt;
-         int[] ptslice;
+      {  int i,j,jj,d,pt,mind;
          double h,minh; // split criterium value
+         List<int[]> lstNptson;
+         bool[] fOut;
 
          for (i = 0; i < currNode.npoints; i++)
          {  pt = currNode.lstPoints[i];
             currNode.nPointClass[Y[pt]]++;
          }
          minh = double.MaxValue;
+         mind = int.MaxValue;
          for (d=0;d<ndim;d++)  // for each dimension upon which we could separate
          {
             if (currNode.isUsedDim[d]) continue;
-            List<int[]> lstNptson = new List<int[]> (); // for each value range, how many of each class
-            bool[] fOut = new bool[currNode.npoints]; // point already considered
+            lstNptson = new List<int[]> (); // for each value range, how many of each class
+            fOut = new bool[currNode.npoints]; // point already considered
             for(j=0;j<cutdim.Length;j++)  // for each cut acting on that dimension
             {
                if (cutdim[j]!=d) continue;
-               ptslice = new int[nclasses];
-               for (i = 0; i < currNode.npoints; i++)
-               {  pt = currNode.lstPoints[i];
-                  if (!fOut[pt] && X[pt,d] < cutval[j]) 
-                  {  ptslice[Y[pt]]++;
-                     fOut[pt] = true;
-                  }
-               }
-               lstNptson.Add (ptslice);
+               separateNodePoints(currNode, lstNptson, fOut, cutval[j], d);
             }
             // points after the biggest cut
-            ptslice = new int[nclasses];
-            for (i = 0; i < currNode.npoints; i++)
-            {  pt = currNode.lstPoints[i];
-               if (!fOut[pt])
-               {  ptslice[Y[pt]]++;
-                  fOut[pt] = true;
-               }
-            }
-            lstNptson.Add(ptslice);
-            switch(splitRule)
+            separateNodePoints(currNode, lstNptson, fOut, double.MaxValue, d);
+            if (lstNptson.Count() == 1) continue; // dim d generates no separation
+            switch (splitRule)
             {  case "entropy": 
                   h = computeEntropy(lstNptson);
-                  if(h<minh) minh = h;
+                  if(h<minh) 
+                  {  minh = h;
+                     mind = d;
+                  }
                   break;
                case "infoGain":
                   Console.WriteLine("Split rule not implemented");
@@ -203,7 +193,52 @@ namespace PlotTreeCsharp
                   break;
             }
          }
+         // current node completion
+         currNode.dim = mind;
+         currNode.isUsedDim[mind] = true;
+         for (j = 0; j < cutdim.Length; j++)  // for each cut acting on that dimension
+            if (cutdim[j] == mind) 
+               currNode.lstCuts.Add(j);       // cuts active at the node
+         // compute the offsprings of the current node
+         j=0;
+         while (j <= currNode.lstCuts.Count() )
+         {  Node son = new Node(decTree.Count(),ndim,nclasses);
+            decTree.Add(son);
+            currNode.lstSons.Add(son.id);
+            j++;
+         }
+         // compute the points of each offspring
+         lstNptson = new List<int[]>(); // for each value range, how many of each class
+         fOut = new bool[currNode.npoints]; // points already considered
+         for (jj = 0; jj < currNode.lstCuts.Count(); jj++)  // for each cut acting on that dimension
+         {  j = currNode.lstCuts[jj];
+            i = currNode.lstSons[jj];
+            decTree[i].lstPoints = separateNodePoints(currNode, lstNptson, fOut, cutval[j], mind);
+         }
+         // points after the biggest cut
+         i = currNode.lstSons[jj];
+         decTree[i].lstPoints = separateNodePoints(currNode, lstNptson, fOut, double.MaxValue, mind);
+      }
 
+      // calcola i punti in ogni segmento definito dai cut
+      private List<int> separateNodePoints(Node currNode, List<int[]> lstNptson, bool[] fOut, double maxVal, int d)
+      {  int i,pt;
+         List<int> ptslice; // points of each slice (not separated per class)
+         int[] nptslice = new int[nclasses]; // num points of each slice, per class
+
+         ptslice = new List<int>();
+         for (i = 0; i < currNode.npoints; i++)
+         {
+            pt = currNode.lstPoints[i];
+            if (!fOut[pt] && X[pt, d] < maxVal)
+            {
+               ptslice.Add(pt);
+               nptslice[Y[pt]]++;
+               fOut[pt] = true;
+            }
+         }
+         lstNptson.Add(nptslice);
+         return ptslice;
       }
 
       // entropy at the node, on number of points in each son
@@ -222,9 +257,10 @@ namespace PlotTreeCsharp
             tot += sums[i];
          }
          for (i = 0; i < lstNptson.Count; i++)
-            h += (sums[i]/tot)*Math.Log(sums[i] / tot);
+            if (sums[i] > 0)
+               h += (sums[i]/tot)*Math.Log(sums[i] / tot);
 
-         return h;
+         return -h;
       }
 
       // Depth-first construction
@@ -244,8 +280,8 @@ namespace PlotTreeCsharp
          for(i=0;i<nclasses;i++) currNode.nPointClass[i] = 0;
          for(i=0;i<n;i++)        currNode.lstPoints.Add(i);
          currNode.npoints = n;
-         fillNode(currNode,idx);
          decTree.Add(currNode);
+         fillNode(currNode,idx);
 
          stack.Push(idNode);
 
@@ -256,19 +292,18 @@ namespace PlotTreeCsharp
             stack.Pop();
             currNode = decTree[idNode];
 
-            // we print the popped item only if it is not visited.
+            // we work on the popped item if it is not visited.
             if (!currNode.visited)
             {
-               Console.Write(idNode + " ");
+               Console.WriteLine($"expanding node {idNode}");
                currNode.visited = true;
+               fillNode(currNode, idx);
             }
 
             // Get all offsprings of the popped vertex s, if not visited, then push it to the stack.
-            foreach (int v in decTree[idNode].lstCuts)
-            {
+            foreach (int v in decTree[idNode].lstSons)
                if (!decTree[v].visited)
                   stack.Push(v);
-            }
          }
       }
 

@@ -1,6 +1,7 @@
 { 
-   "datafile" : "iris", 
+   "datafile" : "nath_jones", 
    "datapath" : "c:\\git\\ODT\\data\\",
 	"LPsolver" : "GLOP",
-	"IPsolver" : "SCIP"
+	"IPsolver" : "SCIP",
+	"splitRule": "entropy"
 }
