@@ -55,8 +55,8 @@ namespace PlotTreeCsharp
       }
       public void run_plotter()
       {
-         Console.WriteLine("Plotting");
          string dataset = readConfig();
+         Console.WriteLine($"Plotting {dataset}");
          readData(dataset); // gets the X and Y matrices (data and class)
          makeTree();
          bool ok = checkSol();
@@ -279,7 +279,7 @@ lend:    return res;
          j=0;
          while (j <= currNode.lstCuts.Count() )
          {  Node son = new Node(decTree.Count(),ndim,nclasses);
-            son.isUsedDim = currNode.isUsedDim;
+            Array.Copy(currNode.isUsedDim,son.isUsedDim,currNode.isUsedDim.Length);
             decTree.Add(son);
             currNode.lstSons.Add(son.id);
             j++;
@@ -364,7 +364,7 @@ lend:    return res;
          // Push the current source node
          idNode = decTree.Count;
          currNode = new Node(idNode,ndim,nclasses);
-         for(i=0;i<ndim;i++)     currNode.isUsedDim[i] = false;
+         for(i=0;i<ndim;i++)     currNode.isUsedDim[i]   = false;
          for(i=0;i<nclasses;i++) currNode.nPointClass[i] = 0;
          for(i=0;i<n;i++)        currNode.lstPoints.Add(i);
          currNode.npoints = n;
