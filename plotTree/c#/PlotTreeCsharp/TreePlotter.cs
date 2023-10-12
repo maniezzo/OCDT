@@ -26,6 +26,7 @@ namespace PlotTreeCsharp
       public int dim;      // dimension (attribute, column) associated with the node
       public int npoints;  // number of points (records) clustered in the node
       public bool visited; // node already visited during search
+      public bool isLeaf;  // node is a leaf node
       public int[] nPointClass;   // number of node points of each class (sum is npoints)
       public bool[] isUsedDim;    // dimensions already used in the path to the node
       public List<int> lstPoints; // list of points clustered in the node (length = npoints)
@@ -193,20 +194,23 @@ namespace PlotTreeCsharp
                   break;
             }
          }
-         // current node completion
+         // ----------------------------------------------- current node completion
          currNode.dim = mind;
          currNode.isUsedDim[mind] = true;
          for (j = 0; j < cutdim.Length; j++)  // for each cut acting on that dimension
             if (cutdim[j] == mind) 
                currNode.lstCuts.Add(j);       // cuts active at the node
-         // compute the offsprings of the current node
+
+         // generate the offsprings of the current node
          j=0;
          while (j <= currNode.lstCuts.Count() )
          {  Node son = new Node(decTree.Count(),ndim,nclasses);
+            son.isUsedDim = currNode.isUsedDim;
             decTree.Add(son);
             currNode.lstSons.Add(son.id);
             j++;
          }
+
          // compute the points of each offspring
          lstNptson = new List<int[]>(); // for each value range, how many of each class
          fOut = new bool[currNode.npoints]; // points already considered
@@ -214,10 +218,20 @@ namespace PlotTreeCsharp
          {  j = currNode.lstCuts[jj];
             i = currNode.lstSons[jj];
             decTree[i].lstPoints = separateNodePoints(currNode, lstNptson, fOut, cutval[j], mind);
+            decTree[i].npoints = decTree[i].lstPoints.Count();
+            // check is son is a leaf
+            for (d = 0; d < nclasses; d++)
+               if (lstNptson[jj][d] == decTree[i].npoints)
+                  decTree[i].isLeaf = true;
          }
          // points after the biggest cut
          i = currNode.lstSons[jj];
          decTree[i].lstPoints = separateNodePoints(currNode, lstNptson, fOut, double.MaxValue, mind);
+         decTree[i].npoints  = decTree[i].lstPoints.Count();
+         // check is son is a leaf
+         for (d = 0; d < nclasses; d++)
+            if (lstNptson[jj][d] == decTree[i].npoints)
+               decTree[i].isLeaf = true;
       }
 
       // calcola i punti in ogni segmento definito dai cut
@@ -230,11 +244,11 @@ namespace PlotTreeCsharp
          for (i = 0; i < currNode.npoints; i++)
          {
             pt = currNode.lstPoints[i];
-            if (!fOut[pt] && X[pt, d] < maxVal)
+            if (!fOut[i] && X[pt, d] < maxVal)
             {
                ptslice.Add(pt);
                nptslice[Y[pt]]++;
-               fOut[pt] = true;
+               fOut[i] = true;
             }
          }
          lstNptson.Add(nptslice);
@@ -281,7 +295,7 @@ namespace PlotTreeCsharp
          for(i=0;i<n;i++)        currNode.lstPoints.Add(i);
          currNode.npoints = n;
          decTree.Add(currNode);
-         fillNode(currNode,idx);
+         //fillNode(currNode,idx);
 
          stack.Push(idNode);
 
@@ -294,10 +308,10 @@ namespace PlotTreeCsharp
 
             // we work on the popped item if it is not visited.
             if (!currNode.visited)
-            {
-               Console.WriteLine($"expanding node {idNode}");
+            {  Console.WriteLine($"expanding node {idNode}");
                currNode.visited = true;
-               fillNode(currNode, idx);
+               if(!currNode.isLeaf)
+                  fillNode(currNode, idx);
             }
 
             // Get all offsprings of the popped vertex s, if not visited, then push it to the stack.
