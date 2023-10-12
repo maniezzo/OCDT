@@ -5,6 +5,9 @@ using System.Text;
 using System.IO;
 using Newtonsoft.Json;
 using System.Data;
+using System.Diagnostics;
+using System.Reflection.Emit;
+using System.Globalization;
 
 namespace PlotTreeCsharp
 {
@@ -56,6 +59,8 @@ namespace PlotTreeCsharp
          string dataset = readConfig();
          readData(dataset); // gets the X and Y matrices (data and class)
          makeTree();
+         bool ok = checkSol();
+         if(ok) plotTree(dataset);
       }
 
       private string readConfig()
@@ -142,6 +147,74 @@ namespace PlotTreeCsharp
          depthFirstConstruction(idx); // construct the tree
       }
 
+      // check the correctness of the tree
+      private bool checkSol()
+      {  int i,j,d,idcut,currnode;
+         bool res=true;
+
+         for(i=0;i<n;i++)
+         {
+            currnode  = 0;
+            if (decTree[currnode].isLeaf)
+               if (Y[i] != Y[decTree[currnode].lstSons[0]])
+               {  res = false;
+                  Console.WriteLine($"ERROR, misclassification of record {i}");
+                  goto lend;
+               }
+            else
+            {
+               d = decTree[currnode].dim;
+               for(j=0;j<decTree[currnode].lstCuts.Count;j++)
+                  if (X[i,d] < decTree[currnode].lstCuts[j])
+                     currnode = decTree[currnode].lstSons[j];
+               if(j==decTree[currnode].lstCuts.Count)
+                  currnode = decTree[currnode].lstSons[j];
+            }
+         }
+         if(res) Console.WriteLine("Checked. Solution is ok");
+lend:    return res;
+      }
+
+      // saves the tree on file and calls graphx to plot it
+      void plotTree(string dataset)
+      {  int i,j;
+         string label;
+
+         using (StreamWriter fout = File.CreateText("graph.txt"))
+         {
+            fout.WriteLine("digraph G {");
+            fout.WriteLine("graph[fontname = \"helvetica\"]");
+            fout.WriteLine("node[fontname = \"helvetica\"]");
+            fout.WriteLine("edge[fontname = \"helvetica\"]");
+
+            for(i=0;i<decTree.Count;i++)
+               if (decTree[i].isLeaf)
+               {
+                  fout.WriteLine($"{i}  [shape = box label = \"{decTree[i].id}\nclass {Y[decTree[i].lstPoints[0]]}\"]");
+               }
+               else
+                  fout.WriteLine($"{i}  [label = \"{decTree[i].id} dim {decTree[i].dim}\"]");
+
+            for(i=0;i<decTree.Count;i++)
+               if (!decTree[i].isLeaf)
+                  for (j = 0; j < decTree[i].lstSons.Count;j++)
+                  { 
+                     if(j < decTree[i].lstCuts.Count)
+                        label = $"[ label = \" < {cutval[decTree[i].lstCuts[j]]}\"]";
+                     else
+                        label = $"[ label = \" > {cutval[decTree[i].lstCuts[j-1]]}\"]";
+                     fout.WriteLine($"{decTree[i].id} -> {decTree[i].lstSons[j]} {label}");
+                  }
+            fout.WriteLine("labelloc = \"t\"");
+            fout.WriteLine($"label = \"{dataset.Substring(dataset.LastIndexOf('\\')+1)}\"");
+            fout.WriteLine("}");
+         }
+
+         string batfile = "graphviz.bat";
+         string parameters = $"/k \"{batfile}\"";
+         Process.Start("cmd", parameters);
+      }
+
       // initializes fields of a new node
       private void fillNode(Node currNode, int[,] idx)
       {  int i,j,jj,d,pt,mind;
@@ -195,6 +268,7 @@ namespace PlotTreeCsharp
             }
          }
          // ----------------------------------------------- current node completion
+         
          currNode.dim = mind;
          currNode.isUsedDim[mind] = true;
          for (j = 0; j < cutdim.Length; j++)  // for each cut acting on that dimension
