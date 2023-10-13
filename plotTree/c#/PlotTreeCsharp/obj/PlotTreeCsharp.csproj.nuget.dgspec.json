@@ -10,14 +10,15 @@
         "projectUniqueName": "C:\\git\\ODT\\plotTree\\c#\\PlotTreeCsharp\\PlotTreeCsharp.csproj",
         "projectName": "PlotTreeCsharp",
         "projectPath": "C:\\git\\ODT\\plotTree\\c#\\PlotTreeCsharp\\PlotTreeCsharp.csproj",
-        "packagesPath": "C:\\Users\\vittorio.maniezzo\\.nuget\\packages\\",
+        "packagesPath": "C:\\Users\\vitto\\.nuget\\packages\\",
         "outputPath": "C:\\git\\ODT\\plotTree\\c#\\PlotTreeCsharp\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",
+          "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
         ],
         "configFilePaths": [
-          "C:\\Users\\vittorio.maniezzo\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\vitto\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
