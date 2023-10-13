@@ -149,29 +149,32 @@ namespace PlotTreeCsharp
 
       // check the correctness of the tree
       private bool checkSol()
-      {  int i,j,d,idcut,currnode;
+      {  int i,j,d,nc,idcut,currnode;
          bool res=true;
 
          for(i=0;i<n;i++)
          {
-            currnode  = 0;
-            if (decTree[currnode].isLeaf)
-               if (Y[i] != Y[decTree[currnode].lstSons[0]])
-               {  res = false;
-                  Console.WriteLine($"ERROR, misclassification of record {i}");
-                  goto lend;
-               }
-            else
+            currnode = 0;
+            while (!decTree[currnode].isLeaf)
             {
                d = decTree[currnode].dim;
-               for(j=0;j<decTree[currnode].lstCuts.Count;j++)
-                  if (X[i,d] < decTree[currnode].lstCuts[j])
-                     currnode = decTree[currnode].lstSons[j];
-               if(j==decTree[currnode].lstCuts.Count)
+               nc = decTree[currnode].lstCuts.Count;
+               for(j=0;j<nc;j++)
+                  if (X[i,d] < cutval[decTree[currnode].lstCuts[j]])
+                  {  currnode = decTree[currnode].lstSons[j];
+                     nc = int.MaxValue; // to avoid entering the following if
+                     break;
+                  }
+               if(j==nc)
                   currnode = decTree[currnode].lstSons[j];
             }
+            if (Y[i] != Y[decTree[currnode].lstPoints[0]])
+            {  res = false;
+               Console.WriteLine($"ERROR, misclassification of record {i}");
+               goto lend;
+            }
          }
-         if(res) Console.WriteLine("Checked. Solution is ok");
+         if (res) Console.WriteLine("Checked. Solution is ok");
 lend:    return res;
       }
 
@@ -221,6 +224,7 @@ lend:    return res;
          double h,minh; // split criterium value
          List<int[]> lstNptson;
          bool[] fOut;
+         Node son;
 
          for (i = 0; i < currNode.npoints; i++)
          {  pt = currNode.lstPoints[i];
@@ -271,41 +275,48 @@ lend:    return res;
          
          currNode.dim = mind;
          currNode.isUsedDim[mind] = true;
-         for (j = 0; j < cutdim.Length; j++)  // for each cut acting on that dimension
-            if (cutdim[j] == mind) 
-               currNode.lstCuts.Add(j);       // cuts active at the node
-
-         // generate the offsprings of the current node
-         j=0;
-         while (j <= currNode.lstCuts.Count() )
-         {  Node son = new Node(decTree.Count(),ndim,nclasses);
-            Array.Copy(currNode.isUsedDim,son.isUsedDim,currNode.isUsedDim.Length);
-            decTree.Add(son);
-            currNode.lstSons.Add(son.id);
-            j++;
-         }
-
-         // compute the points of each offspring
-         lstNptson = new List<int[]>(); // for each value range, how many of each class
+         lstNptson = new List<int[]>();     // for each value range, how many of each class
          fOut = new bool[currNode.npoints]; // points already considered
-         for (jj = 0; jj < currNode.lstCuts.Count(); jj++)  // for each cut acting on that dimension
-         {  j = currNode.lstCuts[jj];
-            i = currNode.lstSons[jj];
-            decTree[i].lstPoints = separateNodePoints(currNode, lstNptson, fOut, cutval[j], mind);
+
+         // generate the offsprings of the current node and compute the points of each offspring
+
+         for (int idcut = 0; idcut < cutdim.Length; idcut++)  // for each cut acting on that dimension
+         {
+            if (cutdim[idcut] != mind) continue;
+            j = idcut;
+            son = new Node(decTree.Count(), ndim, nclasses); // tentative son
+            List<int> lstPoints = separateNodePoints(currNode, lstNptson, fOut, cutval[j], mind);
+            if(lstPoints.Count == 0 ) continue; // region with no points, no need for a son
+
+            // here add the son to the tree
+            Array.Copy(currNode.isUsedDim, son.isUsedDim, currNode.isUsedDim.Length);
+            decTree.Add(son);
+            i = son.id;
+            currNode.lstSons.Add(i);
+            currNode.lstCuts.Add(idcut);         // cuts active at the node
+            decTree[i].lstPoints = lstPoints;
             decTree[i].npoints = decTree[i].lstPoints.Count();
             // check is son is a leaf
             for (d = 0; d < nclasses; d++)
-               if (lstNptson[jj][d] == decTree[i].npoints)
+               if (lstNptson[currNode.lstSons.Count-1][d] == decTree[i].npoints)
                   decTree[i].isLeaf = true;
          }
          // points after the biggest cut
-         i = currNode.lstSons[jj];
-         decTree[i].lstPoints = separateNodePoints(currNode, lstNptson, fOut, double.MaxValue, mind);
-         decTree[i].npoints  = decTree[i].lstPoints.Count();
-         // check is son is a leaf
-         for (d = 0; d < nclasses; d++)
-            if (lstNptson[jj][d] == decTree[i].npoints)
-               decTree[i].isLeaf = true;
+         son = new Node(decTree.Count(), ndim, nclasses); // tentative son
+         List<int> lstPoints1 = separateNodePoints(currNode, lstNptson, fOut, double.MaxValue, mind); // all remaining points
+         if (lstPoints1.Count > 0)  // if empty son, do not include in the tree
+         {
+            Array.Copy(currNode.isUsedDim, son.isUsedDim, currNode.isUsedDim.Length);
+            decTree.Add(son);
+            i = son.id;
+            currNode.lstSons.Add(i);
+            decTree[i].lstPoints = lstPoints1;
+            decTree[i].npoints  = decTree[i].lstPoints.Count();
+            // check is son is a leaf
+            for (d = 0; d < nclasses; d++)
+               if (lstNptson[lstNptson.Count][d] == decTree[i].npoints)
+                  decTree[i].isLeaf = true;
+         }
       }
 
       // calcola i punti in ogni segmento definito dai cut
