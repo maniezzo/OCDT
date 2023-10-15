@@ -28,7 +28,7 @@ namespace ODTMIPmodel
       }
       public void run_MIP()
       {
-         Console.WriteLine("MIP model");
+         Console.Write("C# MIP model ");
 
          StreamReader fconf = new StreamReader("config.json");
          string jconf = fconf.ReadToEnd();
@@ -38,6 +38,7 @@ namespace ODTMIPmodel
          string dataset  = jobj["datafile"].GetValue<string>();
          string datapath = jobj["datapath"].GetValue<string>();
          string fpath = $"{datapath}{dataset}.csv";
+         Console.WriteLine("dataset "+dataset);
          read_data(fpath);
 
          string LPsolver = jobj["LPsolver"].GetValue<string>();
@@ -200,12 +201,12 @@ l1:               continue;
                numConstr++;
 l0:            continue;
             }
-            if(numConstr > numConstrOld && numConstr%10==0)
+            if(numConstr > numConstrOld && numConstr%1000==0)
             {
                Console.WriteLine("Number of variables  = " + solver.NumVariables());
                Console.WriteLine("Number of constraints = " + solver.NumConstraints());
-               resultStatus = solver.Solve();
-               Console.WriteLine("Optimal objective value = " + solver.Objective().Value());
+               //resultStatus = solver.Solve();
+               //Console.WriteLine("Optimal objective value = " + solver.Objective().Value());
                numConstrOld = numConstr;
             }
          }
@@ -213,9 +214,11 @@ l0:            continue;
          Console.WriteLine("Final number of variables  = " + solver.NumVariables());
          Console.WriteLine("Final number of constraints = " + solver.NumConstraints());
 
-         string lp_text = solver.ExportModelAsLpFormat(false);
-         using (StreamWriter out_f = new StreamWriter($"{dataset}.lp"))
-            out_f.Write(lp_text);
+         if(solver.NumVariables() < 1000 && solver.NumConstraints() < 1000)
+         {  string lp_text = solver.ExportModelAsLpFormat(false);
+            using (StreamWriter out_f = new StreamWriter($"{dataset}.lp"))
+               out_f.Write(lp_text);
+         }
 
          // ------------------------------------ SOLVE
          resultStatus = solver.Solve();
