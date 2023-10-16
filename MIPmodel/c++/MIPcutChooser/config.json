@@ -1,0 +1,7 @@
+{ 
+   "datafile" : "test1", 
+   "datapath" : "c:\\git\\ODT\\data\\",
+   "LPsolver" : "CPLEX",
+   "IPsolver" : "CPLEX",
+   "splitRule": "entropy"
+}
