@@ -17,6 +17,7 @@ void MIPmodel::cplexModel()
    double objval;
    int    solstat, objsen;
    bool   isVerbose = true;
+   bool   fReadProblem = true;
    int numRows, numCols;
    int numNZ, numNZrow;  // nonzeros in the whole problem and in a row
 
@@ -53,8 +54,10 @@ void MIPmodel::cplexModel()
    int       i,j,nn;
    int       cur_numrows,cur_numcols, idRow;
    double    mincost;
+   string path;
    
    string name = "Prob1";
+   probname = (char*)name.c_str();
    maxnodes = 100000000;
 
    env = CPXopenCPLEX(&status);
@@ -67,6 +70,13 @@ void MIPmodel::cplexModel()
    else
       cout <<"CPLEX running" << endl;
 
+   // Create the problem, using the filename as the problem name
+   lp = CPXcreateprob(env, &status, probname);
+   if (lp == NULL)
+   {  fprintf(stderr, "Failed to create LP.\n");
+      goto TERMINATE;
+   }
+
    // Turn on output to the screen 
    status = CPXsetintparam(env, CPXPARAM_ScreenOutput, CPX_ON);
    if (status) 
@@ -75,63 +85,65 @@ void MIPmodel::cplexModel()
    }
 
    // reads the problem from lp file
-   status = CPXreadcopyprob(env, lp, "myprob.lp", NULL);
-   
-   probname = (char*)name.c_str();
-   objsen   = CPX_MIN;
-   if (status)
-   {  fprintf(stderr, "Failed to build problem data arrays.\n");
-      goto TERMINATE;
+   if(fReadProblem)
+   {
+      path = "c:\\git\\ODT\\MIPmodel\\cSharp\\ODTMIPmodel\\bin\\Debug\\net6.0\\";
+      name = path + "breastCoimbra.lp";
+      status = CPXreadcopyprob(env, lp, name.c_str(), NULL);
+      if (status)
+      {  cout << "Failed to read lp data." << endl;
+         goto TERMINATE;
+      }
    }
+   else
+   {   
+      objsen   = CPX_MIN;
+      if (status)
+      {  fprintf(stderr, "Failed to build problem data arrays.\n");
+         goto TERMINATE;
+      }
+      CPXchgobjsen(env, lp, CPX_MIN);  // Problem is minimization 
 
-   // Create the problem, using the filename as the problem name
-   lp = CPXcreateprob(env, &status, probname);
-   if (lp == NULL) 
-   {  fprintf(stderr, "Failed to create LP.\n");
-      goto TERMINATE;
+      // Create the columns.
+      numCols = c.size();
+      for (i = 0; i < numCols; i++)
+      {  obj[i] = c[i];
+         lb[i] = 0;
+         ub[i] = 1;
+         ctype[i]  = 'B'; // 'B', 'I','C' to indicate binary, general integer, continuous 
+         lptype[i] = 'C'; // 'B', 'I','C' to indicate binary, general integer, continuous 
+         colname[i] = (char*)malloc(sizeof(char) * (11));   // why not 11?
+         sprintf_s(colname[i], 11, "%s%d", "v", i);
+      }
+      status = CPXnewcols(env, lp, numCols, obj, lb, ub, NULL, colname);  // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+      // Create the constraints, one row at a time
+      idRow = 0;
+      for (i = 0; i < numRows; i++)
+      {  numNZrow = 0;  // number of nonzero element in the row to add
+         rmatbeg[0] = 0;
+         sense[0] = 'G';
+         rhs[0] = b[i];
+         for (j = 0; j < a[i].size(); j++)
+            if (a[i][j] > 0)
+            {  rmatind[numNZrow] = j;
+               rmatval[numNZrow] = 1;
+               numNZrow++;
+            }
+         rmatbeg[1] = numNZrow;
+         rowname[0] = (char*)malloc(sizeof(char) * (11));   // why not 11?
+         sprintf_s(rowname[0], 11, "%s%d", "c", idRow);
+         status = CPXaddrows(env, lp, 0, 1, numNZrow, rhs, sense, rmatbeg, rmatind, rmatval, NULL, rowname);
+         if (status) goto TERMINATE;
+         idRow++;
+      }
    }
-   CPXchgobjsen(env, lp, CPX_MIN);  // Problem is minimization 
-
-   // Create the columns.
-   numCols = c.size();
-   for (i = 0; i < numCols; i++)
-   {  obj[i] = c[i];
-      lb[i] = 0;
-      ub[i] = 1;
-      ctype[i]  = 'C'; // 'B', 'I','C' to indicate binary, general integer, continuous 
-      lptype[i] = 'C'; // 'B', 'I','C' to indicate binary, general integer, continuous 
-      colname[i] = (char*)malloc(sizeof(char) * (11));   // why not 11?
-      sprintf_s(colname[i], 11, "%s%d", "v", i);
-   }
-   status = CPXnewcols(env, lp, numCols, obj, lb, ub, NULL, colname);  // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-   // Create the constraints, one row at a time
-   idRow = 0;
-   for (i = 0; i < numRows; i++)
-   {  numNZrow = 0;  // number of nonzero element in the row to add
-      rmatbeg[0] = 0;
-      sense[0] = 'G';
-      rhs[0] = b[i];
-      for (j = 0; j < a[i].size(); j++)
-         if (a[i][j] > 0)
-         {  rmatind[numNZrow] = j;
-            rmatval[numNZrow] = 1;
-            numNZrow++;
-         }
-      rmatbeg[1] = numNZrow;
-      rowname[0] = (char*)malloc(sizeof(char) * (11));   // why not 11?
-      sprintf_s(rowname[0], 11, "%s%d", "c", idRow);
-      status = CPXaddrows(env, lp, 0, 1, numNZrow, rhs, sense, rmatbeg, rmatind, rmatval, NULL, rowname);
-      if (status) goto TERMINATE;
-      idRow++;
-   }
-
    cur_numrows = CPXgetnumrows(env, lp);
    cur_numcols = CPXgetnumcols(env, lp);
    if (x == NULL)     x     = (double*)malloc(cur_numcols * sizeof(double));
    if (slack == NULL) slack = (double*)malloc(cur_numrows * sizeof(double));
    // Write a copy of the problem to a file, if instance sufficiently small
-   if (numCols * numRows < 1000)
+     if (numCols * numRows < 1000)
       status = CPXwriteprob(env, lp, "prob.lp", NULL);
    if (status)
    {  cout << "Failed to write LP to disk" << endl;
@@ -181,11 +193,13 @@ void MIPmodel::cplexModel()
          status = CPXgetpi(env, lp, pi, 0, CPXgetnumrows(env, lp) - 1);
          status = CPXgetdj(env, lp, dj, 0, CPXgetnumcols(env, lp) - 1);
 
-         status = CPXgetlb(env, lp, lb, 0, cur_numcols - 1);
-         cout << "LB:  "; for (j = 0; j < cur_numcols; j++) cout << lb[j] << ", "; cout << endl;
-         status = CPXgetub(env, lp, ub, 0, cur_numcols - 1);
-         cout << "UB:  "; for (j = 0; j < cur_numcols; j++) cout << ub[j] << ", "; cout << endl;
-         cout << "sol: "; for (j = 0; j < cur_numcols; j++) cout <<  x[j] << ", "; cout << endl;
+         if(cur_numcols < 100)
+         {  status = CPXgetlb(env, lp, lb, 0, cur_numcols - 1);
+            cout << "LB:  "; for (j = 0; j < cur_numcols; j++) cout << lb[j] << ", "; cout << endl;
+            status = CPXgetub(env, lp, ub, 0, cur_numcols - 1);
+            cout << "UB:  "; for (j = 0; j < cur_numcols; j++) cout << ub[j] << ", "; cout << endl;
+            cout << "sol: "; for (j = 0; j < cur_numcols; j++) cout <<  x[j] << ", "; cout << endl;
+         }
       }
    }
 
@@ -203,7 +217,6 @@ void MIPmodel::cplexModel()
    {  cout << "Failed to optimize ." << name << endl;
       goto TERMINATE;
    }
-
 
    status = CPXsolution(env, lp, &solstat, &objval, x, NULL, slack, NULL);
    if (status)
