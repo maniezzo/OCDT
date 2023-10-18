@@ -14,14 +14,10 @@ void MIPmodel::run_MIP()
 
 void MIPmodel::cplexModel()
 {
-   int      solstat;
-   int      objsen;
-   double   objval;
-   double*  incx  = NULL; 
-   bool isVerbose = true;
-
-   int numRows;
-   int numCols;
+   double objval;
+   int    solstat, objsen;
+   bool   isVerbose = true;
+   int numRows, numCols;
    int numNZ, numNZrow;  // nonzeros in the whole problem and in a row
 
    vector<double> c{ 13, 12, 8, 10, 10, 4, 4, 20, 5};
@@ -77,6 +73,9 @@ void MIPmodel::cplexModel()
    {  cout << "Failure to turn on screen indicator, error " << status << endl;
       goto TERMINATE;
    }
+
+   // reads the problem from lp file
+   status = CPXreadcopyprob(env, lp, "myprob.lp", NULL);
    
    probname = (char*)name.c_str();
    objsen   = CPX_MIN;
@@ -191,7 +190,7 @@ void MIPmodel::cplexModel()
    }
 
    // -------------------------------------------- Going to MIP
-   
+   cout << " -------------- Looking for integer optimality -------------- " << endl;
    status = CPXcopyctype(env, lp, ctype);
    if (status)
    {  cerr << "Failed to set integrality on vars.\n";
@@ -241,7 +240,6 @@ void MIPmodel::cplexModel()
 TERMINATE:
 
    // Free up the solution
-   free_and_null((char**)&incx);
    free_and_null((char**)&x);
 
    // Free up the problem as allocated by CPXcreateprob, if necessary
