@@ -15,23 +15,65 @@ void MIPmodel::run_MIP()
 void MIPmodel::cplexModel()
 {
    int      solstat;
+   int      objsen;
    double   objval;
-   double   incobjval;
-   double   meanobjval;
-   double* x = NULL;
-   double* incx = NULL;
-   int      numsol;
-   int      numsolreplaced;
-   int      numdiff;
+   double*  incx  = NULL; 
 
-   CPXENVptr     env = NULL;
-   CPXLPptr      lp = NULL;
-   int           status;
-   int           i, j;
-   int           cur_numcols;
+   int numRows;
+   int numCols;
+   int numNZ, numNZrow;  // nonzeros in the whole problem and in a row
+
+   vector<double> c{ 13, 12, 8, 10, 10, 4, 4, 20, 5, 4, 4, -16, 0, 0, 0, 16 };
+   vector<double> b{ 12,13,10,8,4,4,10,5,20,4,4 };
+   vector<vector<int>> a{ { 1,-11, 12},
+                           { 0,-11, 13},
+                           {-12,13, 3},
+                           {-12,14, 2},
+                           {12,-13, 6},
+                           {-13,14, 5},
+                           {-13,15, 4},
+                           {13,-14, 8},
+                           {-14,16, 7},
+                           {10,13,-15},
+                           {-15,16, 9}
+   };
+   numRows = b.size();
+   numCols = c.size();
+   numNZ   = numRows*numCols;
+
+   double* obj  = (double*)malloc(numCols * sizeof(double));
+   double* lb   = (double*)malloc(numCols * sizeof(double));
+   double* ub   = (double*)malloc(numCols * sizeof(double));
+   int* rmatbeg = (int*)malloc(numRows * sizeof(int));
+   int* rmatind = (int*)malloc(numNZ * sizeof(int));
+   double* rmatval = (double*)malloc(numNZ * sizeof(double));
+   double* rhs     = (double*)malloc(numRows * sizeof(double));
+   char* sense     = (char*)malloc(numRows * sizeof(char));
+   char* ctype     = (char*)malloc(numCols * sizeof(char));
+   char* lptype    = (char*)malloc(numCols * sizeof(char));
+   char* probname  = NULL;
+   char** colname  = (char**)malloc(numCols * sizeof(char*));
+   char** rowname  = (char**)malloc(numRows * sizeof(char*));
+   //for(int i = 0 ; i < numRows; ++i) rowname[i] = (char*) malloc(sizeof(char) * sizeOfString);
+   double* x = NULL;         // cplex solution vector
+   double* pi;
+   double* slack;
+   double* dj;
+
+   dj      = NULL;
+   pi      = NULL;
+   slack   = NULL;
+
+   CPXENVptr env = NULL;
+   CPXLPptr  lp  = NULL;
+   int       status, minind, maxnodes = 1000000;
+   int       i,j,nn;
+   int       cur_numrows,cur_numcols, idRow;
+   double    mincost;
+   
+   string name = "Prob1";
 
    env = CPXopenCPLEX(&status);
-
    if (env == NULL) 
    {  char  errmsg[CPXMESSAGEBUFSIZE];
       CPXgeterrorstring(env, status, errmsg);
@@ -47,12 +89,9 @@ void MIPmodel::cplexModel()
    {  cout << "Failure to turn on screen indicator, error " << status << endl;
       goto TERMINATE;
    }
-
-   // Fill in the data for the problem.
-   status = setproblemdata(&probname, &numcols, &numrows, &objsen, &obj,
-      &rhs, &sense, &matbeg, &matcnt, &matind,
-      &matval, &lb, &ub, &ctype, &qmatbeg, &qmatcnt,
-      &qmatind, &qmatval);
+   
+   probname = (char*)name.c_str();
+   objsen  = CPX_MIN;
 
    if (status)
    {  fprintf(stderr, "Failed to build problem data arrays.\n");
@@ -60,7 +99,7 @@ void MIPmodel::cplexModel()
    }
 
    // Create the problem, using the filename as the problem name
-   lp = CPXcreateprob(env, &status, "OCTP");
+   lp = CPXcreateprob(env, &status, probname);
    if (lp == NULL) 
    {  fprintf(stderr, "Failed to create LP.\n");
       goto TERMINATE;
@@ -68,24 +107,44 @@ void MIPmodel::cplexModel()
 
    CPXchgobjsen(env, lp, CPX_MIN);  // Problem is minimization 
 
-   // Create the new columns.
-   ij = 0;
-   for (i = 0; i < m; i++)
-      for (j = 0; j < n; j++)
+   // Create the columns.
+   numCols = c.size();
+   for (i = 0; i < numCols; i++)
+   {  obj[i] = c[i];
+      lb[i] = 0;
+      ub[i] = 1;
+      ctype[i]  = 'B'; // 'B', 'I','C' to indicate binary, general integer, continuous 
+      lptype[i] = 'C'; // 'B', 'I','C' to indicate binary, general integer, continuous 
+      colname[i] = (char*)malloc(sizeof(char) * (11));   // why not 11?
+      sprintf_s(colname[i], 11, "%s%d", "v", i);
+   }
+   status = CPXnewcols(env, lp, numCols, obj, lb, ub, NULL, colname);  // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+   // Create the constraints
+   idRow = 0;
+   for (i = 0; i < 11; i++)
+   {
+      numNZrow = 0;  // number of nonzero element in the row to add
+      rmatbeg[0] = 0;
+      sense[0] = 'L';
+      rhs[0] = b[i];
+      for (j = 0; j < a[i].size(); j++)
       {
-         obj[ij] = GAP->c[i][j];
-         lb[ij] = 0;
-         ub[ij] = 1.0;
-         ctype[ij] = 'B'; // 'B', 'I','C' to indicate binary, general integer, continuous 
-         lptype[ij] = 'C'; // 'B', 'I','C' to indicate binary, general integer, continuous 
-         colname[ij] = (char*)malloc(sizeof(char) * (11));   // why not 11?
-         sprintf(colname[ij], "%s%d", "x", ij);
-         ij++;
+         rmatind[j] = abs(a[i][j]);
+         rmatval[j] = (a[i][j] >= 0 ? 1 : -1);
+         numNZrow++;
       }
+      rmatbeg[1] = numNZrow;
+      rowname[idRow] = (char*)malloc(sizeof(char) * (11));   // why not 11?
+      sprintf_s(rowname[0], 11, "%s%d", "c", idRow);
+      status = CPXaddrows(env, lp, 0, 1, numNZrow, rhs, sense, rmatbeg, rmatind, rmatval, NULL, rowname);
+      if (status) goto TERMINATE;
+      idRow++;
+   }
 
    // Write a copy of the problem to a file, if instance sufficiently small
-   if (n * m < 100)
-      status = CPXwriteprob(env, lp, "qgap.lp", NULL);
+   if (numCols * numRows < 1000)
+      status = CPXwriteprob(env, lp, "prob.lp", NULL);
    if (status)
    {  cout << "Failed to write LP to disk" << endl;
       goto TERMINATE;
@@ -93,7 +152,7 @@ void MIPmodel::cplexModel()
 
    // max cplex time: 60 seconds
    //status = CPXsetintparam(env, CPXPARAM_TimeLimit, 60);   // max cpu time, can't make this work
-   status = CPXsetintparam(env, CPXPARAM_MIP_Limits_Nodes, conf->maxnodes);   // max num of nodes
+   status = CPXsetintparam(env, CPXPARAM_MIP_Limits_Nodes, maxnodes);   // max num of nodes
    //status = CPXsetintparam(env,    CPXPARAM_DetTimeLimit, 20000);  // max cpu absolute time (ticks), can't make this work
    if (status)
    {  cout << "Failure to reset cpu max time, error " << status << endl;
@@ -109,13 +168,13 @@ void MIPmodel::cplexModel()
    cur_numrows = CPXgetnumrows(env, lp);
    cur_numcols = CPXgetnumcols(env, lp);
 
-   int nn = CPXgetsolnpoolnumsolns(env, lp);
+   nn = CPXgetsolnpoolnumsolns(env, lp);
    if (nn == 0)
    {  cout << "Failed to find feasible solutions." << endl;
       goto TERMINATE;
    }
-   double mincost = DBL_MAX;
-   int minind = -1;
+   mincost = DBL_MAX;
+   minind = -1;
    for (i = 0; i < nn; i++)
    {  status = CPXgetsolnpoolobjval(env, lp, i, &objval);
       cout << "Solution " << i << " cost " << std::fixed << objval << endl;
@@ -125,7 +184,7 @@ void MIPmodel::cplexModel()
       }
    }
 
-   x = (double*)malloc(cur_numcols * sizeof(double));
+   x     = (double*)malloc(cur_numcols * sizeof(double));
    slack = (double*)malloc(cur_numrows * sizeof(double));
    //dj = (double *)malloc(cur_numcols * sizeof(double));
    //pi = (double *)malloc(cur_numrows * sizeof(double));
@@ -137,12 +196,12 @@ void MIPmodel::cplexModel()
       goto TERMINATE;
    }
 
-   status = checkfeas(x, objval);
-   if (status)
-   {  cout << "Solution infeasible !!! status = " << status << endl;
-      goto TERMINATE;
-   }
-   else cout << "Solution checked, status " << status << " cost " << std::fixed << objval << endl;
+   //status = checkfeas(x, objval);
+   //if (status)
+   //{  cout << "Solution infeasible !!! status = " << status << endl;
+   //   goto TERMINATE;
+   //}
+   //else cout << "Solution checked, status " << status << " cost " << std::fixed << objval << endl;
 
    // Write the output to the screen.
    cout << "\nSolution status = " << solstat << endl;
@@ -177,185 +236,6 @@ TERMINATE:
 
    return;
 }
-
-
-int MIPmodel::setproblemdata(char** probname_p, int* numcols_p, int* numrows_p,
-   int* objsen_p, double** obj_p, double** rhs_p, char** sense_p, int** matbeg_p, int** matcnt_p,
-   int** matind_p, double** matval_p, double** lb_p, double** ub_p, char** ctype_p, int** qmatbeg_p, int** qmatcnt_p,
-   int** qmatind_p, double** qmatval_p)
-{
-   int i, j, h, k, ij, hk, idRow, idCol;
-
-   char* zprobname = NULL;
-   double* zobj = NULL;
-   double* zrhs = NULL;
-   char* zsense = NULL;
-   int* zmatbeg = NULL;
-   int* zmatcnt = NULL;
-   int* zmatind = NULL;
-   double* zmatval = NULL;
-   double* zlb = NULL;
-   double* zzub = NULL;
-   char* zctype = NULL;
-   int* zqmatbeg = NULL;
-   int* zqmatcnt = NULL;
-   int* zqmatind = NULL;
-   double* zqmatval = NULL;
-   int      status = 0;
-
-   int numCols = n * m;
-   int numRows = n + m;
-   int numNZ = n * m + n * m;  // nonzeros in the linear coefficient matrix
-   int numQNZ = n * n * m * m; // nonzeros in the quadratic coefficient matrix
-
-   zprobname = (char*)malloc(16 * sizeof(char));
-   zobj = (double*)malloc(numCols * sizeof(double));
-   zrhs = (double*)malloc(numRows * sizeof(double));
-   zsense = (char*)malloc(numRows * sizeof(char));
-   zmatbeg = (int*)malloc(numCols * sizeof(int));
-   zmatcnt = (int*)malloc(numCols * sizeof(int));
-   zmatind = (int*)malloc(numNZ * sizeof(int));
-   zmatval = (double*)malloc(numNZ * sizeof(double));
-   zlb = (double*)malloc(numCols * sizeof(double));
-   zzub = (double*)malloc(numCols * sizeof(double));
-   zctype = (char*)malloc(numCols * sizeof(char));
-   zqmatbeg = (int*)malloc(numCols * sizeof(int));
-   zqmatcnt = (int*)malloc(numCols * sizeof(int));
-   zqmatind = (int*)malloc(numQNZ * sizeof(int));
-   zqmatval = (double*)malloc(numQNZ * sizeof(double));
-
-   if (zprobname == NULL || zobj == NULL ||
-      zrhs == NULL || zsense == NULL ||
-      zmatbeg == NULL || zmatcnt == NULL ||
-      zmatind == NULL || zmatval == NULL ||
-      zlb == NULL || zzub == NULL ||
-      zqmatbeg == NULL || zqmatcnt == NULL ||
-      zqmatind == NULL || zqmatval == NULL) {
-      status = 1;
-      goto TERMINATE;
-   }
-
-   zprobname = (char*)name.c_str();
-
-   // -------------------------- linear objective costs
-   ij = 0;
-   for (i = 0; i < m; i++)
-      for (j = 0; j < n; j++)
-      {
-         zobj[ij] = cl[i][j];
-         zlb[ij] = 0;
-         zzub[ij] = 1;
-         zctype[ij] = 'I';
-         ij++;
-      }
-
-   // -------------------------- quadratic cost matrix
-   ij = 0;
-   numNZ = 0;
-   for (i = 0; i < m; i++)
-      for (j = 0; j < n; j++)
-      {
-         hk = 0;
-         zqmatbeg[ij] = numNZ;
-         for (h = 0; h < m; h++)
-            for (k = 0; k < n; k++)
-            {
-               zqmatind[numNZ] = hk;
-               if (cqf != NULL)
-                  zqmatval[numNZ] = 2 * cqd[i][h] * cqf[j][k]; // d_ih f_jk input format MIND THE 2*
-               else
-                  zqmatval[numNZ] = 2 * cqd[ij][hk];           // c_ijhk input format    MIND THE 2*
-               numNZ++;
-               hk++;
-            }
-         zqmatcnt[ij] = numNZ - zqmatbeg[ij];
-         ij++;
-      }
-
-
-   // -------------------------- find eigenvalues
-   //double evalue = eigenValues(zqmatval,i*j);
-   double evalue = eigenValues(zqmatval, m * n);
-   cout << "Eigenvalue: " << evalue << endl;
-
-   // -------------------------- constraints section
-   idCol = 0;
-   numNZ = 0;
-   for (i = 0; i < m; i++)
-      for (j = 0; j < n; j++)
-      {
-         zmatbeg[idCol] = numNZ;
-
-         zmatind[numNZ] = j;           // Assignment constraint
-         zmatval[numNZ] = 1.0;
-         numNZ++;
-
-         zmatind[numNZ] = n + i;       // Capacity constraint
-         zmatval[numNZ] = req[i][j];
-         numNZ++;
-
-         zmatcnt[idCol] = numNZ - zmatbeg[idCol];
-         idCol++;
-      }
-
-   // -------------------------- rhs
-   for (j = 0; j < n; j++)
-   {
-      zsense[j] = 'E';
-      zrhs[j] = 1.0;
-   }
-
-   for (i = 0; i < m; i++)
-   {
-      zsense[n + i] = 'L';
-      zrhs[n + i] = cap[i];
-   }
-
-TERMINATE:
-   if (status)
-   {
-      free_and_null((char**)&zprobname);
-      free_and_null((char**)&zobj);
-      free_and_null((char**)&zrhs);
-      free_and_null((char**)&zsense);
-      free_and_null((char**)&zmatbeg);
-      free_and_null((char**)&zmatcnt);
-      free_and_null((char**)&zmatind);
-      free_and_null((char**)&zmatval);
-      free_and_null((char**)&zlb);
-      free_and_null((char**)&zzub);
-      free_and_null((char**)&zctype);
-      free_and_null((char**)&zqmatbeg);
-      free_and_null((char**)&zqmatcnt);
-      free_and_null((char**)&zqmatind);
-      free_and_null((char**)&zqmatval);
-   }
-   else
-   {
-      *numcols_p = numCols;
-      *numrows_p = numRows;
-      *objsen_p = CPX_MIN;
-
-      *probname_p = zprobname;
-      *obj_p = zobj;
-      *rhs_p = zrhs;
-      *sense_p = zsense;
-      *matbeg_p = zmatbeg;
-      *matcnt_p = zmatcnt;
-      *matind_p = zmatind;
-      *matval_p = zmatval;
-      *lb_p = zlb;
-      *ub_p = zzub;
-      *ctype_p = zctype;
-      *qmatbeg_p = zqmatbeg;
-      *qmatcnt_p = zqmatcnt;
-      *qmatind_p = zqmatind;
-      *qmatval_p = zqmatval;
-   }
-   return (status);
-
-}  // END setproblemdata
-
 
 string MIPmodel::readConfig()
 {  string line, datapath, dataFileName;
@@ -411,7 +291,7 @@ void MIPmodel::readData(string dataFileName)
          j = stoi(elem[ndim + 1]);
          Y.push_back(j);
          if (j > (nclasses - 1)) nclasses = j + 1;
-      l0:      cont++;
+l0:      cont++;
       }
       f.close();
       ndim = X[0].size(); // in case of partial dataset
@@ -427,7 +307,6 @@ void MIPmodel::free_and_null(char** ptr)
       *ptr = NULL;
    }
 } /* END free_and_null */
-
 
 // split di una stringa in un array di elementi delimitati da separatori
 vector<string> MIPmodel::split(string str, char sep)
