@@ -21,28 +21,19 @@ void MIPmodel::cplexModel()
    int numRows, numCols;
    int numNZ, numNZrow;  // nonzeros in the whole problem and in a row
 
-   vector<double> c{ 13, 12, 8, 10, 10, 4, 4, 20, 5};
-   vector<double> b{ 1,1,1,1 };
-   vector<vector<int>> a{ {0, 0, 0, 0, 0, 1, 1, 0, 1},
-                          {1, 1, 1, 1, 0, 1, 0, 0, 1},
-                          {1, 0, 0, 1, 1, 0, 0, 1, 0},
-                          {0, 0, 1, 0, 0, 1, 1, 1, 0} };
-   numRows = b.size();
-   numCols = c.size();
-
-   double* obj  = (double*)malloc(numCols * sizeof(double));
-   double* lb   = (double*)malloc(numCols * sizeof(double));
-   double* ub   = (double*)malloc(numCols * sizeof(double));
-   int* rmatbeg = (int*)malloc(2 * sizeof(int));                 // one row, 0 begin, 1 end
-   int* rmatind = (int*)malloc(numCols * sizeof(int));           // nonzeros are at ost the cells of a row (adding one row at a time)
-   double* rmatval = (double*)malloc(numCols * sizeof(double));  // nonzeros are at ost the cells of a row (adding one row at a time)
-   double* rhs     = (double*)malloc(1 * sizeof(double));        // one row at a time
-   char* sense     = (char*)malloc(1 * sizeof(char));            // one row at a time
-   char* ctype     = (char*)malloc(numCols * sizeof(char));
-   char* lptype    = (char*)malloc(numCols * sizeof(char));
+   double* obj  = NULL;
+   double* lb   = NULL;
+   double* ub   = NULL;
+   int* rmatbeg = NULL;                 // one row, 0 begin, 1 end
+   int* rmatind = NULL;           // nonzeros are at ost the cells of a row (adding one row at a time)
+   double* rmatval = NULL;  // nonzeros are at ost the cells of a row (adding one row at a time)
+   double* rhs     = NULL;        // one row at a time
+   char* sense     = NULL;            // one row at a time
+   char* ctype     = NULL;
+   char* lptype    = NULL;
    char* probname  = NULL;
-   char** colname  = (char**)malloc(numCols * sizeof(char*));
-   char** rowname  = (char**)malloc(1 * sizeof(char*));           // one row at a time
+   char** colname  = NULL;
+   char** rowname  = NULL;           // one row at a time
    double* x     = NULL;         // cplex solution vector
    double* pi    = NULL;
    double* slack = NULL;
@@ -94,8 +85,30 @@ void MIPmodel::cplexModel()
       {  cout << "Failed to read lp data." << endl;
          goto TERMINATE;
       }
+      numRows = cur_numrows = CPXgetnumrows(env, lp);
+      numCols = cur_numcols = CPXgetnumcols(env, lp);
    }
    else
+   {
+      numCols = n*n/2;
+      numRows = 6;
+   }
+
+   obj     = (double*)malloc(numCols * sizeof(double));
+   lb      = (double*)malloc(numCols * sizeof(double));
+   ub      = (double*)malloc(numCols * sizeof(double));
+   rmatbeg = (int*)malloc(2 * sizeof(int));              // one row, 0 begin, 1 end
+   rmatind = (int*)malloc(numCols * sizeof(int));        // nonzeros are at ost the cells of a row (adding one row at a time)
+   rmatval = (double*)malloc(numCols * sizeof(double));  // nonzeros are at ost the cells of a row (adding one row at a time)
+   rhs     = (double*)malloc(1 * sizeof(double));        // one row at a time
+   sense   = (char*)malloc(1 * sizeof(char));            // one row at a time
+   ctype   = (char*)malloc(numCols * sizeof(char));
+   lptype  = (char*)malloc(numCols * sizeof(char));
+   colname = (char**)malloc(numCols * sizeof(char*));
+   rowname = (char**)malloc(1 * sizeof(char*));          // one row at a time
+
+   // construct the problem, do not read it
+   if (!fReadProblem)
    {   
       objsen   = CPX_MIN;
       if (status)
@@ -105,9 +118,8 @@ void MIPmodel::cplexModel()
       CPXchgobjsen(env, lp, CPX_MIN);  // Problem is minimization 
 
       // Create the columns.
-      numCols = c.size();
       for (i = 0; i < numCols; i++)
-      {  obj[i] = c[i];
+      {  obj[i] = 1;
          lb[i] = 0;
          ub[i] = 1;
          ctype[i]  = 'B'; // 'B', 'I','C' to indicate binary, general integer, continuous 
@@ -123,9 +135,9 @@ void MIPmodel::cplexModel()
       {  numNZrow = 0;  // number of nonzero element in the row to add
          rmatbeg[0] = 0;
          sense[0] = 'G';
-         rhs[0] = b[i];
-         for (j = 0; j < a[i].size(); j++)
-            if (a[i][j] > 0)
+         rhs[0]   = 1;
+         for (j = 0; j < numCols; j++)
+            if ( (rand() % RAND_MAX) > 75)
             {  rmatind[numNZrow] = j;
                rmatval[numNZrow] = 1;
                numNZrow++;
@@ -138,12 +150,12 @@ void MIPmodel::cplexModel()
          idRow++;
       }
    }
-   cur_numrows = CPXgetnumrows(env, lp);
-   cur_numcols = CPXgetnumcols(env, lp);
+   numRows = cur_numrows = CPXgetnumrows(env, lp);
+   numCols = cur_numcols = CPXgetnumcols(env, lp);
    if (x == NULL)     x     = (double*)malloc(cur_numcols * sizeof(double));
    if (slack == NULL) slack = (double*)malloc(cur_numrows * sizeof(double));
    // Write a copy of the problem to a file, if instance sufficiently small
-     if (numCols * numRows < 1000)
+   if (numCols * numRows < 1000)
       status = CPXwriteprob(env, lp, "prob.lp", NULL);
    if (status)
    {  cout << "Failed to write LP to disk" << endl;
@@ -178,7 +190,7 @@ void MIPmodel::cplexModel()
          status = max(status, solstat);
          goto TERMINATE;
       }
-      cout << "\nLP Solution status = " << status << endl;
+      cout << "\nLP Solution status (0 ok) = " << status << endl;
       cout << "LP Solution value  = " << objval << endl;
       if (isVerbose)
       {
@@ -205,6 +217,9 @@ void MIPmodel::cplexModel()
 
    // -------------------------------------------- Going to MIP
    cout << " -------------- Looking for integer optimality -------------- " << endl;
+   for (i = 0; i < numCols; i++)
+      ctype[i] = 'B'; // 'B', 'I','C' to indicate binary, general integer, continuous 
+
    status = CPXcopyctype(env, lp, ctype);
    if (status)
    {  cerr << "Failed to set integrality on vars.\n";
@@ -220,34 +235,34 @@ void MIPmodel::cplexModel()
 
    status = CPXsolution(env, lp, &solstat, &objval, x, NULL, slack, NULL);
    if (status)
-   {
-      cerr << "Failed to obtain MIP solution.\n";
+   {  cerr << "Failed to obtain MIP solution.\n";
       goto TERMINATE;
    }
    cout << "\nMIP Solution status (101 optimal ok) = " << solstat << endl;
-   cout << "MIP Solution value  = " << objval << endl;
+   cout << "MIP Solution value  = " << objval << "\nSolution: " << endl;
+   for (j = 0; j < cur_numcols; j++)
+      if (x[j] > 0.001)
+         cout << j << " ";
+   cout << endl;
 
    if (isVerbose)
    {
       int solnmethod, solntype, pfeasind, dfeasind;
       status = CPXsolninfo(env, lp, &solnmethod, &solntype, &pfeasind, &dfeasind);
 
-      for (i = 0; i < cur_numrows; i++)
-         cout << "Row: " << i << " Slack = " << slack[i] << endl;
-      for (j = 0; j < cur_numcols; j++)
-         if (x[j] > 0.001)
-            cout << "Column " << j << " - " << colname[j] << "  Value = " << x[j] << endl;
-
       status = CPXgetlb(env, lp, lb, 0, cur_numcols - 1);
       status = CPXgetub(env, lp, ub, 0, cur_numcols - 1);
 
-      cout << "LB:  "; for (j = 0; j < cur_numcols; j++) cout << lb[j] << ", "; cout << endl;
-      cout << "UB:  "; for (j = 0; j < cur_numcols; j++) cout << ub[j] << ", "; cout << endl;
-      cout << "sol: "; for (j = 0; j < cur_numcols; j++) cout << x[j] << ", "; cout << endl;
-      for (j = 0; j < cur_numcols; j++)
-         if (x[j] > 0.001)
-            cout << j << " ";
-      cout << endl;
+      if(cur_numcols<200 && cur_numrows<200)
+      {  for (i = 0; i < cur_numrows; i++) cout << "Row: " << i << " Slack = " << slack[i] << endl;
+         for (j = 0; j < cur_numcols; j++)
+            if (x[j] > 0.001)
+               cout << "Column " << j << "  Value = " << x[j] << endl;
+
+         cout << "LB:  "; for (j = 0; j < cur_numcols; j++) cout << lb[j] << ", "; cout << endl;
+         cout << "UB:  "; for (j = 0; j < cur_numcols; j++) cout << ub[j] << ", "; cout << endl;
+         cout << "sol: "; for (j = 0; j < cur_numcols; j++) cout << x[j] << ", "; cout << endl;
+      }
    }
 
 TERMINATE:
