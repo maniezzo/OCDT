@@ -8,6 +8,7 @@ using System.Text.Json.Nodes;
 using Google.OrTools;
 using Google.OrTools.LinearSolver;
 using static Google.OrTools.LinearSolver.Solver;
+using System.Data;
 //using Google.OrTools.ConstraintSolver;
 
 namespace ODTMIPmodel
@@ -219,6 +220,7 @@ l0:            continue;
             using (StreamWriter out_f = new StreamWriter($"{dataset}.lp"))
                out_f.Write(lp_text);
          }
+         writeProb(dataset,numVar,numConstr,lstTableauRows);
 
          // ------------------------------------ SOLVE
          resultStatus = solver.Solve();
@@ -350,6 +352,21 @@ l0:            continue;
          for(i=0;i<cut.Count();i++)
             hash = hash + 13 + (17 * cut[i] * cut[i]);
          return hash;
+      }
+
+      // scrive il problema su file, formato mio
+      private void writeProb(string dataset, int nvar, int ncons, List<List<int>> lstTableauRows)
+      {  int i,j;
+
+         using (StreamWriter fout = new StreamWriter($"{dataset}.prob"))
+         {  fout.WriteLine(nvar);
+            fout.WriteLine(ncons);
+            for(i=0;i<ncons;i++)
+            {  for (j = 0; j < lstTableauRows[i].Count;j++)
+                  fout.Write($"{lstTableauRows[i][j]} ");
+               fout.WriteLine();
+            }
+         }
       }
    }
 }
