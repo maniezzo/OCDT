@@ -17,7 +17,7 @@ private:
       vector<vector<int>> lstConstr,lstCols; // colonne di ogni vincolo e vincoli di ogni colonna
 
       void subgradient();
-      void subproblem(vector<int> x, vector<double> lambda, double &zlbiter, int &zubiter);
+      void subproblem(vector<int> x, vector<double> lambda, double &zlbiter);
       void build_structures();
       void read_data();
       vector<string> split(string str, char sep);

@@ -18,11 +18,12 @@ void Lagrangian::subgradient()
    int zub=INT_MAX,zubiter;
    vector<double> lambda(nconstr);
    vector<int> x(nvar);
+   vector<int> subgr(nconstr);
 
    for(i=0;i<nconstr;i++) lambda[i] = 0;
 
    zlbiter = zubiter = 0;
-   subproblem(x, lambda, zlbiter, zubiter);
+   subproblem(x, lambda, zlbiter);
    if(zlbiter > zlb) zlb = zlbiter;
 
    // optimality check
@@ -33,11 +34,15 @@ void Lagrangian::subgradient()
    }
 
    // subgradient update
-
+   for (i = 0; i < nconstr; i++) 
+   {  subgr[i] = 1;
+      for(j=0;j<lstConstr[i].size();j++)
+         subgr[i] -= x[j];
+   }
 }
 
 // solves the SCP given the lambdas
-void Lagrangian::subproblem(vector<int> x, vector<double> lambda, double &zlbiter, int &zubiter)
+void Lagrangian::subproblem(vector<int> x, vector<double> lambda, double &zlbiter)
 {
    int i,j;
    double colCost; // the penalized cost of each column
