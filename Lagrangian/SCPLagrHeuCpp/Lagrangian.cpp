@@ -1,57 +1,88 @@
 #include <string.h>
 #include <stdlib.h>
+#include <iomanip>   // setw
 #include "Lagrangian.h"
 
 void Lagrangian::run_lagrangian()
-{
+{  int maxiter;
+   double alpha;
+
    cout << "Starting Lagrangian" << endl;
    read_data();
    build_structures();
-   subgradient();
+
+   maxiter = 100;
+   alpha = 2.5;
+   subgradient(alpha,maxiter);
    cout << "Lagrangian completed" << endl;
 }
 
 // LA funzione
-void Lagrangian::subgradient()
+void Lagrangian::subgradient(double alpha, int maxiter)
 {  int i,j;
-   double zlb=0,zlbiter;
-   int zub=INT_MAX,zubiter;
+   double zlb,zlbiter,sumSubgr2,step;
+   int zub,zubiter,iter;
    vector<double> lambda(nconstr);
    vector<int> x(nvar);
    vector<int> subgr(nconstr);
 
    for(i=0;i<nconstr;i++) lambda[i] = 0;
+   zlb = 2;       // safe guess
+   zub = nvar;    // safe guess
+   cout.precision(2);
 
-   zlbiter = zubiter = 0;
-   subproblem(x, lambda, zlbiter);
-   if(zlbiter > zlb) zlb = zlbiter;
-
-   // optimality check
-   if (zub - zlb < 1)
+   ofstream fout("lagrheu.log");
+   fout.precision(2);
+   for(iter=0;iter<maxiter;iter++)
    {
-      cout << "OPTIMUM FOUND!! \n exiting ..." << endl;
-      return;
-   }
+      zlbiter = zubiter = 0;
+      subproblem(x, lambda, zlbiter);
+      if(zlbiter > zlb) zlb = zlbiter;
 
-   // subgradient update
-   for (i = 0; i < nconstr; i++) 
-   {  subgr[i] = 1;
-      for(j=0;j<lstConstr[i].size();j++)
-         subgr[i] -= x[j];
+      // optimality check
+      if (zub - zlb < 1)
+      {  cout << "OPTIMUM FOUND!! \n exiting ..." << endl;
+         return;
+      }
+
+      // subgradients computation
+      sumSubgr2 = 0;
+      for (i = 0; i < nconstr; i++) 
+      {  subgr[i] = 1;
+         for(j=0;j<lstColOfConstr[i].size();j++)
+            subgr[i] -= x[lstColOfConstr[i][j]];
+         sumSubgr2 += subgr[i]*subgr[i];
+      }
+
+      if(zub > 2.0*zlb) step = alpha*1.5*zlb / sumSubgr2;
+      else              step = alpha*(zub-zlb) / sumSubgr2;
+
+      for (i = 0; i < nconstr; i++)
+      {  lambda[i] += step*subgr[i];
+         if(lambda[i]<=0) lambda[i]=0;
+      }
+
+      cout << "iter " << iter <<" zlb=" << zlb << " zlbiter= " << zlbiter << " zubiter=" << zubiter << " zub=" 
+           << zub << " sumSubgr2=" << sumSubgr2 << " step=" << step <<endl;
+
+      // log
+      for (i = 0; i < nconstr; i++) fout << setw(6) <<  subgr[i]; fout << endl;
+      for (i = 0; i < nconstr; i++) fout << setw(6) << std::fixed << lambda[i]; fout << endl;
    }
+   fout.close();
 }
 
 // solves the SCP given the lambdas
-void Lagrangian::subproblem(vector<int> x, vector<double> lambda, double &zlbiter)
+void Lagrangian::subproblem(vector<int> &x, vector<double> &lambda, double &zlbiter)
 {
    int i,j;
    double colCost; // the penalized cost of each column
    
    zlbiter = 0;
    for (i = 0; i < nvar; i++)
-   {  colCost = 1;
-      for(j=0;j<lstCols[i].size(); j++)
-         colCost -= lambda[lstCols[i][j]];
+   {  colCost = 1;  // c_j
+      for(j=0;j<lstConstrOfCol[i].size(); j++)
+         colCost -= lambda[lstConstrOfCol[i][j]];
 
       if(colCost < 0) x[i] = 1;
       else            x[i] = 0;
@@ -67,11 +98,11 @@ void Lagrangian::build_structures()
 {  int i,j,col;
    
    // for each column, the constraints that cover it
-   lstCols = vector<vector<int>>(nvar);
+   lstConstrOfCol = vector<vector<int>>(nvar);
    for(i=0;i<nconstr;i++)
-      for(j=0;j<lstConstr[i].size();j++)
-      {  col = lstConstr[i][j];
-         lstCols[col].push_back(i);
+      for(j=0;j<lstColOfConstr[i].size();j++)
+      {  col = lstColOfConstr[i][j];
+         lstConstrOfCol[col].push_back(i);
       }
 }
 
@@ -88,8 +119,7 @@ void Lagrangian::read_data()
    cout << "Opening datafile " << dataFile << endl;
    f.open(dataFile);
    if (f.is_open())
-   {
-      getline(f, line);
+   {  getline(f, line);
       nvar = stoi(line);
       getline(f, line);
       nconstr = stoi(line);
@@ -100,11 +130,14 @@ void Lagrangian::read_data()
          val.clear();
          for(i=0;i<elem.size();i++)
             val.push_back( stoi(elem[i]));
-         lstConstr.push_back(val);
+         lstColOfConstr.push_back(val);
       }
       f.close();
    }
-   else cout << "Cannot open dataset input file\n";
+   else 
+   {  cout << "Cannot open dataset input file\n";
+      exit(1);
+   }
 }
 
 // split di una stringa in un array di elementi delimitati da separatori
