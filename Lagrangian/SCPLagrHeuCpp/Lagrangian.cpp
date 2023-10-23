@@ -13,6 +13,7 @@ void Lagrangian::run_lagrangian()
 
    maxiter = 100;
    alpha = 2.5;
+   isVerbose = false;
    subgradient(alpha,maxiter);
    cout << "Lagrangian completed" << endl;
 }
@@ -39,9 +40,12 @@ void Lagrangian::subgradient(double alpha, int maxiter)
       subproblem(x, lambda, zlbiter);
       if(zlbiter > zlb) zlb = zlbiter;
 
+      zubiter = fixZub(x);
+      if(zubiter<zub) zub = zubiter;
+
       // optimality check
       if (zub - zlb < 1)
-      {  cout << "OPTIMUM FOUND!! \n exiting ..." << endl;
+      {  cout << "OPTIMUM FOUND!! zub=" << zub <<"\nexiting ..." << endl;
          return;
       }
 
@@ -64,15 +68,72 @@ void Lagrangian::subgradient(double alpha, int maxiter)
 
       cout << "iter " << iter <<" zlb=" << zlb << " zlbiter= " << zlbiter << " zubiter=" << zubiter << " zub=" 
            << zub << " sumSubgr2=" << sumSubgr2 << " step=" << step <<endl;
+      
+      if(iter%100==0) alpha = 0.9*alpha;
 
       // log
-      for (i = 0; i < nconstr; i++) fout << setw(6) <<  subgr[i]; fout << endl;
-      for (i = 0; i < nconstr; i++) fout << setw(6) << std::fixed << lambda[i]; fout << endl;
+      if(isVerbose)
+      {  for (i = 0; i < nconstr; i++) fout << setw(6) << subgr[i]; fout << endl;
+         for (i = 0; i < nconstr; i++) fout << setw(6) << std::fixed << lambda[i]; fout << endl;
+      }
    }
    fout.close();
 }
 
-// solves the SCP given the lambdas
+int Lagrangian::fixZub(vector<int> &x)
+{  int i,j,nunc,zubiter=0;
+   vector<bool> fCol(nvar);     // columns in the solution
+   vector<bool> fRow(nconstr);  // row already covered;
+   vector<int>  lstUncovered;   // uncovered rows;
+   bool fLoop=false;
+
+   for(i=0;i<nconstr;i++) fRow[i]=false;
+   for(i=0;i<nvar;i++)    fCol[i]=false;
+
+   for (i = 0; i < nvar; i++)
+      if(x[i]>0)
+      {  fCol[i] = true;
+         zubiter++;
+         for(j=0;j<lstConstrOfCol[i].size();j++)
+            fRow[lstConstrOfCol[i][j]] = true;
+      }
+      else
+         fLoop = true;
+   
+   while (fLoop)
+   {
+      lstUncovered.clear();
+      for(i=0;i<nconstr;i++)
+         if(!fRow[i])
+            lstUncovered.push_back(i);
+
+      int minNunc=INT_MAX;
+      vector<int> lstMin;
+      for (int ii = 0; ii < lstUncovered.size(); ii++) // I choose the col that covers the least covered row
+      {  nunc = 0;
+         i = lstUncovered[ii];  // uncovered row
+         for (int jj = 0; jj < lstColOfConstr[i].size(); jj++)
+         {  j = lstColOfConstr[i][jj];
+            if(!fRow[j])
+               nunc++;
+         }
+         if (nunc < minNunc) // least num of covering columns so far
+         {  minNunc = nunc;
+            lstMin.clear();
+            lstMin.push_back(i);
+         }
+         else if(nunc==minNunc)
+            //if(find(lstMin.begin(), lstMin.end(), i) != lstMin.end()) // not already present
+               lstMin.push_back(i);
+      }
+      // scelgo la colonna in lstMin che copre piu' righe
+      ...
+   }
+
+   return zubiter;
+}
+
+// solves the LR of the SCP given the lambdas
 void Lagrangian::subproblem(vector<int> &x, vector<double> &lambda, double &zlbiter)
 {
    int i,j;
