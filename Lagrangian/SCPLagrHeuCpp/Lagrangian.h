@@ -18,7 +18,7 @@ class Lagrangian
       vector<vector<int>> lstColOfConstr,lstConstrOfCol; // colonne di ogni vincolo e vincoli di ogni colonna
       vector<int> zubSol; // the best found solution, columns id
 
-      void subgradient(double alpha, int maxiter);
+      void subgradient();
       void subproblem(vector<int> &x, vector<double> &lambda, double &zlbiter);
       int fixZub(vector<int> x, int& zub);
       void writeSolution(string path, string dataset);

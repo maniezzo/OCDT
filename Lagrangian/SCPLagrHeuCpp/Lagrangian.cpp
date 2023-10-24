@@ -10,14 +10,12 @@ void Lagrangian::run_lagrangian()
 
    cout << "Starting Lagrangian" << endl;
    string path = "\\git\\ODT\\MIPmodel\\cSharp\\ODTMIPmodel\\bin\\Debug\\net6.0\\";
-   string dataset = "test1";
+   string dataset = "breastCoimbra";
    read_data(path, dataset);
    build_structures();
 
-   maxiter = 100;
-   alpha = 2.5;
    isVerbose = false;
-   subgradient(alpha,maxiter);
+   subgradient();
    writeSolution(path,dataset);
    cout << "Lagrangian completed" << endl;
 }
@@ -54,9 +52,9 @@ void Lagrangian::writeSolution(string path, string dataset)
 }
 
 // THE function
-void Lagrangian::subgradient(double alpha, int maxiter)
+void Lagrangian::subgradient()
 {  int i,j;
-   double zlb,zlbiter,sumSubgr2,step;
+   double alpha,zlb,zlbiter,sumSubgr2,step;
    int zub,zubiter,iter;
    vector<double> lambda(nconstr);
    vector<int> x(nvar);
@@ -66,6 +64,12 @@ void Lagrangian::subgradient(double alpha, int maxiter)
    zlb = 2;       // safe guess
    zub = nvar;    // safe guess
    cout.precision(2);
+   int maxiter = 12000;      // num iterations
+   int stepiter = 100;       // every when to write log
+   double alphainit = 7.5;   // initial (and reset) alpha value
+   double alphastep = 0.9;   // percentage of alpha after update
+   double alphamin  = 0.01;  // min alpha, below reset to init
+   alpha = alphainit;
 
    ofstream fout("lagrheu.log");
    fout.precision(2);
@@ -99,10 +103,12 @@ void Lagrangian::subgradient(double alpha, int maxiter)
          if(lambda[i]<=0) lambda[i]=0;
       }
 
-      cout << "iter " << iter <<" zlb=" << zlb << " zlbiter= " << zlbiter << " zubiter=" << zubiter << " zub=" 
-           << zub << " sumSubgr2=" << sumSubgr2 << " step=" << step <<endl;
+      if(iter%stepiter == 0)
+         cout << "iter " << iter <<" zlb=" << zlb << " zlbiter= " << zlbiter << " zubiter=" << zubiter << " zub=" 
+              << zub << " sumSubgr2=" << sumSubgr2 << " step=" << step <<endl;
       
-      if(iter%100==0) alpha = 0.9*alpha;
+      if (iter % (maxiter/10) == 0) alpha = alphastep * alpha;
+      if(alpha < alphamin) alpha = alphainit;  // alpha reset
 
       // log
       if(isVerbose)
