@@ -35,18 +35,16 @@ void Lagrangian::subgradient(double alpha, int maxiter)
    ofstream fout("lagrheu.log");
    fout.precision(2);
    for(iter=0;iter<maxiter;iter++)
-   {
-      zlbiter = zubiter = 0;
+   {  zlbiter = zubiter = 0;
       subproblem(x, lambda, zlbiter);
       if(zlbiter > zlb) zlb = zlbiter;
 
-      zubiter = fixZub(x);
-      if(zubiter<zub) zub = zubiter;
+      zubiter = fixZub(x,zub);
 
       // optimality check
       if (zub - zlb < 1)
-      {  cout << "OPTIMUM FOUND!! zub=" << zub <<"\nexiting ..." << endl;
-         return;
+      {  cout << "OPTIMUM FOUND!! zlb=" << zlb << " zub = " << zub <<"\nexiting ..." << endl;
+         goto lend;
       }
 
       // subgradients computation
@@ -78,9 +76,12 @@ void Lagrangian::subgradient(double alpha, int maxiter)
       }
    }
    fout.close();
+
+lend: i=0;
 }
 
-int Lagrangian::fixZub(vector<int> &x)
+// a simple fixing heuristic to make the lagrangian solution feasible
+int Lagrangian::fixZub(vector<int> x, int &zub)
 {  int i,j,nunc,zubiter=0;
    vector<bool> fCol(nvar);     // columns in the solution
    vector<bool> fRow(nconstr);  // row already covered;
@@ -101,11 +102,11 @@ int Lagrangian::fixZub(vector<int> &x)
          fLoop = true;
    
    while (fLoop)
-   {
-      lstUncovered.clear();
+   {  lstUncovered.clear();
       for(i=0;i<nconstr;i++)
          if(!fRow[i])
             lstUncovered.push_back(i);
+      if(lstUncovered.size() == 0) goto lend;
 
       int minNunc=INT_MAX;
       vector<int> lstMin;
@@ -120,23 +121,51 @@ int Lagrangian::fixZub(vector<int> &x)
          if (nunc < minNunc) // least num of covering columns so far
          {  minNunc = nunc;
             lstMin.clear();
-            lstMin.push_back(i);
+            lstMin.push_back(j); // column covering the least number of rows
          }
          else if(nunc==minNunc)
             //if(find(lstMin.begin(), lstMin.end(), i) != lstMin.end()) // not already present
-               lstMin.push_back(i);
+               lstMin.push_back(j);
       }
+
       // scelgo la colonna in lstMin che copre piu' righe
-      ...
+      int imax=-1, maxRows = 0;
+      for (int ii = 0; ii < lstMin.size(); ii++)
+      {  i = lstMin[ii];
+         nunc = 0;
+         for (int jj = 0; jj < lstUncovered.size(); jj++)
+         {  j = lstUncovered[jj];
+            if (find(lstConstrOfCol[i].begin(), lstConstrOfCol[i].end(), j) != lstConstrOfCol[i].end())
+               nunc++;
+         }
+         if(nunc>maxRows) 
+         {  maxRows = nunc;
+            imax=i;  // best column so far
+         }
+      }
+
+      // metto la colonna imax in soluzione
+      x[imax] = 1;
+      zubiter++;
+      fCol[imax] = true;
+      for(i=0;i<lstConstrOfCol[imax].size();i++)
+         fRow[lstConstrOfCol[imax][i]] = true;
    }
 
+lend: if (zubiter < zub)
+   {  zub = zubiter;
+      cout << "New zub!!! zub = " << zub << endl;
+      zubSol.clear();
+      for(i=0;i<nvar;i++)
+         if(x[i] > 0)
+            zubSol.push_back(i);
+   }
    return zubiter;
 }
 
 // solves the LR of the SCP given the lambdas
 void Lagrangian::subproblem(vector<int> &x, vector<double> &lambda, double &zlbiter)
-{
-   int i,j;
+{  int i,j;
    double colCost; // the penalized cost of each column
    
    zlbiter = 0;
