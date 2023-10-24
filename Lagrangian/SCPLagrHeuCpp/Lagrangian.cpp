@@ -2,23 +2,58 @@
 #include <stdlib.h>
 #include <iomanip>   // setw
 #include "Lagrangian.h"
+#include "json.h"
 
 void Lagrangian::run_lagrangian()
 {  int maxiter;
    double alpha;
 
    cout << "Starting Lagrangian" << endl;
-   read_data();
+   string path = "\\git\\ODT\\MIPmodel\\cSharp\\ODTMIPmodel\\bin\\Debug\\net6.0\\";
+   string dataset = "test1";
+   read_data(path, dataset);
    build_structures();
 
    maxiter = 100;
    alpha = 2.5;
    isVerbose = false;
    subgradient(alpha,maxiter);
+   writeSolution(path,dataset);
    cout << "Lagrangian completed" << endl;
 }
 
-// LA funzione
+// writes the solution on a file, json format
+void Lagrangian::writeSolution(string path, string dataset)
+{  int i,j;
+   string line;
+   string dataFile = path + dataset + "_allcuts.json";
+   // leggo i tagli
+   ifstream fin(dataFile);
+   stringstream buffer;
+   buffer << fin.rdbuf();
+   line = buffer.str();
+   json::Value JSV = json::Deserialize(line);
+   json::Array fdim = (json::Array)JSV["dim"];
+   json::Array fpos = (json::Array)JSV["pos"];
+   fin.close();
+
+   // writes out the solution
+   ofstream fout(dataset+"_cuts.json");
+   fout << "{" << endl << "\"dim\" : [";
+   for (int ii = 0; ii < zubSol.size()-1; ii++)
+   {  i = zubSol[ii];
+      fout << (int) fdim[i] << ",";      // dimensione in cui agisce il taglio
+   }
+   fout << (int) fdim[zubSol[zubSol.size() - 1]] << "]," << endl << "\"pos\" : [";
+   for (int ii = 0; ii < zubSol.size() - 1; ii++)
+   {  i = zubSol[ii];
+      fout << (double) fpos[i] << ",";   // posizione del taglio
+   }
+   fout << (double)fpos[zubSol[zubSol.size() - 1]] << "]" << endl << "}";
+   fout.close();
+}
+
+// THE function
 void Lagrangian::subgradient(double alpha, int maxiter)
 {  int i,j;
    double zlb,zlbiter,sumSubgr2,step;
@@ -196,7 +231,7 @@ void Lagrangian::build_structures()
       }
 }
 
-void Lagrangian::read_data()
+void Lagrangian::read_data(string path, string dataset)
 {  int i,j;
    string line;
    vector<string> elem;
@@ -204,8 +239,7 @@ void Lagrangian::read_data()
 
    // leggo i punti
    ifstream f;
-   string path = "\\git\\ODT\\MIPmodel\\cSharp\\ODTMIPmodel\\bin\\Debug\\net6.0\\";
-   string dataFile = path + "test1.prob";
+   string dataFile = path + dataset+ ".prob";
    cout << "Opening datafile " << dataFile << endl;
    f.open(dataFile);
    if (f.is_open())

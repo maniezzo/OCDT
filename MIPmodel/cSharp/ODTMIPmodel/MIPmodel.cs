@@ -9,6 +9,7 @@ using Google.OrTools;
 using Google.OrTools.LinearSolver;
 using static Google.OrTools.LinearSolver.Solver;
 using System.Data;
+using System.Runtime.InteropServices;
 //using Google.OrTools.ConstraintSolver;
 
 namespace ODTMIPmodel
@@ -85,7 +86,7 @@ namespace ODTMIPmodel
       }
 
       // trova tutti i possibili cut, tagli fra due punti ordinati che devono essere separati
-      private void findCuts(List<Tuple<int, double>> lstCuts)
+      private void findCuts(List<Tuple<int, double>> lstCuts, string dataset)
       {  int cont,i,j,d;
 
          cont = 0;
@@ -126,8 +127,20 @@ namespace ODTMIPmodel
                      }
                   }
                }
-l0: continue;
+l0:            continue;
             }
+         }
+
+         // write out cut file
+         using (StreamWriter fout = new StreamWriter($"{dataset}_allcuts.json"))
+         {
+            fout.Write("{\n\"dim\" : [");
+            for (i = 0; i < lstCuts.Count - 1; i++)
+               fout.Write($"{lstCuts[i].Item1},");
+            fout.Write($"{lstCuts[lstCuts.Count - 1].Item1}],\n\"pos\" : [");
+            for (i = 0; i < lstCuts.Count - 1; i++)
+               fout.Write($"{lstCuts[i].Item2},");
+            fout.WriteLine($"{lstCuts[lstCuts.Count - 1].Item2}]\n}}");
          }
       }
 
@@ -139,7 +152,7 @@ l0: continue;
          List<List<int>> lstTableauRows = new List<List<int>>(); // cut accettati, riche del tableau
 
          List<Tuple<int,double>> lstCuts = new List<Tuple<int, double>>();
-         findCuts(lstCuts);  // costruisce lista lstCuts
+         findCuts(lstCuts,dataset);  // costruisce lista lstCuts
          numVar = lstCuts.Count;
 
          // da qui modello LP
