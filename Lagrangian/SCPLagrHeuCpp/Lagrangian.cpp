@@ -10,7 +10,7 @@ void Lagrangian::run_lagrangian()
 
    cout << "Starting Lagrangian" << endl;
    string path = "\\git\\ODT\\MIPmodel\\cSharp\\ODTMIPmodel\\bin\\Debug\\net6.0\\";
-   string dataset = "breastCoimbra";
+   string dataset = "test1";
    read_data(path, dataset);
    build_structures();
 
@@ -156,7 +156,7 @@ int Lagrangian::fixZub(vector<int> x, int &zub)
          i = lstUncovered[ii];  // uncovered row
          for (int jj = 0; jj < lstColOfConstr[i].size(); jj++)
          {  j = lstColOfConstr[i][jj];
-            if(!fRow[j])
+            if(!fCol[j])
                nunc++;
          }
          if (nunc < minNunc) // least num of covering columns so far

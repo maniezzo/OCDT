@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Text.Json.Nodes;
 using Google.OrTools;
 using Google.OrTools.LinearSolver;
-using static Google.OrTools.LinearSolver.Solver;
+using static Google.OrTools.LinearSolver.Solver; // I guess this and the former one could be united
 using System.Data;
 using System.Runtime.InteropServices;
 //using Google.OrTools.ConstraintSolver;
@@ -144,6 +144,67 @@ l0:            continue;
          }
       }
 
+      // removes dominated constraints
+      private void checkDominance(Google.OrTools.LinearSolver.Solver solver, List<List<int>> lstTableauRows)
+      {  int i,j,k;
+
+         // remove dominated
+         numConstr = solver.NumConstraints();
+         bool[] fOut = new bool[numConstr];
+         int[] tsmall, tbig;
+         for (i = 0; i < numConstr - 1; i++) fOut[i] = false;
+
+         bool isSubset;
+         for (i = 0; i < numConstr - 1; i++)
+         {
+            if (fOut[i]) continue;
+            for (j = i + 1; j < numConstr; j++)
+            {
+               if (fOut[j]) continue;
+               if (lstTableauRows[i].Count < lstTableauRows[j].Count) // i may dominate j
+               {
+                  isSubset = true;
+                  tsmall = lstTableauRows[i].ToArray();
+                  tbig = lstTableauRows[j].ToArray();
+                  foreach (int element in tsmall)
+                     if (!tbig.Contains(element))
+                     {
+                        isSubset = false; // tsmall is not a subset of tbig
+                        break;
+                     }
+                  if (isSubset) fOut[j] = true; // constraint j is dominated
+               }
+               else
+               {
+                  isSubset = true;
+                  tsmall = lstTableauRows[j].ToArray();
+                  tbig = lstTableauRows[i].ToArray();
+                  foreach (int element in tsmall)
+                     if (!tbig.Contains(element))
+                     {
+                        isSubset = false; // tsmall is not a subset of tbig
+                        break;
+                     }
+                  if (isSubset)
+                  {
+                     fOut[i] = true; // constraint i is dominated
+                     break; // check next i
+                  }
+               }
+            }
+         }
+         // resulting non dominated constraints
+         Console.WriteLine("Non dominated constraints");
+         for (i = 0; i < numConstr; i++)
+         {
+            if (fOut[i]) continue;
+            Console.Write($"{i} - ");
+            for (j = 0; j < lstTableauRows[i].Count; j++)
+               Console.Write($" {lstTableauRows[i][j]}");
+            Console.WriteLine();
+         }
+      }
+
       private void lpModel(String LPsolver, string IPsolver, string fpath, string dataset)
       {
          int i, j, k, d, numConstrOld;
@@ -157,12 +218,12 @@ l0:            continue;
 
          // da qui modello LP
          Console.WriteLine($"---- Linear programming model with {LPsolver} ----");
-         Solver solver = Solver.CreateSolver(LPsolver);
+         Google.OrTools.LinearSolver.Solver solver = Google.OrTools.LinearSolver.Solver.CreateSolver(LPsolver);
          if (solver == null)
          {  Console.WriteLine("Could not create linear solver " + LPsolver);
             return;
          }
-         Solver.ResultStatus resultStatus;
+         Google.OrTools.LinearSolver.Solver.ResultStatus resultStatus;
 
          // continuous 0/1 variables, if cut is used
          Variable[] x = new Variable[numVar];
@@ -196,6 +257,8 @@ l0:            continue;
                for (i=0;i<lstCuts.Count;i++)
                   if (separates(p1,p2,lstCuts,i))
                      lstCols.Add(i);
+
+               // here I just chack for repeated subsets
                hash = getRowhash(lstCols);
                for(i=0;i<numConstr;i++)
                {  if(hash == lstHash[i] && lstCols.Count() == lstTableauRows[i].Count())
@@ -215,15 +278,20 @@ l1:               continue;
                numConstr++;
 l0:            continue;
             }
+
             if(numConstr > numConstrOld && numConstr%1000==0)
             {
-               Console.WriteLine("Number of variables  = " + solver.NumVariables());
-               Console.WriteLine("Number of constraints = " + solver.NumConstraints());
+               Console.WriteLine("Number of variables  = " + numVar + " Number of constraints = " + numConstr);
                //resultStatus = solver.Solve();
                //Console.WriteLine("Optimal objective value = " + solver.Objective().Value());
                numConstrOld = numConstr;
             }
          }
+
+         checkDominance(solver,lstTableauRows);
+
+         ///////////// SOLO CONSTRAINT NON DOMINATI \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+         pippo
 
          Console.WriteLine("Final number of variables  = " + solver.NumVariables());
          Console.WriteLine("Final number of constraints = " + solver.NumConstraints());
@@ -239,7 +307,7 @@ l0:            continue;
          resultStatus = solver.Solve();
 
          // Check that the problem has an optimal solution.
-         if (resultStatus != Solver.ResultStatus.OPTIMAL)
+         if (resultStatus != Google.OrTools.LinearSolver.Solver.ResultStatus.OPTIMAL)
          {  Console.WriteLine("The problem does not have an optimal solution!");
             return;
          }
@@ -278,7 +346,7 @@ l0:            continue;
       {  int i,j;
 
          // -------------------------------------------- integer solution
-         Solver Isolver = Solver.CreateSolver(IPsolver);
+         Google.OrTools.LinearSolver.Solver Isolver = Google.OrTools.LinearSolver.Solver.CreateSolver(IPsolver);
 
          // integer 0/1 variables, if cut is used
          Variable[] xi = Isolver.MakeBoolVarArray(numVar, "xi");
