@@ -145,49 +145,43 @@ l0:            continue;
       }
 
       // removes dominated constraints
-      private void checkDominance(Google.OrTools.LinearSolver.Solver solver, List<List<int>> lstTableauRows)
+      private bool[] checkDominance(int numConstr, List<List<int>> lstTableauRows)
       {  int i,j,k;
 
          // remove dominated
-         numConstr = solver.NumConstraints();
          bool[] fOut = new bool[numConstr];
          int[] tsmall, tbig;
          for (i = 0; i < numConstr - 1; i++) fOut[i] = false;
 
          bool isSubset;
          for (i = 0; i < numConstr - 1; i++)
-         {
-            if (fOut[i]) continue;
+         {  if (fOut[i]) continue;
+
             for (j = i + 1; j < numConstr; j++)
-            {
-               if (fOut[j]) continue;
+            {  if (fOut[j]) continue;
+
                if (lstTableauRows[i].Count < lstTableauRows[j].Count) // i may dominate j
-               {
-                  isSubset = true;
+               {  isSubset = true;
                   tsmall = lstTableauRows[i].ToArray();
                   tbig = lstTableauRows[j].ToArray();
                   foreach (int element in tsmall)
                      if (!tbig.Contains(element))
-                     {
-                        isSubset = false; // tsmall is not a subset of tbig
+                     {  isSubset = false; // tsmall is not a subset of tbig
                         break;
                      }
                   if (isSubset) fOut[j] = true; // constraint j is dominated
                }
                else
-               {
-                  isSubset = true;
+               {  isSubset = true;
                   tsmall = lstTableauRows[j].ToArray();
                   tbig = lstTableauRows[i].ToArray();
                   foreach (int element in tsmall)
                      if (!tbig.Contains(element))
-                     {
-                        isSubset = false; // tsmall is not a subset of tbig
+                     {  isSubset = false; // tsmall is not a subset of tbig
                         break;
                      }
                   if (isSubset)
-                  {
-                     fOut[i] = true; // constraint i is dominated
+                  {  fOut[i] = true; // constraint i is dominated
                      break; // check next i
                   }
                }
@@ -196,18 +190,18 @@ l0:            continue;
          // resulting non dominated constraints
          Console.WriteLine("Non dominated constraints");
          for (i = 0; i < numConstr; i++)
-         {
-            if (fOut[i]) continue;
+         {  if (fOut[i]) continue;
             Console.Write($"{i} - ");
             for (j = 0; j < lstTableauRows[i].Count; j++)
                Console.Write($" {lstTableauRows[i][j]}");
             Console.WriteLine();
          }
+         return fOut;
       }
 
+      // linear relaxation
       private void lpModel(String LPsolver, string IPsolver, string fpath, string dataset)
-      {
-         int i, j, k, d, numConstrOld;
+      {  int i, j, k, d, m=0, numConstrOld;
          List<int> lstCols; // il cut che verrà costruito e testato
          List<int> lstHash = new List<int>(); // un hashcode per ogni riga del tableau
          List<List<int>> lstTableauRows = new List<List<int>>(); // cut accettati, riche del tableau
@@ -223,7 +217,7 @@ l0:            continue;
          {  Console.WriteLine("Could not create linear solver " + LPsolver);
             return;
          }
-         Google.OrTools.LinearSolver.Solver.ResultStatus resultStatus;
+         Solver.ResultStatus resultStatus;
 
          // continuous 0/1 variables, if cut is used
          Variable[] x = new Variable[numVar];
@@ -243,7 +237,6 @@ l0:            continue;
          // constraint section, range of feasible values
          numConstr = numConstrOld = 0;
          int n2 = npoints*(npoints+1)/2;
-         Google.OrTools.LinearSolver.Constraint[] cuts = new Google.OrTools.LinearSolver.Constraint[n2]; // one cut for each pair of points
          int p1,p2,hash;
          int n = npoints;
          // for all pairs of points (n2)
@@ -272,26 +265,33 @@ l1:               continue;
                }
                lstHash.Add(hash);
                lstTableauRows.Add(lstCols);
-               cuts[numConstr] = solver.MakeConstraint(1, double.PositiveInfinity, $"geq{p1}_{p2}");
-               for(i=0;i<lstCols.Count;i++)
-                  cuts[numConstr].SetCoefficient(x[lstCols[i]], 1);
                numConstr++;
 l0:            continue;
             }
 
             if(numConstr > numConstrOld && numConstr%1000==0)
-            {
-               Console.WriteLine("Number of variables  = " + numVar + " Number of constraints = " + numConstr);
-               //resultStatus = solver.Solve();
-               //Console.WriteLine("Optimal objective value = " + solver.Objective().Value());
+            {  Console.WriteLine("Number of variables  = " + numVar + " Number of constraints = " + numConstr);
                numConstrOld = numConstr;
             }
          }
 
-         checkDominance(solver,lstTableauRows);
+         // insertion of constraints into the model
+         bool[] fOut; // flags, true if constraint to be removed
+         fOut = checkDominance(numConstr,lstTableauRows);
+         writeProb(dataset, numVar, numConstr, lstTableauRows, fOut); // problema formato mio
+         for (i = 0; i < numConstr; i++)
+            if (!fOut[i]) m++;   // counting eventual constraints
 
-         ///////////// SOLO CONSTRAINT NON DOMINATI \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-         pippo
+         Google.OrTools.LinearSolver.Constraint[] cuts = new Google.OrTools.LinearSolver.Constraint[m]; // m constraints in the model
+         k = 0;
+         for (i = 0; i < numConstr; i++)
+         {  if (fOut[i]) continue;   // no constraint for dominated sets
+            cuts[k] = solver.MakeConstraint(1, double.PositiveInfinity, $"c{k}");
+            for (j = 0; j < lstTableauRows[i].Count; j++)
+               cuts[k].SetCoefficient(x[lstTableauRows[i][j]], 1); // consraint coeffiicients
+            k++;
+         }
+         numConstr = m;
 
          Console.WriteLine("Final number of variables  = " + solver.NumVariables());
          Console.WriteLine("Final number of constraints = " + solver.NumConstraints());
@@ -301,7 +301,6 @@ l0:            continue;
             using (StreamWriter out_f = new StreamWriter($"{dataset}.lp"))
                out_f.Write(lp_text);
          }
-         writeProb(dataset,numVar,numConstr,lstTableauRows);
 
          // ------------------------------------ SOLVE
          resultStatus = solver.Solve();
@@ -436,14 +435,15 @@ l0:            continue;
       }
 
       // scrive il problema su file, formato mio
-      private void writeProb(string dataset, int nvar, int ncons, List<List<int>> lstTableauRows)
+      private void writeProb(string dataset, int nvar, int ncons, List<List<int>> lstTableauRows, bool[] fOut)
       {  int i,j;
 
          using (StreamWriter fout = new StreamWriter($"{dataset}.prob"))
          {  fout.WriteLine(nvar);
-            fout.WriteLine(ncons);
+            fout.WriteLine(lstTableauRows.Count);
             for(i=0;i<ncons;i++)
-            {  for (j = 0; j < lstTableauRows[i].Count;j++)
+            {  if (fOut[i]) continue;
+               for (j = 0; j < lstTableauRows[i].Count;j++)
                   fout.Write($"{lstTableauRows[i][j]} ");
                fout.WriteLine();
             }
