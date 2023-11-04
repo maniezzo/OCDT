@@ -278,9 +278,9 @@ l0:            continue;
          // insertion of constraints into the model
          bool[] fOut; // flags, true if constraint to be removed
          fOut = checkDominance(numConstr,lstTableauRows);
-         writeProb(dataset, numVar, numConstr, lstTableauRows, fOut); // problema formato mio
          for (i = 0; i < numConstr; i++)
             if (!fOut[i]) m++;   // counting eventual constraints
+         writeProb(dataset, numVar, numConstr, m, lstTableauRows, fOut); // problema formato mio
 
          Google.OrTools.LinearSolver.Constraint[] cuts = new Google.OrTools.LinearSolver.Constraint[m]; // m constraints in the model
          k = 0;
@@ -435,12 +435,12 @@ l0:            continue;
       }
 
       // scrive il problema su file, formato mio
-      private void writeProb(string dataset, int nvar, int ncons, List<List<int>> lstTableauRows, bool[] fOut)
+      private void writeProb(string dataset, int nvar, int ncons, int m, List<List<int>> lstTableauRows, bool[] fOut)
       {  int i,j;
 
          using (StreamWriter fout = new StreamWriter($"{dataset}.prob"))
          {  fout.WriteLine(nvar);
-            fout.WriteLine(lstTableauRows.Count);
+            fout.WriteLine(m);
             for(i=0;i<ncons;i++)
             {  if (fOut[i]) continue;
                for (j = 0; j < lstTableauRows[i].Count;j++)
