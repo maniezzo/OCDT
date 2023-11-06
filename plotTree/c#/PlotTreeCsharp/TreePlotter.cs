@@ -8,6 +8,7 @@ using System.Data;
 using System.Diagnostics;
 using System.Reflection.Emit;
 using System.Globalization;
+using System.Collections.Specialized;
 
 namespace PlotTreeCsharp
 {
@@ -189,6 +190,8 @@ namespace PlotTreeCsharp
                Console.WriteLine($"ERROR, misclassification of record {i}");
                goto lend;
             }
+            else
+               Console.WriteLine($"Record {i} node {currnode} class {Y[i]}"); 
          }
          if (res) Console.WriteLine("Checked. Solution is ok");
 lend:    return res;
