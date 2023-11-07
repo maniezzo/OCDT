@@ -241,11 +241,11 @@ lend:    return res;
       private void fillNode(Node currNode, int[,] idx)
       {  int i,j,jj,d,pt,mind;
          double h,minh; // split criterium value
-         List<int[]> lstNptson;
+         List<int[]> lstNptClass;
          List<int> lstp;
          bool[] fOut;
          Node child;
-         bool fSkip;
+         bool fSkip,isLeaf;
 
          for (i = 0; i < currNode.npoints; i++)
          {  pt = currNode.lstPoints[i];
@@ -256,22 +256,22 @@ lend:    return res;
          for (d=0;d<ndim;d++)  // for each dimension upon which we could separate
          {
             if (currNode.isUsedDim[d]) continue;
-            lstNptson = new List<int[]> (); // for each value range, how many of each class
+            lstNptClass = new List<int[]> (); // for each value range, how many of each class
             fOut = new bool[currNode.npoints]; // point already considered
             fSkip = false;
             for(j=0;j<cutdim.Length;j++)  // for each cut acting on that dimension
             {
                if (cutdim[j]!=d) continue;
-               lstp = separateNodePoints(currNode, lstNptson, fOut, cutval[j], d);
+               lstp = separateNodePoints(currNode, lstNptClass, fOut, cutval[j], d);
                if (lstp.Count == currNode.npoints) fSkip=true; // dim d generates no separation
             }
             // points after the biggest cut
-            lstp = separateNodePoints(currNode, lstNptson, fOut, double.MaxValue, d);
+            lstp = separateNodePoints(currNode, lstNptClass, fOut, double.MaxValue, d);
             if (lstp.Count == currNode.npoints) fSkip = true; // dim d generates no separation
-            if (fSkip || lstNptson.Count() == 1) continue;    // dim d generates no separation
+            if (fSkip || lstNptClass.Count() == 1) continue;    // dim d generates no separation
             switch (splitRule)
             {  case "entropy": 
-                  h = computeEntropy(lstNptson);
+                  h = computeEntropy(lstNptClass);
                   if(h<minh) 
                   {  minh = h;
                      mind = d;
@@ -299,35 +299,47 @@ lend:    return res;
          
          currNode.dim = mind;
          currNode.isUsedDim[mind] = true;
-         lstNptson = new List<int[]>();     // for each value range, how many of each class
+         lstNptClass = new List<int[]>();     // for each value range, how many of each class
          fOut = new bool[currNode.npoints]; // points already considered
 
          // generate the offsprings of the current node and compute the points of each offspring
+         for (int idcut = 0; idcut < cutdim.Length; idcut++)
+         {  if (cutdim[idcut] != mind) continue;  // for each cut acting on the mind dimension
 
-         for (int idcut = 0; idcut < cutdim.Length; idcut++)  // for each cut acting on that dimension
-         {
-            if (cutdim[idcut] != mind) continue;
             j = idcut;
             child = new Node(decTree.Count(), ndim, nclasses); // tentative son
-            List<int> lstPoints = separateNodePoints(currNode, lstNptson, fOut, cutval[j], mind);
+            List<int> lstPoints = separateNodePoints(currNode, lstNptClass, fOut, cutval[j], mind);
             if(lstPoints.Count == 0 ) continue; // region with no points, no need for a son
 
-            // here add the son to the tree
-            Array.Copy(currNode.isUsedDim, child.isUsedDim, currNode.isUsedDim.Length);
-            decTree.Add(child);
-            i = child.id;
-            currNode.lstSons.Add(i);
-            currNode.lstCuts.Add(idcut);         // cuts active at the node
-            decTree[i].lstPoints = lstPoints;
-            decTree[i].npoints = decTree[i].lstPoints.Count();
-            // check is son is a leaf
+            // check if potential child would be a leaf
+            isLeaf = false;
             for (d = 0; d < nclasses; d++)
-               if (lstNptson[lstNptson.Count - 1][d] == decTree[i].npoints)
+               if (lstNptClass[lstNptClass.Count - 1][d] == lstPoints.Count)
+                  isLeaf = true;
+
+            // if leaf, and previous a leaf, same class, then merge
+            if(decTree.Count>0 && isLeaf) 
+            {  
+               Node prev = decTree[decTree.Count-1];
+               if(currNode.lstSons.Count > 0 && prev.isLeaf && Y[prev.lstPoints[0]] == Y[lstPoints[0]])
+                  continue;
+            }
+            else
+            {  // here add the child to the tree
+               Array.Copy(currNode.isUsedDim, child.isUsedDim, currNode.isUsedDim.Length);
+               decTree.Add(child);
+               i = child.id;
+               currNode.lstSons.Add(i);
+               currNode.lstCuts.Add(idcut);         // cuts active at the node
+               decTree[i].lstPoints = lstPoints;
+               decTree[i].npoints = decTree[i].lstPoints.Count();
+               if(isLeaf)
                   decTree[i].isLeaf = true;
+            }
          }
          // points after the biggest cut
          child = new Node(decTree.Count(), ndim, nclasses); // tentative son
-         List<int> lstPoints1 = separateNodePoints(currNode, lstNptson, fOut, double.MaxValue, mind); // all remaining points
+         List<int> lstPoints1 = separateNodePoints(currNode, lstNptClass, fOut, double.MaxValue, mind); // all remaining points
          if (lstPoints1.Count > 0)  // if empty son, do not include in the tree
          {
             Array.Copy(currNode.isUsedDim, child.isUsedDim, currNode.isUsedDim.Length);
@@ -338,7 +350,7 @@ lend:    return res;
             decTree[i].npoints  = decTree[i].lstPoints.Count();
             // check is son is a leaf
             for (d = 0; d < nclasses; d++)
-               if (lstNptson[lstNptson.Count-1][d] == decTree[i].npoints)
+               if (lstNptClass[lstNptClass.Count-1][d] == decTree[i].npoints)
                   decTree[i].isLeaf = true;
          }
 
@@ -347,7 +359,7 @@ lend:    return res;
       }
 
       // calcola i punti in ogni segmento definito dai cut
-      private List<int> separateNodePoints(Node currNode, List<int[]> lstNptson, bool[] fOut, double maxVal, int d)
+      private List<int> separateNodePoints(Node currNode, List<int[]> lstNptClass, bool[] fOut, double maxVal, int d)
       {  int i,pt;
          List<int> ptslice; // points of each slice (not separated per class)
          int[] nptslice = new int[nclasses]; // num points of each slice, per class
@@ -358,12 +370,12 @@ lend:    return res;
             pt = currNode.lstPoints[i];
             if (!fOut[i] && X[pt, d] < maxVal)
             {
-               ptslice.Add(pt);
-               nptslice[Y[pt]]++;
+               ptslice.Add(pt);   // i punti
+               nptslice[Y[pt]]++; // quanti punti di ogni classe
                fOut[i] = true;
             }
          }
-         lstNptson.Add(nptslice);
+         lstNptClass.Add(nptslice);
          return ptslice;
       }
 
