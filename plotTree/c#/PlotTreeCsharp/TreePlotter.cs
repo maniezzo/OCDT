@@ -246,6 +246,7 @@ lend:    return res;
          bool[] fOut;
          Node child;
          bool fSkip,isLeaf;
+         Node prev;
 
          for (i = 0; i < currNode.npoints; i++)
          {  pt = currNode.lstPoints[i];
@@ -303,6 +304,7 @@ lend:    return res;
          fOut = new bool[currNode.npoints]; // points already considered
 
          // generate the offsprings of the current node and compute the points of each offspring
+         int nSons = 0;
          for (int idcut = 0; idcut < cutdim.Length; idcut++)
          {  if (cutdim[idcut] != mind) continue;  // for each cut acting on the mind dimension
 
@@ -318,43 +320,66 @@ lend:    return res;
                   isLeaf = true;
 
             // if leaf, and previous a leaf, same class, then merge
-            if(decTree.Count>0 && isLeaf) 
-            {  
-               Node prev = decTree[decTree.Count-1];
-               if(currNode.lstSons.Count > 0 && prev.isLeaf && Y[prev.lstPoints[0]] == Y[lstPoints[0]])
-                  continue;
+            prev = decTree[decTree.Count-1];
+            if(nSons>0 && isLeaf && currNode.lstSons.Count > 0 && prev.isLeaf && Y[prev.lstPoints[0]] == Y[lstPoints[0]])
+            {
+               for(i=0;i<lstPoints.Count;i++)
+               {  prev.lstPoints.Add(lstPoints[i]);
+                  prev.npoints++;
+                  currNode.lstCuts[currNode.lstCuts.Count-1] = idcut;
+               }
+               decTree[decTree.Count - 1] = prev;
             }
             else
             {  // here add the child to the tree
                Array.Copy(currNode.isUsedDim, child.isUsedDim, currNode.isUsedDim.Length);
                decTree.Add(child);
+               nSons++;
                i = child.id;
                currNode.lstSons.Add(i);
                currNode.lstCuts.Add(idcut);         // cuts active at the node
                decTree[i].lstPoints = lstPoints;
                decTree[i].npoints = decTree[i].lstPoints.Count();
-               if(isLeaf)
-                  decTree[i].isLeaf = true;
+               if(isLeaf) decTree[i].isLeaf = true;
             }
          }
          // points after the biggest cut
-         child = new Node(decTree.Count(), ndim, nclasses); // tentative son
+         // check if potential child would be a leaf
          List<int> lstPoints1 = separateNodePoints(currNode, lstNptClass, fOut, double.MaxValue, mind); // all remaining points
-         if (lstPoints1.Count > 0)  // if empty son, do not include in the tree
+         if (lstPoints1.Count == 0) goto l0; // region with no points, no need for a son
+         isLeaf = false;
+         for (d = 0; d < nclasses; d++)
+            if (lstNptClass[lstNptClass.Count - 1][d] == lstPoints1.Count)
+               isLeaf = true;
+
+         // if leaf, and previous a leaf, same class, then merge
+         prev = decTree[decTree.Count - 1];
+         if (isLeaf && currNode.lstSons.Count > 0 && prev.isLeaf && Y[prev.lstPoints[0]] == Y[lstPoints1[0]])
          {
-            Array.Copy(currNode.isUsedDim, child.isUsedDim, currNode.isUsedDim.Length);
-            decTree.Add(child);
-            i = child.id;
-            currNode.lstSons.Add(i);
-            decTree[i].lstPoints = lstPoints1;
-            decTree[i].npoints  = decTree[i].lstPoints.Count();
-            // check is son is a leaf
-            for (d = 0; d < nclasses; d++)
-               if (lstNptClass[lstNptClass.Count-1][d] == decTree[i].npoints)
-                  decTree[i].isLeaf = true;
+            for (i = 0; i < lstPoints1.Count; i++)
+            {
+               prev.lstPoints.Add(lstPoints1[i]);
+               prev.npoints++;
+               if(currNode.lstCuts.Count>0)
+                  currNode.lstCuts.RemoveAt(currNode.lstCuts.Count-1);
+            }
+            decTree[decTree.Count - 1] = prev;
+         }
+         else
+         {  child = new Node(decTree.Count(), ndim, nclasses); // tentative son
+            if (lstPoints1.Count > 0)  // if empty son, do not include in the tree
+            {
+               Array.Copy(currNode.isUsedDim, child.isUsedDim, currNode.isUsedDim.Length);
+               decTree.Add(child);
+               i = child.id;
+               currNode.lstSons.Add(i);
+               decTree[i].lstPoints = lstPoints1;
+               decTree[i].npoints  = decTree[i].lstPoints.Count();
+               if(isLeaf) decTree[i].isLeaf = true;
+            }
          }
 
-         if(currNode.lstSons.Count == 1)
+l0:      if(currNode.lstSons.Count == 1)
             Console.WriteLine("WARNING. Single child");
       }
 
@@ -426,8 +451,8 @@ lend:    return res;
          while (stack.Count > 0)
          {
             // Pop a vertex from stack and print it
-            idNode = stack.Peek();
-            stack.Pop();
+            // idNode = stack.Peek();
+            idNode = stack.Pop();
             currNode = decTree[idNode];
 
             // we work on the popped item if it is not visited.
