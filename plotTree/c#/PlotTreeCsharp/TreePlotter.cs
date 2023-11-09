@@ -49,6 +49,7 @@ namespace PlotTreeCsharp
       private int n, nclasses;  // num of records, num of classes
       private List<Node> decTree;
       private string splitRule; // criterium for node plitting
+      private string splitDir;  // max o min
 
       public TreePlotter() 
       {
@@ -86,7 +87,8 @@ namespace PlotTreeCsharp
          try
          {  string path = Convert.ToString(config.datapath);
             string file = Convert.ToString(config.datafile);
-            splitRule   = Convert.ToString(config.splitRule);
+            splitRule = Convert.ToString(config.splitRule);
+            splitDir  = Convert.ToString(config.splitDir);
             dataset = path + file;
          }
          catch (Exception ex)
@@ -239,8 +241,8 @@ lend:    return res;
 
       // initializes fields of a new node
       private void fillNode(Node currNode, int[,] idx)
-      {  int i,j,jj,d,pt,mind;
-         double h,minh; // split criterium value
+      {  int i,j,jj,d,pt,splitd;
+         double h,splith; // split criterium value
          List<int[]> lstNptClass;
          List<int> lstp;
          bool[] fOut;
@@ -252,8 +254,8 @@ lend:    return res;
          {  pt = currNode.lstPoints[i];
             currNode.nPointClass[Y[pt]]++;
          }
-         minh = double.MinValue; //////////////////////// !!!!!!!!!!!!!!!!!
-         mind = int.MaxValue;
+         splith = (splitDir == "max" ? double.MinValue : double.MaxValue); 
+         splitd = int.MaxValue;
          for (d=0;d<ndim;d++)  // for each dimension upon which we could separate
          {
             if (currNode.isUsedDim[d]) continue;
@@ -273,9 +275,9 @@ lend:    return res;
             switch (splitRule)
             {  case "entropy": 
                   h = computeEntropy(lstNptClass);
-                  if(h>minh) //////////////////////// !!!!!!!!!!!!!!!!!
-                  {  minh = h;
-                     mind = d;
+                  if(splitDir=="max" ? h>splith : h<splith) 
+                  {  splith = h;
+                     splitd = d;
                   }
                   break;
                case "infoGain":
@@ -298,19 +300,19 @@ lend:    return res;
          }
          // ----------------------------------------------- current node completion
          
-         currNode.dim = mind;
-         currNode.isUsedDim[mind] = true;
+         currNode.dim = splitd;
+         currNode.isUsedDim[splitd] = true;
          lstNptClass = new List<int[]>();     // for each value range, how many of each class
          fOut = new bool[currNode.npoints]; // points already considered
 
          // generate the offsprings of the current node and compute the points of each offspring
          int nSons = 0;
          for (int idcut = 0; idcut < cutdim.Length; idcut++)
-         {  if (cutdim[idcut] != mind) continue;  // for each cut acting on the mind dimension
+         {  if (cutdim[idcut] != splitd) continue;  // for each cut acting on the mind dimension
 
             j = idcut;
             child = new Node(decTree.Count(), ndim, nclasses); // tentative son
-            List<int> lstPoints = separateNodePoints(currNode, lstNptClass, fOut, cutval[j], mind);
+            List<int> lstPoints = separateNodePoints(currNode, lstNptClass, fOut, cutval[j], splitd);
             if(lstPoints.Count == 0 ) continue; // region with no points, no need for a son
 
             // check if potential child would be a leaf
@@ -345,7 +347,7 @@ lend:    return res;
          }
          // points after the biggest cut
          // check if potential child would be a leaf
-         List<int> lstPoints1 = separateNodePoints(currNode, lstNptClass, fOut, double.MaxValue, mind); // all remaining points
+         List<int> lstPoints1 = separateNodePoints(currNode, lstNptClass, fOut, double.MaxValue, splitd); // all remaining points
          if (lstPoints1.Count == 0) goto l0; // region with no points, no need for a son
          isLeaf = false;
          for (d = 0; d < nclasses; d++)
