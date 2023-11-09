@@ -27,7 +27,7 @@ test_ratio = 0.25
 
 """## Load Data """
 
-x, y = dataset.loadData('breast-cancer')
+x, y = dataset.loadData('nath-jones')
 
 x_enc = dataset.oneHot(x)
 

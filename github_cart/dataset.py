@@ -11,6 +11,10 @@ def loadData(dataname):
     """
     load training and testing data from different dataset
     """
+    # nath-jones
+    if dataname == 'nath-jones':
+        x, y = loadNathJones()
+        return x, y
     # balance-scale
     if dataname == 'balance-scale':
         x, y = loadBalanceScale()
@@ -59,6 +63,12 @@ def oneHot(x):
         lb.fit(np.unique(x[:,j]))
         x_enc = np.concatenate((x_enc, lb.transform(x[:,j])), axis=1)
     return x_enc
+
+def loadNathJones():
+    df = pd.read_csv('../data/nath_jones.csv', delimiter=',')
+    x, y = df[['CF/TD','NI/TA','CA/CL','CA/NS']], df['class']
+    y = pd.factorize(y)
+    return np.array(x), np.array(y, dtype=object)[0]
 
 def loadBalanceScale():
     """

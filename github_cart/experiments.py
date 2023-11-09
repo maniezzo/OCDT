@@ -25,9 +25,9 @@ from sklearn import tree
 timelimit = 600
 """
 datasets = ['balance-scale', 'breast-cancer', 'car-evaluation', 'hayes-roth', 'house-votes-84', 
-            'soybean-small', 'spect', 'tic-tac-toe', 'monks-1', 'monks-2', 'monks-3']
+            'soybean-small', 'spect', 'tic-tac-toe', 'monks-1', 'monks-2', 'monks-3', 'nath_jones']
 """
-datasets = ['breast-cancer']
+datasets = ['nath_jones']
 alpha = [0, 0.01, 0.1]
 depth = [2, 3, 4, 5]
 seeds = [37, 42, 53]
