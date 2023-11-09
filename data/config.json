@@ -1,7 +1,8 @@
 { 
-   "datafile" : "test7", 
+   "datafile" : "nath_jones", 
    "datapath" : "c:\\git\\ODT\\data\\",
    "LPsolver" : "GLOP",
    "IPsolver" : "SCIP",
-   "splitRule": "entropy"
+   "splitRule": "entropy",
+	"splitDir" : "max"
 }

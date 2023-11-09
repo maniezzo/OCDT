@@ -252,7 +252,7 @@ lend:    return res;
          {  pt = currNode.lstPoints[i];
             currNode.nPointClass[Y[pt]]++;
          }
-         minh = double.MaxValue;
+         minh = double.MinValue; //////////////////////// !!!!!!!!!!!!!!!!!
          mind = int.MaxValue;
          for (d=0;d<ndim;d++)  // for each dimension upon which we could separate
          {
@@ -273,7 +273,7 @@ lend:    return res;
             switch (splitRule)
             {  case "entropy": 
                   h = computeEntropy(lstNptClass);
-                  if(h<minh) 
+                  if(h>minh) //////////////////////// !!!!!!!!!!!!!!!!!
                   {  minh = h;
                      mind = d;
                   }
