@@ -33,7 +33,7 @@ class MIPmodel
       vector<vector<float>> X;     // features
       vector<int> Y;               // classes
 
-      void cplexModel();
+      void cplexModel(string dataFile);
       string readConfig();
       void readData(string fpath);
       vector<string> split(string str, char sep);

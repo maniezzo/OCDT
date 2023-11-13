@@ -9,10 +9,10 @@ void MIPmodel::run_MIP()
    cout << "run CPLEX, see C# for full code." << endl;
    string dataFileName = readConfig();
    readData(dataFileName);
-   cplexModel();
+   cplexModel(dataFileName);
 }
 
-void MIPmodel::cplexModel()
+void MIPmodel::cplexModel(string dataFileName)
 {
    double objval;
    int    solstat, objsen;
@@ -47,7 +47,9 @@ void MIPmodel::cplexModel()
    double    mincost;
    string path;
    
-   string name = "Prob1";
+   size_t lastPos = dataFileName.find_last_of("/\\");
+   dataFileName = dataFileName.substr(lastPos + 1);
+   string name = dataFileName;
    probname = (char*)name.c_str();
    maxnodes = 100000000;
 
@@ -79,7 +81,7 @@ void MIPmodel::cplexModel()
    if(fReadProblem)
    {
       path = "c:\\git\\ODT\\MIPmodel\\cSharp\\ODTMIPmodel\\bin\\Debug\\net6.0\\";
-      name = path + "breastCoimbra.lp";
+      name = path + dataFileName+".lp";
       status = CPXreadcopyprob(env, lp, name.c_str(), NULL);
       if (status)
       {  cout << "Failed to read lp data." << endl;
@@ -299,7 +301,7 @@ string MIPmodel::readConfig()
    buffer << fconf.rdbuf();
    line = buffer.str();
    json::Value JSV = json::Deserialize(line);
-   datapath = JSV["datapath"];
+   datapath     = JSV["datapath"];
    dataFileName = JSV["datafile"];
    cout << dataFileName << endl;
    return datapath + dataFileName;

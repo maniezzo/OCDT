@@ -4,31 +4,10 @@
 Minimize
  Obj: x0 + x1 + x2 + x3 + x4 + x5 + x6 + x7
 Subject To
- geq0_1:   x5 >= 1
- geq0_3:   x0 + x5 >= 1
- geq0_4:   x0 + x1 + x6 + x7 >= 1
- geq0_5:   x0 + x1 + x6 >= 1
- geq0_6:   x0 + x1 + x5 >= 1
- geq0_10:  x0 + x1 + x2 + x3 + x5 >= 1
- geq1_7:   x0 + x1 + x2 + x5 >= 1
- geq1_11:  x0 + x1 + x2 + x3 + x4 + x5 + x6 >= 1
- geq2_4:   x1 + x6 + x7 >= 1
- geq2_5:   x1 + x6 >= 1
- geq2_6:   x1 + x5 >= 1
- geq2_10:  x1 + x2 + x3 + x5 >= 1
- geq3_7:   x1 + x2 + x5 >= 1
- geq3_11:  x1 + x2 + x3 + x4 + x5 + x6 >= 1
- geq4_7:   x2 + x6 + x7 >= 1
- geq4_9:   x2 + x3 + x6 + x7 >= 1
- geq4_11:  x2 + x3 + x4 + x7 >= 1
- geq5_7:   x2 + x6 >= 1
- geq5_9:   x2 + x3 + x6 >= 1
- geq5_11:  x2 + x3 + x4 >= 1
- geq6_7:   x2 + x5 >= 1
- geq6_9:   x2 + x3 + x5 >= 1
- geq6_11:  x2 + x3 + x4 + x5 + x6 >= 1
- geq7_10:  x3 + x5 >= 1
- geq10_11: x4 + x5 + x6 >= 1
+ c0: x5 >= 1
+ c1: x1 + x6 >= 1
+ c2: x2 + x6 >= 1
+ c3: x2 + x3 + x4 >= 1
 Bounds
  0 <= x0 <= 1
  0 <= x1 <= 1

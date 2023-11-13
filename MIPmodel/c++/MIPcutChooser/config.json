@@ -1,5 +1,5 @@
 { 
-   "datafile" : "test1", 
+   "datafile" : "breastCoimbra", 
    "datapath" : "c:\\git\\ODT\\data\\",
    "LPsolver" : "CPLEX",
    "IPsolver" : "CPLEX",
