@@ -1,5 +1,5 @@
-# ODT
-optimal decision tree
+# OCDT
+Optimal Covering Decision Tree
 
 Lots of up to date work and old leftovers
 
