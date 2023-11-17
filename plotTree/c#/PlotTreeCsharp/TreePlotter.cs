@@ -50,6 +50,7 @@ namespace PlotTreeCsharp
       private List<Node> decTree;
       private string splitRule; // criterium for node plitting
       private string splitDir;  // max o min
+      private int totNodes=0, treeHeight=0, totLeaves=0;
 
       public TreePlotter() 
       {
@@ -168,9 +169,11 @@ namespace PlotTreeCsharp
 
       // check the correctness of the tree
       private bool checkSol()
-      {  int i,j,d,nc,idcut,currnode;
+      {  int i,j,d,nc,idcut,currnode,child;
          bool res=true;
+         int[] heights = new int[decTree.Count];
 
+         heights[0]=0;
          for(i=0;i<n;i++)
          {
             currnode = 0;
@@ -180,12 +183,21 @@ namespace PlotTreeCsharp
                nc = decTree[currnode].lstCuts.Count;
                for(j=0;j<nc;j++)
                   if (X[i,d] < cutval[decTree[currnode].lstCuts[j]])
-                  {  currnode = decTree[currnode].lstSons[j];
+                  {  
+                     //child = decTree[currnode].lstSons[j];
+                     //heights[child] = heights[currnode]+1;
+                     //if (heights[child]>treeHeight) treeHeight = heights[child];
+                     //currnode = child;
                      nc = int.MaxValue; // to avoid entering the following if
                      break;
                   }
-               if(j==nc)
-                  currnode = decTree[currnode].lstSons[j];
+               //if(j==nc)
+               //   currnode = decTree[currnode].lstSons[j];
+
+               child = decTree[currnode].lstSons[j];
+               heights[child] = heights[currnode] + 1;
+               if (heights[child] > treeHeight) treeHeight = heights[child];
+               currnode = child;
             }
             if (Y[i] != Y[decTree[currnode].lstPoints[0]])
             {  res = false;
@@ -196,6 +208,7 @@ namespace PlotTreeCsharp
                Console.WriteLine($"Record {i} node {currnode} class {Y[i]}"); 
          }
          if (res) Console.WriteLine("Checked. Solution is ok");
+         Console.WriteLine($"Tree height = {treeHeight}");
 lend:    return res;
       }
 
@@ -213,8 +226,8 @@ lend:    return res;
 
             for(i=0;i<decTree.Count;i++)
                if (decTree[i].isLeaf)
-               {
-                  fout.WriteLine($"{i}  [shape = box label = \"{decTree[i].id}\nclass {Y[decTree[i].lstPoints[0]]}\"]");
+               {  fout.WriteLine($"{i}  [shape = box label = \"{decTree[i].id}\nclass {Y[decTree[i].lstPoints[0]]}\"]");
+                  totLeaves++;
                }
                else
                   fout.WriteLine($"{i}  [label = \"{decTree[i].id} dim {decTree[i].dim}\"]");
@@ -237,6 +250,9 @@ lend:    return res;
          string batfile = "graphviz.bat";
          string parameters = $"/k \"{batfile}\"";
          Process.Start("cmd", parameters);
+         totNodes = decTree.Count;
+         Console.WriteLine($"Tot nodes  = {totNodes}");
+         Console.WriteLine($"Tot leaves = {totLeaves}");
       }
 
       // initializes fields of a new node
