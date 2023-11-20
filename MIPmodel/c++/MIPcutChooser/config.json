@@ -1,5 +1,5 @@
 { 
-   "datafile" : "breastCoimbra", 
+   "datafile" : "hayes-roth", 
    "datapath" : "c:\\git\\ODT\\data\\",
    "LPsolver" : "CPLEX",
    "IPsolver" : "CPLEX",

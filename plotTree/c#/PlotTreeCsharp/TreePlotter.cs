@@ -251,6 +251,7 @@ lend:    return res;
          string parameters = $"/k \"{batfile}\"";
          Process.Start("cmd", parameters);
          totNodes = decTree.Count;
+         Console.WriteLine($"Tot cuts   = {cutdim.Length}");
          Console.WriteLine($"Tot nodes  = {totNodes}");
          Console.WriteLine($"Tot leaves = {totLeaves}");
       }
@@ -346,7 +347,6 @@ lend:    return res;
                   prev.npoints++;
                   currNode.lstCuts[currNode.lstCuts.Count-1] = idcut;
                }
-               decTree[decTree.Count - 1] = prev;
             }
             else
             {  // here add the child to the tree
@@ -378,10 +378,11 @@ lend:    return res;
             {
                prev.lstPoints.Add(lstPoints1[i]);
                prev.npoints++;
-               if(currNode.lstCuts.Count>0)
-                  currNode.lstCuts.RemoveAt(currNode.lstCuts.Count-1);
             }
-            decTree[decTree.Count - 1] = prev;
+            if(currNode.lstCuts.Count>0)
+               currNode.lstCuts.RemoveAt(currNode.lstCuts.Count-1);
+            if(currNode.lstCuts.Count == 0)
+               Console.WriteLine($"Nonleaf with no cuts {currNode.id}");
          }
          else
          {  child = new Node(decTree.Count(), ndim, nclasses); // tentative son
@@ -394,6 +395,8 @@ lend:    return res;
                decTree[i].lstPoints = lstPoints1;
                decTree[i].npoints  = decTree[i].lstPoints.Count();
                if(isLeaf) decTree[i].isLeaf = true;
+               if (currNode.lstCuts.Count == 0 && !currNode.isLeaf)
+                  Console.WriteLine("WARNING. uncut non leaf"); ;
             }
          }
 

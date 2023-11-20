@@ -227,7 +227,7 @@ void MIPmodel::cplexModel(string dataFileName)
    {  cerr << "Failed to set integrality on vars.\n";
       goto TERMINATE;
    }
-   //status = CPXwriteprob(env, lp, "MIP.lp", NULL);
+   status = CPXwriteprob(env, lp, "MIP.lp", NULL);
 
    status = CPXmipopt(env, lp);
    if (status)
