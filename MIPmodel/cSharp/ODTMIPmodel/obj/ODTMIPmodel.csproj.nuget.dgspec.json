@@ -10,14 +10,15 @@
         "projectUniqueName": "C:\\git\\ODT\\MIPmodel\\cSharp\\ODTMIPmodel\\ODTMIPmodel.csproj",
         "projectName": "ODTMIPmodel",
         "projectPath": "C:\\git\\ODT\\MIPmodel\\cSharp\\ODTMIPmodel\\ODTMIPmodel.csproj",
-        "packagesPath": "C:\\Users\\vittorio.maniezzo\\.nuget\\packages\\",
+        "packagesPath": "C:\\Users\\vitto\\.nuget\\packages\\",
         "outputPath": "C:\\git\\ODT\\MIPmodel\\cSharp\\ODTMIPmodel\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",
+          "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
         ],
         "configFilePaths": [
-          "C:\\Users\\vittorio.maniezzo\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\vitto\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -70,7 +71,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.100\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.403\\RuntimeIdentifierGraph.json"
         }
       }
     }
