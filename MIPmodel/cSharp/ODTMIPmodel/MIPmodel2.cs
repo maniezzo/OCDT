@@ -188,13 +188,15 @@ l0:            continue;
             }
          }
          // resulting non dominated constraints
-         Console.WriteLine("Non dominated constraints");
-         for (i = 0; i < numConstr; i++)
-         {  if (fOut[i]) continue;
-            Console.Write($"{i} - ");
-            for (j = 0; j < lstTableauRows[i].Count; j++)
-               Console.Write($" {lstTableauRows[i][j]}");
-            Console.WriteLine();
+         if(numConstr < 500)
+         {  Console.WriteLine("Non dominated constraints");
+            for (i = 0; i < numConstr; i++)
+            {  if (fOut[i]) continue;
+               Console.Write($"{i} - ");
+               for (j = 0; j < lstTableauRows[i].Count; j++)
+                  Console.Write($" {lstTableauRows[i][j]}");
+               Console.WriteLine();
+            }
          }
          return fOut;
       }
