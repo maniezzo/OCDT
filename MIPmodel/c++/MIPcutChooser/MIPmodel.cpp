@@ -16,10 +16,12 @@ void MIPmodel::cplexModel(string dataFileName)
 {
    double objval;
    int    solstat, objsen;
-   bool   isVerbose = true;
-   bool   fReadProblem = true;
-   int numRows, numCols;
+   bool   isVerbose = false;
+   bool   fReadLpProblem = true;
+   bool   fReadFromProbFile = false;
+   int numRows=0, numCols=0;
    int numNZ, numNZrow;  // nonzeros in the whole problem and in a row
+   vector<vector<int>> lstConstr;
 
    double* obj  = NULL;
    double* lb   = NULL;
@@ -77,10 +79,11 @@ void MIPmodel::cplexModel(string dataFileName)
       goto TERMINATE;
    }
 
-   // reads the problem from lp file
-   if(fReadProblem)
+   // reads the problem from file
+   path = "c:\\git\\ODT\\MIPmodel\\cSharp\\ODTMIPmodel\\bin\\Debug\\net6.0\\";
+   path = ".\\";
+   if(fReadLpProblem)
    {
-      path = "c:\\git\\ODT\\MIPmodel\\cSharp\\ODTMIPmodel\\bin\\Debug\\net6.0\\";
       name = path + dataFileName+".lp";
       status = CPXreadcopyprob(env, lp, name.c_str(), NULL);
       if (status)
@@ -89,6 +92,36 @@ void MIPmodel::cplexModel(string dataFileName)
       }
       numRows = cur_numrows = CPXgetnumrows(env, lp);
       numCols = cur_numcols = CPXgetnumcols(env, lp);
+   }
+   else if (fReadFromProbFile)
+   {  int cont=0;
+      ifstream fprob;
+      string line;
+      vector<string> elem;
+      string dataProbFile = path + dataFileName + ".prob";
+      cout << "Opening datafile " << dataProbFile << endl;
+      fprob.open(dataProbFile);
+      if (fprob.is_open())
+      {
+         getline(fprob, line);
+         numCols = stoi(line);
+         getline(fprob, line);
+         //numRows = stoi(line);
+         getline(fprob, line);
+
+         while (getline(fprob, line))
+         {  
+            elem = split(line, ' ');
+            vector<int> ints(elem.size(),-1);
+            for(i=0;i<elem.size();i++)
+               ints[i] = stoi(elem[i]);
+            lstConstr.push_back(ints);
+            numRows++;
+            if(cont%100==0) cout << "reading constraint "<<cont<<endl;
+            cont++;
+         }
+      }
+      fprob.close();
    }
    else
    {
@@ -110,7 +143,7 @@ void MIPmodel::cplexModel(string dataFileName)
    rowname = (char**)malloc(1 * sizeof(char*));          // one row at a time
 
    // construct the problem, do not read it
-   if (!fReadProblem)
+   if (!fReadLpProblem && fReadFromProbFile)
    {   
       objsen   = CPX_MIN;
       if (status)
@@ -138,12 +171,11 @@ void MIPmodel::cplexModel(string dataFileName)
          rmatbeg[0] = 0;
          sense[0] = 'G';
          rhs[0]   = 1;
-         for (j = 0; j < numCols; j++)
-            if ( (rand() % RAND_MAX) > 75)
-            {  rmatind[numNZrow] = j;
-               rmatval[numNZrow] = 1;
-               numNZrow++;
-            }
+         for (j = 0; j < lstConstr[i].size(); j++)
+         {  rmatind[numNZrow] = lstConstr[i][j];
+            rmatval[numNZrow] = 1;
+            numNZrow++;
+         }
          rmatbeg[1] = numNZrow;
          rowname[0] = (char*)malloc(sizeof(char) * (11));   // why not 11?
          sprintf_s(rowname[0], 11, "%s%d", "c", idRow);

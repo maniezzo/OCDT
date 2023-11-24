@@ -1,5 +1,5 @@
 { 
-   "datafile" : "banknote_authentication", 
+   "datafile" : "breast_cancer_w", 
    "datapath" : "c:\\git\\ODT\\data\\",
    "LPsolver" : "CPLEX",
    "IPsolver" : "CPLEX",
