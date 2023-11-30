@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Text;
-using System.Threading.Tasks;
+using System.Threading;
 using System.Text.Json.Nodes;
 using Google.OrTools;
 using Google.OrTools.LinearSolver;
 using static Google.OrTools.LinearSolver.Solver; // I guess this and the former one could be united
-using System.Data;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 //using Google.OrTools.ConstraintSolver;
 
@@ -24,6 +24,8 @@ namespace ODTMIPmodel
       int ndim,npoints;
       double[][] coord;
       int[] classe;
+      TimeSpan startCpuUsage, endCpuUsage;
+      double cpuUsedSec;
 
       public MIPmodel()
       {  coord = null;
@@ -43,9 +45,17 @@ namespace ODTMIPmodel
          Console.WriteLine("dataset "+dataset);
          read_data(fpath);
 
+         var startTime = DateTime.UtcNow;
+         startCpuUsage = Process.GetCurrentProcess().TotalProcessorTime;   // Init time
+
          string LPsolver = jobj["LPsolver"].GetValue<string>();
          string IPsolver = jobj["IPsolver"].GetValue<string>();
          lpModel(LPsolver, IPsolver, fpath, dataset);   // linear model
+
+         var endTime = DateTime.UtcNow;
+         endCpuUsage = Process.GetCurrentProcess().TotalProcessorTime;
+         double cpuUsedSec = (endCpuUsage - startCpuUsage).TotalSeconds;
+         Console.WriteLine($"End - CPU: {cpuUsedSec}");
       }
 
       private void read_data(string fpath)
@@ -212,6 +222,10 @@ l0:            continue;
          findCuts(lstCuts,dataset);  // costruisce lista lstCuts
          numVar = lstCuts.Count;
 
+         endCpuUsage = Process.GetCurrentProcess().TotalProcessorTime;
+         cpuUsedSec = (endCpuUsage - startCpuUsage).TotalMilliseconds/1000.0;
+         Console.WriteLine($"After cut generation: CPU: {cpuUsedSec}");
+
          // da qui modello LP
          Console.WriteLine($"---- Linear programming model with {LPsolver} ----");
          Google.OrTools.LinearSolver.Solver solver = Google.OrTools.LinearSolver.Solver.CreateSolver(LPsolver);
@@ -314,6 +328,9 @@ l0:            continue;
          }
 
          Console.WriteLine("Problem solved in " + solver.WallTime() + " milliseconds");
+         endCpuUsage = Process.GetCurrentProcess().TotalProcessorTime;
+         cpuUsedSec = (endCpuUsage - startCpuUsage).TotalSeconds;
+         Console.WriteLine($"After LP: CPU: {cpuUsedSec}");
 
          // The objective value of the solution.
          Console.WriteLine("Optimal objective value = " + solver.Objective().Value());
@@ -327,6 +344,9 @@ l0:            continue;
          double[] activities = solver.ComputeConstraintActivities();
 
          Console.WriteLine("Problem solved in " + solver.Iterations() + " iterations");
+         endCpuUsage = Process.GetCurrentProcess().TotalProcessorTime;
+         cpuUsedSec = (endCpuUsage - startCpuUsage).TotalSeconds;
+         Console.WriteLine($"After IP: CPU: {cpuUsedSec}");
 
          // reduced costs
          for (i = 0; i < numVar; i++)

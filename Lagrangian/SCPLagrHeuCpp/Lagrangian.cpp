@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <iomanip>   // setw
+#include <ctime>
 #include "Lagrangian.h"
 #include "json.h"
 
@@ -10,14 +11,18 @@ void Lagrangian::run_lagrangian()
 
    cout << "Starting Lagrangian" << endl;
    string path = "\\git\\ODT\\MIPmodel\\cSharp\\ODTMIPmodel\\bin\\Debug\\net6.0\\";
-   string dataset = "test1";
+   string dataset = "soybean-small";
    read_data(path, dataset);
    build_structures();
 
    isVerbose = false;
+
+   tstart = clock();
    subgradient();
+   tend = clock();
+   ttot = (tend - tstart) / CLOCKS_PER_SEC;
    writeSolution(path,dataset);
-   cout << "Lagrangian completed" << endl;
+   cout << "Lagrangian completed, zub " << zub << " time " << ttot << " sec" << endl;
 }
 
 // writes the solution on a file, json format
@@ -55,7 +60,7 @@ void Lagrangian::writeSolution(string path, string dataset)
 void Lagrangian::subgradient()
 {  int i,j;
    double alpha,zlb,zlbiter,sumSubgr2,step;
-   int zub,zubiter,iter;
+   int zubiter,iter;
    vector<double> lambda(nconstr);
    vector<int> x(nvar);
    vector<int> subgr(nconstr);
@@ -64,7 +69,7 @@ void Lagrangian::subgradient()
    zlb = 2;       // safe guess
    zub = nvar;    // safe guess
    cout.precision(2);
-   int maxiter = 12000;      // num iterations
+   int maxiter = 10000;      // num iterations
    int stepiter = 100;       // every when to write log
    double alphainit = 7.5;   // initial (and reset) alpha value
    double alphastep = 0.9;   // percentage of alpha after update
@@ -73,6 +78,9 @@ void Lagrangian::subgradient()
 
    ofstream fout("lagrheu.log");
    fout.precision(2);
+
+   firstZub(x,zub);
+
    for(iter=0;iter<maxiter;iter++)
    {  zlbiter = zubiter = 0;
       subproblem(x, lambda, zlbiter);
@@ -118,7 +126,13 @@ void Lagrangian::subgradient()
    }
    fout.close();
 
-lend: i=0;
+   lend: i=0;
+}
+
+int Lagrangian::firstZub(vector<int> x, int& zub)
+{
+   fixZub(x,zub);
+   return zub;
 }
 
 // a simple fixing heuristic to make the lagrangian solution feasible
@@ -195,8 +209,7 @@ int Lagrangian::fixZub(vector<int> x, int &zub)
 
 lend: if (zubiter < zub)
    {  zub = zubiter;
-      cout << "New zub!!! zub = " << zub << endl;
-      zubSol.clear();
+      cout << "New zub!!! zub = " << zub << " time " << (clock() - tstart) / CLOCKS_PER_SEC << endl;      zubSol.clear();
       for(i=0;i<nvar;i++)
          if(x[i] > 0)
             zubSol.push_back(i);
