@@ -11,7 +11,7 @@ void Lagrangian::run_lagrangian()
 
    cout << "Starting Lagrangian" << endl;
    string path = "\\git\\ODT\\MIPmodel\\cSharp\\ODTMIPmodel\\bin\\Debug\\net6.0\\";
-   string dataset = "soybean-small";
+   string dataset = "monks-1-train";
    read_data(path, dataset);
    build_structures();
 
@@ -69,11 +69,11 @@ void Lagrangian::subgradient()
    zlb = 2;       // safe guess
    zub = nvar;    // safe guess
    cout.precision(2);
-   int maxiter = 10000;      // num iterations
+   int maxiter = 50000;      // num iterations
    int stepiter = 100;       // every when to write log
    double alphainit = 7.5;   // initial (and reset) alpha value
-   double alphastep = 0.9;   // percentage of alpha after update
-   double alphamin  = 0.01;  // min alpha, below reset to init
+   double alphastep = 0.95;  // percentage of alpha after update
+   double alphamin  = 0.05;  // min alpha, below reset to init
    alpha = alphainit;
 
    ofstream fout("lagrheu.log");
