@@ -132,7 +132,8 @@ namespace ODTMIPmodel
                      if (!lstCuts.Contains(t))
                      {
                         lstCuts.Add(t);
-                        Console.WriteLine($"Cut {cont} {t.Item1}->{t.Item2}");
+                        if(cont%100 == 0)
+                           Console.WriteLine($"Cut {cont} {t.Item1}->{t.Item2}");
                         cont++;
                      }
                   }
@@ -274,7 +275,8 @@ l0:            continue;
                   {  for(j=0;j<lstCols.Count;j++)
                         if (lstCols[j] != lstTableauRows[i][j])
                            goto l1; // try next cut, check if it dominates
-                     Console.WriteLine($">>> Cut {i} duplicato");
+                     if(n < 100)
+                        Console.WriteLine($">>> Cut {i} duplicato");
                      goto l0;  // cut dominated, do not add
                   }
 l1:               continue;
@@ -349,14 +351,16 @@ l0:            continue;
          Console.WriteLine($"After IP: CPU: {cpuUsedSec}");
 
          // reduced costs
-         for (i = 0; i < numVar; i++)
-            if(x[i].ReducedCost() > 0.0001)
-               Console.WriteLine($"x{i}: reduced cost = " + x[i].ReducedCost());
+         if(numVar < 200)
+         {  for (i = 0; i < numVar; i++)
+               if(x[i].ReducedCost() > 0.0001)
+                  Console.WriteLine($"x{i}: reduced cost = " + x[i].ReducedCost());
 
-         // dual variables
-         for (j = 0; j < numConstr; j++)
-            if(cuts[j].DualValue() > 0.0001)
-               Console.WriteLine($"c0: dual value = {cuts[j].DualValue()} activity = {activities[cuts[j].Index()]}");
+            // dual variables
+            for (j = 0; j < numConstr; j++)
+               if(cuts[j].DualValue() > 0.0001)
+                  Console.WriteLine($"c0: dual value = {cuts[j].DualValue()} activity = {activities[cuts[j].Index()]}");
+         }
 
          // GO INTEGER
          IPmodel(IPsolver, lstTableauRows, lstCuts, fpath);                   
