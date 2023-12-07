@@ -70,7 +70,7 @@ def pruneLstPoints(jp,dim,lstPoints,minlo,minhi,maxlo,maxhi):
       if (X[lp, dim] == X[jp, dim] and X[lp, dim] == minhi[dim]):
          maxhi[dim] = X[lp, dim]
          print(f"Removing {lp} from {lstPoints} (incompatible with {jp})")
-         lstPoints.remove(lp)  # confliting internal point
+         lstPoints.remove(lp)  # conflicting internal point
    return lstPoints
 
 # reduces max boundaries of AABB given point jp of different class. Return false if impossible
@@ -137,7 +137,7 @@ def addBB(bbox,cls):
          if bbox[d,1] > lstAABB[b][d,1] or bbox[d,2] < lstAABB[b][d,2]:
             fContains = False
       if isContained:
-         print("bbox contained, no appending")
+         if isVerbose: print("bbox contained, no appending")
          return
       if fContains:
          lstAABB.pop(b)
@@ -170,8 +170,8 @@ def computeAABB():
       for k in lstPrmt[idperm]:      # dimensione corrente
          for idp in np.arange(n):    # indice punto corrente
             seed = ind[idp,k]        # primo punto del box
-            print(f">>>> new bbox on point {seed} dir {k}")
             minlo, minhi, maxlo, maxhi = initializeAABB(ind,seed,k)
+            if isVerbose: print(f">>>> new bbox on point {seed} dir {k}")
             # ordinamento sulla dimensione k, bbox con tutte le altre
             cls = df.iloc[seed,3]
             lstPoints = [seed]       # points in current cluster
@@ -184,16 +184,16 @@ def computeAABB():
                clspt = df.iloc[jp,3] # class of current point j
                if(clspt!=cls):
                   fReduced = reduceAABB(jp,k,lstPoints,minlo,minhi,maxlo,maxhi)
-                  if fReduced:
+                  if fReduced and isVerbose:
                      print(f"reducing cause of {jp} ({X[jp,0]},{X[jp,1]})")
                   else:
                      maxhi[k] = X[jp,k]
-                     print(f"point {jp} ({X[jp,0]},{[jp,1]}) incompatible. Closing bbox")
+                     if isVerbose: print(f"point {jp} ({X[jp,0]},{[jp,1]}) incompatible. Closing bbox")
                      break
                else:
                   if(enlargeAABB(jp,cls,k,ind,minlo,minhi,maxlo,maxhi,lstPoints)): # add a point proceding in direction k
                      print(f"adding {jp} ({X[jp,0]},{X[jp,1]})")
-               print(f"bbox (cls:{cls}): after idpt {jp} class {clspt} x:{maxlo[0]}/{minlo[0]}/{minhi[0]}/{maxhi[0]} y:{maxlo[1]}/{minlo[1]}/{minhi[1]}/{maxhi[1]}")
+               if isVerbose: print(f"bbox (cls:{cls}): after idpt {jp} class {clspt} x:{maxlo[0]}/{minlo[0]}/{minhi[0]}/{maxhi[0]} y:{maxlo[1]}/{minlo[1]}/{minhi[1]}/{maxhi[1]}")
                j+=1
             bbox = AABB2bbox(minlo,minhi,maxlo,maxhi)
             lstAABB = addBB(bbox,cls)
@@ -201,9 +201,11 @@ def computeAABB():
 
 if __name__ == "__main__":
    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-   df = pd.read_csv("..\\..\\data\\test5.csv")
+   df = pd.read_csv("..\\..\\data\\breastCoimbra.csv")
    #df = pd.read_csv("..\\data\\Iris_setosa.csv",usecols=["Id","SepalWidthCm","PetalLengthCm","class"])
    #df["class"] = df["class"].map({"x":0,"o":1})
+
+   isVerbose = False
 
    n = len(df["class"])       # num of points
    X = df.iloc[:,1:-1].values # coords of the points
