@@ -13,6 +13,7 @@
 #include <time.h>     /* time        */
 #include <assert.h>   /* assert      */
 #include <algorithm>  /* std::sort   */
+#include <ilcplex\cplex.h>
 
 using namespace std;
 
@@ -29,6 +30,7 @@ class MIPmodel
 
       struct Cutline { int dim; double cutval; };
       map<int, Cutline> cutlines;  // dictionary dei tagli
+
       vector<vector<int>> ptClass; // indices of the classes
       vector<vector<float>> X;     // features
       vector<int> Y;               // classes

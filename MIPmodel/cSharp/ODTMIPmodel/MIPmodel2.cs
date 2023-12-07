@@ -346,10 +346,6 @@ l0:            continue;
          double[] activities = solver.ComputeConstraintActivities();
 
          Console.WriteLine("Problem solved in " + solver.Iterations() + " iterations");
-         endCpuUsage = Process.GetCurrentProcess().TotalProcessorTime;
-         cpuUsedSec = (endCpuUsage - startCpuUsage).TotalSeconds;
-         Console.WriteLine($"After IP: CPU: {cpuUsedSec}");
-
          // reduced costs
          if(numVar < 200)
          {  for (i = 0; i < numVar; i++)

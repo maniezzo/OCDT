@@ -1,5 +1,5 @@
 { 
-   "datafile" : "breast_cancer_w", 
+   "datafile" : "nath_jones", 
    "datapath" : "c:\\git\\ODT\\data\\",
    "LPsolver" : "CPLEX",
    "IPsolver" : "CPLEX",

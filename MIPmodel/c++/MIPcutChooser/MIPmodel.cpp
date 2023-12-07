@@ -1,8 +1,19 @@
 #include "MIPmodel.h"
 #include "json.h"
-#include <ilcplex\cplex.h>
 #include <string.h>
 #include <stdlib.h>
+
+
+struct loginfo {
+   double timestart;
+   double dettimestart;
+   double lastincumbent;
+   int    lastlog;
+   int    numcols;
+};
+typedef struct loginfo LOGINFO, * LOGINFOptr;
+static int CPXPUBLIC
+logcallback(CPXCENVptr env, void* cbdata, int wherefrom, void* cbhandle);
 
 void MIPmodel::run_MIP()
 {
@@ -55,6 +66,9 @@ void MIPmodel::cplexModel(string dataFileName)
    probname = (char*)name.c_str();
    maxnodes = 100000000;
 
+   bool uselogcallback = true;  // variables for the log callout
+   LOGINFO myloginfo;
+
    env = CPXopenCPLEX(&status);
    if (env == NULL) 
    {  char  errmsg[CPXMESSAGEBUFSIZE];
@@ -81,7 +95,7 @@ void MIPmodel::cplexModel(string dataFileName)
 
    // reads the problem from file
    path = "c:\\git\\ODT\\MIPmodel\\cSharp\\ODTMIPmodel\\bin\\Debug\\net6.0\\";
-   path = ".\\";
+   //path = ".\\";
    if(fReadLpProblem)
    {
       name = path + dataFileName+".lp";
@@ -260,6 +274,33 @@ void MIPmodel::cplexModel(string dataFileName)
       goto TERMINATE;
    }
    status = CPXwriteprob(env, lp, "MIP.lp", NULL);
+   if (uselogcallback)
+   {  /* Set overall node limit in case callback conditions are not met */
+      status = CPXsetintparam(env, CPXPARAM_MIP_Limits_Nodes, 5000);
+      if (status) goto TERMINATE;
+
+      status = CPXgettime(env, &myloginfo.timestart);
+      if (status) {
+         fprintf(stderr, "Failed to query time.\n");
+         goto TERMINATE;
+      }
+      status = CPXgetdettime(env, &myloginfo.dettimestart);
+      if (status) {
+         fprintf(stderr, "Failed to query deterministic time.\n");
+         goto TERMINATE;
+      }
+      myloginfo.numcols = CPXgetnumcols(env, lp);
+      myloginfo.lastincumbent = CPXgetobjsen(env, lp) * 1e+35;
+      myloginfo.lastlog = -10000;
+      status = CPXsetinfocallbackfunc(env, logcallback, &myloginfo);
+      if (status) {
+         fprintf(stderr, "Failed to set logging callback function.\n");
+         goto TERMINATE;
+      }
+      /* Turn off CPLEX logging */
+      status = CPXsetintparam(env, CPXPARAM_MIP_Display, 0);
+      if (status)  goto TERMINATE;
+   }
 
    status = CPXmipopt(env, lp);
    if (status)
@@ -406,3 +447,93 @@ vector<string> MIPmodel::split(string str, char sep)
    }
    return tokens;
 }
+
+// Log new incumbents if they are at better than the old by a
+// relative tolerance of 1e-5; also log progress info every 100 nodes.
+static int CPXPUBLIC
+logcallback(CPXCENVptr env, void* cbdata, int wherefrom, void* cbhandle) 
+{
+   int status = 0;
+
+   LOGINFOptr info = (LOGINFOptr)cbhandle;
+   int        hasincumbent = 0;
+   int        newincumbent = 0;
+   int        nodecnt;
+   int        nodesleft;
+   double     objval;
+   double     bound;
+   double* x = NULL;
+
+
+   status = CPXgetcallbackinfo(env, cbdata, wherefrom,
+      CPX_CALLBACK_INFO_NODE_COUNT, &nodecnt);
+   if (status)  goto TERMINATE;
+
+   status = CPXgetcallbackinfo(env, cbdata, wherefrom,
+      CPX_CALLBACK_INFO_NODES_LEFT, &nodesleft);
+   if (status)  goto TERMINATE;
+
+   status = CPXgetcallbackinfo(env, cbdata, wherefrom,
+      CPX_CALLBACK_INFO_MIP_FEAS, &hasincumbent);
+   if (status)  goto TERMINATE;
+
+   if (hasincumbent) {
+      status = CPXgetcallbackinfo(env, cbdata, wherefrom,
+         CPX_CALLBACK_INFO_BEST_INTEGER, &objval);
+      if (status)  goto TERMINATE;
+
+      if (fabs(info->lastincumbent - objval) > 1e-5 * (1.0 + fabs(objval))) {
+         newincumbent = 1;
+         info->lastincumbent = objval;
+      }
+   }
+
+   if (nodecnt >= info->lastlog + 1000 || newincumbent) {
+      double walltime;
+      double dettime;
+
+      status = CPXgetcallbackinfo(env, cbdata, wherefrom, CPX_CALLBACK_INFO_BEST_REMAINING, &bound);
+      if (status)  goto TERMINATE;
+
+      if (!newincumbent)  info->lastlog = nodecnt;
+
+      status = CPXgettime(env, &walltime);
+      if (status)  goto TERMINATE;
+
+      status = CPXgetdettime(env, &dettime);
+      if (status)  goto TERMINATE;
+
+      printf("Time = %.2f  Dettime = %.2f  Nodes = %d(%d)  Best objective = %g",
+         walltime - info->timestart, dettime - info->dettimestart,
+         nodecnt, nodesleft, bound);
+      if (hasincumbent)  cout << "  Incumbent objective = " << objval << endl;
+      else               cout << endl;
+   }
+
+   if (newincumbent) 
+   {  int j;
+      int numcols = info->numcols;
+
+      x = (double*)malloc(numcols * sizeof(double));
+      if (x == NULL) 
+      {  status = CPXERR_NO_MEMORY;
+         goto TERMINATE;
+      }
+      status = CPXgetcallbackincumbent(env, cbdata, wherefrom, x, 0, numcols - 1);
+      if (status)  goto TERMINATE;
+
+      cout <<"New ZUB! " << objval << " incumbent variables:" << endl;
+      for (j = 0; j < numcols; j++) {
+         if (fabs(x[j]) > 1e-6) 
+            cout << "  " << j; // << ": " << x[j];
+      }
+      cout << endl;
+   }
+
+TERMINATE:
+
+   free(x);
+   x = NULL;
+   return (status);
+
+} /* END logcallback */
