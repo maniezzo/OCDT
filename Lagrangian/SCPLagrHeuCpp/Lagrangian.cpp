@@ -11,7 +11,7 @@ void Lagrangian::run_lagrangian()
 
    cout << "Starting Lagrangian" << endl;
    string path = "\\git\\ODT\\MIPmodel\\cSharp\\ODTMIPmodel\\bin\\Debug\\net6.0\\";
-   string dataset = "monks-1-train";
+   string dataset = "hayes_roth";
    read_data(path, dataset);
    build_structures();
 

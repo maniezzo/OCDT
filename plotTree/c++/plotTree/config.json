@@ -1,5 +1,5 @@
 { 
-   "datafile" : "inliers2", 
+   "datafile" : "breast-csncer-wh", 
    "datapath" : "c:\\git\\ODT\\data\\",
 	"LPsolver" : "GLOP",
 	"IPsolver" : "SCIP"

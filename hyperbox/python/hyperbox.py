@@ -201,7 +201,7 @@ def computeAABB():
 
 if __name__ == "__main__":
    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-   df = pd.read_csv("..\\..\\data\\breastCoimbra.csv")
+   df = pd.read_csv("..\\..\\data\\monks-1-train.csv")
    #df = pd.read_csv("..\\data\\Iris_setosa.csv",usecols=["Id","SepalWidthCm","PetalLengthCm","class"])
    #df["class"] = df["class"].map({"x":0,"o":1})
 

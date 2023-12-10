@@ -29,7 +29,7 @@ Bbox::~Bbox() {  return; }
 
 // >>>>>>>>>>>>>>>>>>> main method, everythong starts from here <<<<<<<<<<<<<<<<<<<<<<<
 int Bbox::bboxHeu(string fpath, string dataFileName)
-{  int i,dim,idx;
+{  int i,j,dim,idx;
    read_data(fpath);
 
    nb = 0;     // box counter
@@ -39,6 +39,7 @@ int Bbox::bboxHeu(string fpath, string dataFileName)
 
    // find min and max coords of the domain
    hbox domain;
+l1:dim=0;
    for (dim = 0; dim < ndim; dim++)
    {  domain.min.push_back(X[0][dim]);
       domain.max.push_back(X[0][dim]);
@@ -46,17 +47,24 @@ int Bbox::bboxHeu(string fpath, string dataFileName)
       {  if (X[i][dim] > domain.max[dim]) domain.max[dim] = X[i][dim];
          if (X[i][dim] < domain.min[dim]) domain.min[dim] = X[i][dim];
          if (domain.min[dim] < 1)
-         {  cout << "domain.min < 1: unfeasible for this implementation" << endl; // dimensioni devono valere almeno 1, v. initializeBox
-            goto l0; // aborting
+         {  cout << "domain.min < 1: increasing coord values" << endl; // dimensioni devono valere almeno 1, v. initializeBox
+            if(find(dimIncreased.begin(), dimIncreased.end(), dim) == dimIncreased.end())
+               dimIncreased.push_back(dim);
+            //goto l0; // aborting
+            for(j=0;j<n;j++)
+               X[j][dim]+=1;
+            domain.min[dim] = DBL_MAX;
+            goto l1;
          }
       }
    }
+   
    removeNonParetian(domain);
 
    // box a set
    idx = 0; // index of incumbent record
    while (idx<Y.size()) // initialize box stack
-   {  cout << "initializaing point " << idx << endl; 
+   {  cout << "initializing point " << idx << endl; 
       AABB box(ndim);
       initializeBox(idx,box,domain); // out is whole domain, in is the point
       AABBstack.push_back(box);
@@ -71,7 +79,7 @@ l0:return 0;
 
 // writes out the final boxes
 void Bbox::writeHboxes(string dataFileName)
-{  int i,j,dim;
+{  int i,j,dim,inc;
    vector<int> lstIdBox;  // list of undominated boxes
 
    for (i = 0; i < AABBstack.size(); i++)
@@ -81,10 +89,14 @@ void Bbox::writeHboxes(string dataFileName)
       for(j=0;j<AABBstack[i].points.size();j++)
          cout << " " << AABBstack[i].points[j]; cout << endl;
       for(dim=0;dim<ndim;dim++)
-         cout << setw(5) << AABBstack[i].loOut[dim] << 
-                 setw(5) << AABBstack[i].loIn[dim]  <<
-                 setw(5) << AABBstack[i].hiIn[dim]  <<
-                 setw(5) << AABBstack[i].hiOut[dim] << endl;
+      {  inc = 0;
+         if(find(dimIncreased.begin(), dimIncreased.end(), dim) != dimIncreased.end())
+            inc = 1;
+         cout << setw(5) << AABBstack[i].loOut[dim]-inc << 
+                 setw(5) << AABBstack[i].loIn[dim] - inc <<
+                 setw(5) << AABBstack[i].hiIn[dim] - inc <<
+                 setw(5) << AABBstack[i].hiOut[dim] - inc << endl;
+      }
    }
    writeFinals(lstIdBox, dataFileName);
 }
@@ -264,7 +276,7 @@ bool Bbox::checkDominated(AABB& box)
                   box.loOut[k] == AABBstack[j].loOut[k] &&
                   box.hiIn[k] == AABBstack[j].hiIn[k] &&
                   box.loIn[k] == AABBstack[j].loIn[k])
-               {  cout << "Duplicate box: " << box.id << endl;
+               {  //cout << "Duplicate box: " << box.id << endl;
                   isDominated = true;
                   break;
                }

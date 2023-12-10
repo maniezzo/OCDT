@@ -7,7 +7,7 @@ int main()
 {
    Bbox B;
    string fpath;
-   string dataFileName = "test5";
+   string dataFileName = "monks-2-train";
    fpath = "..//..//data//"+dataFileName+".csv";
    B.isVerbose = false;
 

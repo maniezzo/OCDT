@@ -47,6 +47,7 @@ private:
       vector<AABB> AABBstack;      // the stack of boxes
       vector<int>  hashtable;      // hash of hboxes
       vector<vector<int>> ptClass; // indices of the two classes
+      vector<int> dimIncreased;    // id of dimensions with coords added by 1
 
       void initializeBox(int idx, AABB& box, hbox domain);
       void expandBox();
