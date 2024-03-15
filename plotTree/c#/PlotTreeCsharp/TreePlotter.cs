@@ -72,7 +72,27 @@ namespace PlotTreeCsharp
 
       private void exactTree()
       {
+         int i, j, d;
+         List<int>[] dimCuts = new List<int>[numcol]; // which cuts for ech dim
+
          Console.WriteLine("Exact tree construction");
+         for (i = 0; i < numcol; i++)
+            dimCuts[i] = new List<int>();
+         for (i = 0; i < cutdim.Length; i++)
+            dimCuts[cutdim[i]].Add(i);
+
+         int[,] idx; // indices of sorted values for each column
+         idx = getSortIdx();
+
+         List<int> lstPoints = new List<int> ();  // i punti del dataset
+         List<int[]> lstNptClass = new List<int[]> (); // num punti di ogni slice individuata
+         bool[] fOut = new bool[n]; // punti da escludere
+         double maxVal = double.MaxValue; // limite superiore ai val da considerare per la dim
+         for (i = 0; i < n; i++) lstPoints.Add(i);
+         List<int>[] ptSlice = new List<int>[nclasses];
+         // ogni cut come partiziona
+         for (d = 0; d < cutdim.Length; d++)
+            ptSlice = separateNodePoints(lstPoints,lstNptClass,fOut,maxVal,d);
 
          Environment.Exit(0);
       }
@@ -415,7 +435,7 @@ l0:      if(currNode.lstSons.Count == 1)
             Console.WriteLine("WARNING. Single child");
       }
 
-      // calcola i punti in ogni segmento definito dai cut
+      // calcola i punti in ogni segmento definito dai cut, albero euristico
       private List<int> separateNodePoints(Node currNode, List<int[]> lstNptClass, bool[] fOut, double maxVal, int d)
       {  int i,pt;
          List<int> ptslice; // points of each slice (not separated per class)
@@ -428,6 +448,29 @@ l0:      if(currNode.lstSons.Count == 1)
             if (!fOut[i] && X[pt, d] < maxVal)
             {
                ptslice.Add(pt);   // i punti
+               nptslice[Y[pt]]++; // quanti punti di ogni classe
+               fOut[i] = true;
+            }
+         }
+         lstNptClass.Add(nptslice);
+         return ptslice;
+      }
+      // separate attivo per albero esatto, restituisce i punti separati per classe
+      private List<int>[] separateNodePoints(List<int> lstPoints, List<int[]> lstNptClass, bool[] fOut, double maxVal, int d)
+      {
+         int i, pt;
+         List<int>[] ptslice = new List<int>[nclasses] ; // points of each slice separated per class
+         for(i=0;i<nclasses;i++)
+            ptslice[i] = new List<int>();
+         int[] nptslice = new int[nclasses]; // num points of each slice, per class
+         int npoints = lstPoints.Count;
+
+         for (i = 0; i < npoints; i++)
+         {
+            pt = lstPoints[i];
+            if (!fOut[i] && X[pt, d] < maxVal)
+            {
+               ptslice[Y[pt]].Add(pt);   // i punti
                nptslice[Y[pt]]++; // quanti punti di ogni classe
                fOut[i] = true;
             }
