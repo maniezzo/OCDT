@@ -15,6 +15,10 @@ def loadData(dataname):
     if dataname == 'nath-jones':
         x, y = loadNathJones()
         return x, y
+    # points
+    if dataname == 'points':
+        x, y = loadPoints()
+        return x, y
     # balance-scale
     if dataname == 'balance-scale':
         x, y = loadBalanceScale()
@@ -63,6 +67,13 @@ def oneHot(x):
         lb.fit(np.unique(x[:,j]))
         x_enc = np.concatenate((x_enc, lb.transform(x[:,j])), axis=1)
     return x_enc
+
+def loadPoints():
+    print("custom load for dataset points")
+    df = pd.read_csv('../data/points.csv', delimiter=',')
+    x, y = df[["f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "f11", "f12", "f13", "f14", "f15", "f16", "f17", "f18", "f19", "f20", "f21", "f22", "f23", "f24", "f25", "f26", "f27", "f28", "f29", "f30", "f31"]], df['class']
+    y = pd.factorize(y)
+    return np.array(x), np.array(y, dtype=object)[0]
 
 def loadNathJones():
     df = pd.read_csv('../data/nath_jones.csv', delimiter=',')

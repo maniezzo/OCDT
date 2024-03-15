@@ -50,21 +50,31 @@ namespace PlotTreeCsharp
       private List<Node> decTree;
       private string splitRule; // criterium for node plitting
       private string splitDir;  // max o min
+      private string method;    // exact or heuristic
       private int totNodes=0, treeHeight=0, totLeaves=0;
 
       public TreePlotter() 
-      {
-         decTree = new List<Node> ();
+      {  decTree = new List<Node> ();
       }
       public void run_plotter()
       {
          string dataset = readConfig();
          Console.WriteLine($"Plotting {dataset}");
          readData(dataset); // gets the X and Y matrices (data and class)
-         makeTree();
+         if(method == "exact")
+            exactTree();
+         else
+            heuristicTree();
          postProcessing();
          bool ok = checkSol();
          if(ok) plotTree(dataset);
+      }
+
+      private void exactTree()
+      {
+         Console.WriteLine("Exact tree construction");
+
+         Environment.Exit(0);
       }
 
       // removes nodes with no points
@@ -90,10 +100,11 @@ namespace PlotTreeCsharp
             string file = Convert.ToString(config.datafile);
             splitRule = Convert.ToString(config.splitRule);
             splitDir  = Convert.ToString(config.splitDir);
+            method    = Convert.ToString(config.method);
             dataset = path + file;
          }
          catch (Exception ex)
-         { Console.WriteLine(ex.Message); }
+         {  Console.WriteLine(ex.Message); }
          return dataset;
       }
 
@@ -154,7 +165,7 @@ namespace PlotTreeCsharp
       }
 
       // starts the process of tree construction
-      private void makeTree()
+      private void heuristicTree()
       {  int i,j;
          List<int>[] dimCuts = new List<int>[numcol]; // which cuts for ech dim
          for(i=0;i<numcol;i++)
