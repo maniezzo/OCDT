@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Reflection.Emit;
 using System.Globalization;
 using System.Collections.Specialized;
+using System.Xml.Linq;
 
 namespace PlotTreeCsharp
 {
@@ -38,6 +39,15 @@ namespace PlotTreeCsharp
       public List<int> lstSons;   // id of each offspring, in array decTree. If null, node is a leaf
    }
 
+   // a cell of the DP table
+   public class DPcell
+   {
+      public int id;
+      public int nodeid;   // the node in DPstate
+      public int depth;    // distance from the root
+      public int nnodes;   // number of tree nodes so far
+   }
+
    internal class TreePlotter
    {
       private int[]     cutdim;
@@ -48,53 +58,73 @@ namespace PlotTreeCsharp
       private int numcol,ndim;  // num dimensions (attributes, columns of X)
       private int n, nclasses;  // num of records, num of classes
       private List<Node> decTree;
+      private List<Node> DPstate; // per DP esatta, ogni nodo candidato (partizione)
       private string splitRule; // criterium for node plitting
       private string splitDir;  // max o min
       private string method;    // exact or heuristic
       private int totNodes=0, treeHeight=0, totLeaves=0;
 
-      public TreePlotter() 
-      {  decTree = new List<Node> ();
+      public TreePlotter()
+      {  decTree = new List<Node>();
+         DPstate = new List<Node>();
       }
       public void run_plotter()
-      {
-         string dataset = readConfig();
-         Console.WriteLine($"Plotting {dataset}");
-         readData(dataset); // gets the X and Y matrices (data and class)
-         if(method == "exact")
-            exactTree();
-         else
-            heuristicTree();
-         postProcessing();
-         bool ok = checkSol();
-         if(ok) plotTree(dataset);
-      }
+   {
+      string dataset = readConfig();
+      Console.WriteLine($"Plotting {dataset}");
+      readData(dataset); // gets the X and Y matrices (data and class)
+      if(method == "exact")
+         exactTree();
+      else
+         heuristicTree();
+      postProcessing();
+      bool ok = checkSol();
+      if(ok) plotTree(dataset);
+   }
 
       private void exactTree()
       {
-         int i, j, d;
+         int i, j, d, idNode;
+         double maxVal = double.MaxValue; // limite superiore ai val da considerare per la dim corrente
+         Node currNode;
+         bool[] fOut   = new bool[n];     // punti da escludere
+
          List<int>[] dimCuts = new List<int>[numcol]; // which cuts for ech dim
+         for (i = 0; i < numcol; i++)        dimCuts[i] = new List<int>();
+         for (i = 0; i < cutdim.Length; i++) dimCuts[cutdim[i]].Add(i);   // dimesioni su cui agisce ogni cut
 
          Console.WriteLine("Exact tree construction");
-         for (i = 0; i < numcol; i++)
-            dimCuts[i] = new List<int>();
-         for (i = 0; i < cutdim.Length; i++)
-            dimCuts[cutdim[i]].Add(i);
-
-         int[,] idx; // indices of sorted values for each column
+         int[,] idx;          // indices of sorted values for each column
          idx = getSortIdx();
 
-         List<int> lstPoints = new List<int> ();  // i punti del dataset
-         List<int[]> lstNptClass = new List<int[]> (); // num punti di ogni slice individuata
-         bool[] fOut = new bool[n]; // punti da escludere
-         double maxVal = double.MaxValue; // limite superiore ai val da considerare per la dim
-         for (i = 0; i < n; i++) lstPoints.Add(i);
+         List<int> lstPoints = new List<int> (); // indici punti del dataset
+         for (i=0;i<n;i++) lstPoints.Add(i);
+         List<int[]> lstNptClass = new List<int[]>(); // num punti di ogni slice individuata
          List<int>[] ptSlice = new List<int>[nclasses];
+
+         // node 0
+         idNode = DPstate.Count;
+         currNode = new Node(idNode, ndim, nclasses);
+         for (i=0;i<ndim;i++)     currNode.isUsedDim[i] = false; // dim usate fino a lui
+         for (i=0;i<nclasses;i++) currNode.nPointClass[i] = 0;   // num punti per classe nel nodo
+         for (i=0;i<n;i++)        currNode.lstPoints.Add(i);     // punti nel nodo
+         currNode.npoints = n;
+         DPstate.Add(currNode);
+         int h = nodeHash(currNode);
+
          // ogni cut come partiziona
          for (d = 0; d < cutdim.Length; d++)
             ptSlice = separateNodePoints(lstPoints,lstNptClass,fOut,maxVal,d);
 
          Environment.Exit(0);
+      }
+
+      // hash function of a node (mod product of its points)
+      int nodeHash(Node n)
+      {  int i,hash = 1;
+         for(i=0;i<n.npoints;i++)
+            hash = (hash * (n.lstPoints[i] % 31 + 1)) % 193939;
+         return hash;
       }
 
       // removes nodes with no points
@@ -196,6 +226,52 @@ namespace PlotTreeCsharp
          int[,] idx; // indices of sorted values for each column
          idx = getSortIdx();
          depthFirstConstruction(idx); // construct the tree
+      }
+
+      // Depth-first construction
+      private void depthFirstConstruction(int[,] idx)
+      {
+         int i, j, idNode;
+         Node currNode;
+         // Initially mark all vertices as not visited
+         // Boolean[] visited = new Boolean[V];
+
+         // Create a stack for DFS
+         Stack<int> stack = new Stack<int>();
+
+         // Push the current source node
+         idNode = decTree.Count;
+         currNode = new Node(idNode, ndim, nclasses);
+         for (i = 0; i < ndim; i++) currNode.isUsedDim[i] = false;
+         for (i = 0; i < nclasses; i++) currNode.nPointClass[i] = 0;
+         for (i = 0; i < n; i++) currNode.lstPoints.Add(i);
+         currNode.npoints = n;
+         decTree.Add(currNode);
+         //fillNode(currNode,idx);
+
+         stack.Push(idNode);
+
+         while (stack.Count > 0)
+         {
+            // Pop a vertex from stack and print it
+            // idNode = stack.Peek();
+            idNode = stack.Pop();
+            currNode = decTree[idNode];
+
+            // we work on the popped item if it is not visited.
+            if (!currNode.visited)
+            {
+               Console.WriteLine($"expanding node {idNode}");
+               currNode.visited = true;
+               if (!currNode.isLeaf)
+                  fillNode(currNode, idx);
+            }
+
+            // Get all offsprings of the popped vertex s, if not visited, then push it to the stack.
+            foreach (int v in decTree[idNode].lstSons)
+               if (!decTree[v].visited)
+                  stack.Push(v);
+         }
       }
 
       // check the correctness of the tree
@@ -499,50 +575,6 @@ l0:      if(currNode.lstSons.Count == 1)
                h += (sums[i]/tot)*Math.Log(sums[i] / tot);
 
          return -h;
-      }
-
-      // Depth-first construction
-      private void depthFirstConstruction(int[,] idx)
-      {  int i,j,idNode;
-         Node currNode;
-         // Initially mark all vertices as not visited
-         // Boolean[] visited = new Boolean[V];
-
-         // Create a stack for DFS
-         Stack<int> stack = new Stack<int>();
-
-         // Push the current source node
-         idNode = decTree.Count;
-         currNode = new Node(idNode,ndim,nclasses);
-         for(i=0;i<ndim;i++)     currNode.isUsedDim[i]   = false;
-         for(i=0;i<nclasses;i++) currNode.nPointClass[i] = 0;
-         for(i=0;i<n;i++)        currNode.lstPoints.Add(i);
-         currNode.npoints = n;
-         decTree.Add(currNode);
-         //fillNode(currNode,idx);
-
-         stack.Push(idNode);
-
-         while (stack.Count > 0)
-         {
-            // Pop a vertex from stack and print it
-            // idNode = stack.Peek();
-            idNode = stack.Pop();
-            currNode = decTree[idNode];
-
-            // we work on the popped item if it is not visited.
-            if (!currNode.visited)
-            {  Console.WriteLine($"expanding node {idNode}");
-               currNode.visited = true;
-               if(!currNode.isLeaf)
-                  fillNode(currNode, idx);
-            }
-
-            // Get all offsprings of the popped vertex s, if not visited, then push it to the stack.
-            foreach (int v in decTree[idNode].lstSons)
-               if (!decTree[v].visited)
-                  stack.Push(v);
-         }
       }
 
       // computes the indices that sort each dimension
