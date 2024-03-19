@@ -42,13 +42,17 @@ namespace PlotTreeCsharp
       public List<int> lstSons;   // id of each offspring, in array decTree. If null, node is a leaf
    }
 
+   /* DPtable : a list DPcells
+    * DPcell  : node with info about costs and data for DP search
+    * NodeClus: the partitions at the node + info
+    */
    // a cell of the DP table
    public class DPcell
-   {
-      public int id;
-      public int nodeid;   // the node in DPstate
-      public int depth;    // distance from the root
-      public int nnodes;   // number of tree nodes so far
+   {  public int id;
+      public NodeClus node;   // the node 
+      public int depth;       // distance from the root
+      public int nnodes;      // number of tree nodes so far
+      public bool isExpanded; // the cell was expanded
    }
 
    // Node of the exact tree, explicit point partitions into clusters
@@ -65,14 +69,14 @@ namespace PlotTreeCsharp
       public int npoints;  // number of points (records) clustered in the node
       public bool[] isUsedDim;    // dimensions already used in the path to the node
       public List<List<int>> lstPartitions; // list of the point partitions at the node
+      public List<int> lstPartClass; // the class of each partition, -1 heterogeneous
    }
 
    internal class TreePlotter
-   {
-      private double[,] X;
+   {  private double[,] X;
       private int[]     Y;
-      private List<Node> decTree;
-      private List<NodeClus> DPstate; // per DP esatta, ogni nodo candidato (partizione)
+      private List<Node> decTree;   // l'albero euristico
+      private List<DPcell> DPtable; // la tabella della dinamica
       private int[]     cutdim;     // dimension on which each cut acts
       private double[]  cutval;     // value where the cut acts
       private int[]     dimValues;  // number of values (of cuts) acting on each dimension
@@ -81,12 +85,12 @@ namespace PlotTreeCsharp
       private string splitRule;     // criterium for node plitting
       private string splitDir;      // max o min
       private string method;        // exact or heuristic
-      private string[]  dataColumns;
+      private string[] dataColumns;
       private int totNodes=0, treeHeight=0, totLeaves=0;
 
       public TreePlotter()
       {  decTree = new List<Node>();
-         DPstate = new List<NodeClus>();
+         DPtable = new List<DPcell>();
       }
       public void run_plotter()
       {  string dataset = readConfig();
@@ -102,13 +106,13 @@ namespace PlotTreeCsharp
       }
 
       private void exactTree()
-      {
+      {  
          int i, j, d, idNode;
          double maxVal = double.MaxValue; // limite superiore ai val da considerare per la dim corrente
          NodeClus currNode;
          bool[] fOut   = new bool[n];     // punti da escludere
 
-         List<int>[] dimCuts = new List<int>[numcol]; // which cuts for ech dim
+         List<int>[] dimCuts = new List<int>[numcol]; // which cuts for each dim
          for (i = 0; i < numcol; i++)        dimCuts[i] = new List<int>();
          for (i = 0; i < cutdim.Length; i++) dimCuts[cutdim[i]].Add(i);   // dimesioni su cui agisce ogni cut
 
@@ -122,14 +126,22 @@ namespace PlotTreeCsharp
          List<int>[] ptSlice = new List<int>[nclasses];
 
          // --------------------------------------------------------- node 0
-         idNode = DPstate.Count;
+         idNode = DPtable.Count;
          currNode = new NodeClus(idNode, ndim, nclasses);
          currNode.lstPartitions.Add(new List<int>());
+         currNode.lstPartClass = new List<int>();
+         currNode.lstPartClass.Add(-1);  // unica partizione, dati eterogenei
          for (i=0;i<n;i++) currNode.lstPartitions[0].Add(i);       // tutti i punti nell'unica partizione
          for (i = 0; i < ndim; i++) currNode.isUsedDim[i] = false; // dim usate fino a lui (radice, nessuna)
          currNode.npoints = n;
-         DPstate.Add(currNode);
+         DPcell dpc = new DPcell();
+         dpc.id   = 0;
+         dpc.node = currNode;
+         dpc.depth = 0;
+         dpc.nnodes = 1;
+         dpc.isExpanded = false;
          int h = nodeHash(currNode);
+         DPtable.Add(dpc);
 
          // ogni cut come partiziona
          for (d = 0; d < ndim; d++)
@@ -141,24 +153,43 @@ namespace PlotTreeCsharp
 
       // raffina tutte le partizioni di un nodo in accordo con una dimensione (genera nodi figli)
       private void expandNode(NodeClus nd, int d)
-      {  int i,j,k,idpart,npartitions;
+      {  int i,j,k,id,idpoint,idpart,npartitions;
 
          npartitions = nd.lstPartitions.Count;
          for(i=0;i<npartitions;i++)  // for each partition of the node
-         {  
+         {
+            if (nd.lstPartClass[i] >= 0) continue;    // unique class, no expansion
+
+            List<int> partClass = new List<int>();    // la classe della partizione, -1 non univoca
             List<List<int>> newpartitions = new List<List<int>>();
-            for (idpart = 0; idpart < dimValues[d]+1; idpart++) newpartitions.Add(new List<int>());
+            for (idpart = 0; idpart < dimValues[d]+1; idpart++) 
+            {  newpartitions.Add(new List<int>());
+               partClass.Add(-2);
+            }
 
             for (j = 0; j < nd.lstPartitions[i].Count;j++)  // for each point in the partition
-            {  k=0;
+            {  idpoint = nd.lstPartitions[i][j];
+               k = 0;
                while (cutdim[k]!=d) k++; // first value for dimension d
                idpart=0;   // id of the new partiorn of the node
-               while (cutdim[k] == d && cutval[k] < X[nd.lstPartitions[i][j],d])
+               while (cutdim[k] == d && cutval[k] < X[idpoint,d]) // find the partition of idpoint
                {  k++;
                   idpart++;
                }
-               newpartitions[idpart].Add(nd.lstPartitions[i][j]); // le nuove partizioni lungo la dimensione, sostituiscono la vecchia
+               newpartitions[idpart].Add(idpoint); // le nuove partizioni lungo la dimensione, sostituiscono la vecchia
+
+               if (partClass[idpart] == -2) // initialization
+                  partClass[idpart] = Y[idpoint];
+               else if (partClass[idpart] != Y[idpoint])
+                  partClass[idpart] = -1; // classi eterogenee
             }
+
+            // qui ho il nodo figlio della partizione i-esima
+            string jsonlst =JsonConvert.SerializeObject(nd);
+            NodeClus newNode = JsonConvert.DeserializeObject<NodeClus>(jsonlst);
+            newNode.id  = DPtable.Count;
+            newNode.dim = d;
+            newNode.isUsedDim[d] = true;
          }
       }
 
