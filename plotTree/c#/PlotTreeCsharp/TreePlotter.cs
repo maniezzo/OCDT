@@ -11,6 +11,9 @@ using System.Globalization;
 using System.Collections.Specialized;
 using System.Xml.Linq;
 
+/* Data is in X, classes in Y. Attributes are columns of X
+*/
+
 namespace PlotTreeCsharp
 {
    // Each node of the non binary decision tree
@@ -48,45 +51,61 @@ namespace PlotTreeCsharp
       public int nnodes;   // number of tree nodes so far
    }
 
+   // Node of the exact tree, explicit point partitions into clusters
+   public class NodeClus
+   {  public NodeClus() { this.lstPartitions = new List<List<int>>(); }
+      public NodeClus(int id, int ndim, int nclasses) 
+      {  this.id = id;
+         this.isUsedDim = new bool[ndim];
+         this.lstPartitions = new List<List<int>> { };
+      }
+
+      public int id;
+      public int dim;      // dimension (attribute, column) associated with the node
+      public int npoints;  // number of points (records) clustered in the node
+      public bool[] isUsedDim;    // dimensions already used in the path to the node
+      public List<List<int>> lstPartitions; // list of the point partitions at the node
+   }
+
    internal class TreePlotter
    {
-      private int[]     cutdim;
-      private double[]  cutval;
-      private string[]  dataColumns;
       private double[,] X;
       private int[]     Y;
-      private int numcol,ndim;  // num dimensions (attributes, columns of X)
-      private int n, nclasses;  // num of records, num of classes
       private List<Node> decTree;
-      private List<Node> DPstate; // per DP esatta, ogni nodo candidato (partizione)
-      private string splitRule; // criterium for node plitting
-      private string splitDir;  // max o min
-      private string method;    // exact or heuristic
+      private List<NodeClus> DPstate; // per DP esatta, ogni nodo candidato (partizione)
+      private int[]     cutdim;     // dimension on which each cut acts
+      private double[]  cutval;     // value where the cut acts
+      private int[]     dimValues;  // number of values (of cuts) acting on each dimension
+      private int numcol,ndim;      // num dimensions (attributes, columns of X)
+      private int n, nclasses;      // num of records, num of classes
+      private string splitRule;     // criterium for node plitting
+      private string splitDir;      // max o min
+      private string method;        // exact or heuristic
+      private string[]  dataColumns;
       private int totNodes=0, treeHeight=0, totLeaves=0;
 
       public TreePlotter()
       {  decTree = new List<Node>();
-         DPstate = new List<Node>();
+         DPstate = new List<NodeClus>();
       }
       public void run_plotter()
-   {
-      string dataset = readConfig();
-      Console.WriteLine($"Plotting {dataset}");
-      readData(dataset); // gets the X and Y matrices (data and class)
-      if(method == "exact")
-         exactTree();
-      else
-         heuristicTree();
-      postProcessing();
-      bool ok = checkSol();
-      if(ok) plotTree(dataset);
-   }
+      {  string dataset = readConfig();
+         Console.WriteLine($"Plotting {dataset}");
+         readData(dataset); // gets the X and Y matrices (data and class)
+         if(method == "exact")
+            exactTree();
+         else
+            heuristicTree();
+         postProcessing();
+         bool ok = checkSol();
+         if(ok) plotTree(dataset);
+      }
 
       private void exactTree()
       {
          int i, j, d, idNode;
          double maxVal = double.MaxValue; // limite superiore ai val da considerare per la dim corrente
-         Node currNode;
+         NodeClus currNode;
          bool[] fOut   = new bool[n];     // punti da escludere
 
          List<int>[] dimCuts = new List<int>[numcol]; // which cuts for ech dim
@@ -95,35 +114,64 @@ namespace PlotTreeCsharp
 
          Console.WriteLine("Exact tree construction");
          int[,] idx;          // indices of sorted values for each column
-         idx = getSortIdx();
+         idx = getSortIdxAllDim();
 
-         List<int> lstPoints = new List<int> (); // indici punti del dataset
+         List<int> lstPoints = new List<int> ();         // indici punti del dataset
          for (i=0;i<n;i++) lstPoints.Add(i);
-         List<int[]> lstNptClass = new List<int[]>(); // num punti di ogni slice individuata
+         List<int[]> lstNptClass = new List<int[]>();    // num punti di ogni slice individuata
          List<int>[] ptSlice = new List<int>[nclasses];
 
-         // node 0
+         // --------------------------------------------------------- node 0
          idNode = DPstate.Count;
-         currNode = new Node(idNode, ndim, nclasses);
-         for (i=0;i<ndim;i++)     currNode.isUsedDim[i] = false; // dim usate fino a lui
-         for (i=0;i<nclasses;i++) currNode.nPointClass[i] = 0;   // num punti per classe nel nodo
-         for (i=0;i<n;i++)        currNode.lstPoints.Add(i);     // punti nel nodo
+         currNode = new NodeClus(idNode, ndim, nclasses);
+         currNode.lstPartitions.Add(new List<int>());
+         for (i=0;i<n;i++) currNode.lstPartitions[0].Add(i);       // tutti i punti nell'unica partizione
+         for (i = 0; i < ndim; i++) currNode.isUsedDim[i] = false; // dim usate fino a lui (radice, nessuna)
          currNode.npoints = n;
          DPstate.Add(currNode);
          int h = nodeHash(currNode);
 
          // ogni cut come partiziona
-         for (d = 0; d < cutdim.Length; d++)
-            ptSlice = separateNodePoints(lstPoints,lstNptClass,fOut,maxVal,d);
+         for (d = 0; d < ndim; d++)
+            if (!currNode.isUsedDim[d] && dimValues[d] > 0)
+               expandNode(currNode, cutdim[d]);
 
          Environment.Exit(0);
       }
 
-      // hash function of a node (mod product of its points)
-      int nodeHash(Node n)
-      {  int i,hash = 1;
-         for(i=0;i<n.npoints;i++)
-            hash = (hash * (n.lstPoints[i] % 31 + 1)) % 193939;
+      // raffina tutte le partizioni di un nodo in accordo con una dimensione (genera nodi figli)
+      private void expandNode(NodeClus nd, int d)
+      {  int i,j,k,idpart,npartitions;
+
+         npartitions = nd.lstPartitions.Count;
+         for(i=0;i<npartitions;i++)  // for each partition of the node
+         {  
+            List<List<int>> newpartitions = new List<List<int>>();
+            for (idpart = 0; idpart < dimValues[d]+1; idpart++) newpartitions.Add(new List<int>());
+
+            for (j = 0; j < nd.lstPartitions[i].Count;j++)  // for each point in the partition
+            {  k=0;
+               while (cutdim[k]!=d) k++; // first value for dimension d
+               idpart=0;   // id of the new partiorn of the node
+               while (cutdim[k] == d && cutval[k] < X[nd.lstPartitions[i][j],d])
+               {  k++;
+                  idpart++;
+               }
+               newpartitions[idpart].Add(nd.lstPartitions[i][j]); // le nuove partizioni lungo la dimensione, sostituiscono la vecchia
+            }
+         }
+      }
+
+      // hash function of a node (mod product of its points). Assumes id in partitions to be ordered
+      int nodeHash(NodeClus ndClus)
+      {  int i,j,hash = 1;
+         int[] firstElems = new int[ndClus.lstPartitions.Count];
+         for(i=0;i<firstElems.Length;i++) firstElems[i] = ndClus.lstPartitions[i][0]; // array con i primi elementi di ogni partizione
+         int[] idxPart = getSortIdx(firstElems); // indici ordinati partizioni per primo elemento crescente
+
+         for(i=0;i<idxPart.Length;i++)
+            for (j = 0; j < ndClus.lstPartitions[idxPart[i]].Count;j++)
+               hash = (hash * (ndClus.lstPartitions[idxPart[i]][j] % 31 + 1)) % 193939;
          return hash;
       }
 
@@ -177,7 +225,7 @@ namespace PlotTreeCsharp
                line = fin.ReadLine();
                i++;
                if(i%10==0) Console.WriteLine(line);
-               string[] elem = line.Split(',');
+               string[] elem  = line.Split(',');
                string[] elem1 = elem.Take(elem.Length - 1).ToArray();
                double[] aline = Array.ConvertAll( elem1 , double.Parse);
                X1.Add( aline );
@@ -200,6 +248,7 @@ namespace PlotTreeCsharp
          // read cuts
          try
          {
+            dimValues = new int[ndim];
             StreamReader fin = new StreamReader(dataset + "_cuts.json");
             string jcuts = fin.ReadToEnd();
             fin.Close();
@@ -207,6 +256,8 @@ namespace PlotTreeCsharp
             var cuts = JsonConvert.DeserializeObject<dynamic>(jcuts);
             cutdim = cuts.dim.ToObject<int[]>();
             cutval = cuts.pos.ToObject<double[]>();
+            for(i=0;i<cutdim.Length;i++)
+               dimValues[cutdim[i]]++;
          }
          catch (Exception ex)
          {  Console.WriteLine(ex.Message);
@@ -224,7 +275,7 @@ namespace PlotTreeCsharp
             dimCuts[cutdim[i]].Add(i);
 
          int[,] idx; // indices of sorted values for each column
-         idx = getSortIdx();
+         idx = getSortIdxAllDim();
          depthFirstConstruction(idx); // construct the tree
       }
 
@@ -383,7 +434,7 @@ lend:    return res;
          for (d=0;d<ndim;d++)  // for each dimension upon which we could separate
          {
             if (currNode.isUsedDim[d]) continue;
-            lstNptClass = new List<int[]> (); // for each value range, how many of each class
+            lstNptClass = new List<int[]> ();  // for each value range, how many of each class
             fOut = new bool[currNode.npoints]; // point already considered
             fSkip = false;
             for(j=0;j<cutdim.Length;j++)  // for each cut acting on that dimension
@@ -531,7 +582,8 @@ l0:      if(currNode.lstSons.Count == 1)
          lstNptClass.Add(nptslice);
          return ptslice;
       }
-      // separate attivo per albero esatto, restituisce i punti separati per classe
+      
+      // separate che restituisce i punti separati per classe
       private List<int>[] separateNodePoints(List<int> lstPoints, List<int[]> lstNptClass, bool[] fOut, double maxVal, int d)
       {
          int i, pt;
@@ -578,22 +630,32 @@ l0:      if(currNode.lstSons.Count == 1)
       }
 
       // computes the indices that sort each dimension
-      private int[,] getSortIdx()
-      {  int i,j;
-         int[,] idxSort = new int[n,numcol];
+      private int[,] getSortIdxAllDim()
+      {  int i, j;
+         int[,] idxSort = new int[n, numcol];
          double[] col = new double[n];
-         int[]    ind = new int[n];
+         int[] ind = new int[n];
 
-         for (j=0;j<numcol;j++)
-         {  for(i=0;i<n;i++)
-            {  col[i] = X[i,j];
+         for (j = 0; j < numcol; j++)
+         {  for (i = 0; i < n; i++)
+            {  col[i] = X[i, j];
                ind[i] = i;
             }
             Array.Sort<int>(ind, (a, b) => col[a].CompareTo(col[b]));
-            for(i=0;i<n; i++)
-               idxSort[i,j] = ind[i];
+            for (i = 0; i < n; i++)
+               idxSort[i, j] = ind[i];
          }
+         return idxSort;
+      }
 
+      // gets the sorte indices of an array of int
+      private int[] getSortIdx(int[] A)
+      {  int i, j;
+         int[] idxSort = new int[A.Length];
+
+         for (i = 0; i < A.Length; i++)
+            idxSort[i] = i;
+         Array.Sort<int>(idxSort, (a, b) => A[a].CompareTo(A[b]));
          return idxSort;
       }
    }
