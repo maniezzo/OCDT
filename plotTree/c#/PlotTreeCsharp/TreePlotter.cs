@@ -67,6 +67,7 @@ namespace PlotTreeCsharp
       public int id;
       public int dim;      // dimension (attribute, column) associated with the node
       public int npoints;  // number of points (records) clustered in the node
+      public int hash;     // hash code of the partition
       public bool[] isUsedDim;    // dimensions already used in the path to the node
       public List<List<int>> lstPartitions; // list of the point partitions at the node
       public List<int> lstPartClass; // the class of each partition, -1 heterogeneous
@@ -75,8 +76,8 @@ namespace PlotTreeCsharp
    internal class TreePlotter
    {  private double[,] X;
       private int[]     Y;
-      private List<Node> decTree;   // l'albero euristico
-      private List<DPcell> DPtable; // la tabella della dinamica
+      private List<Node> decTree;     // l'albero euristico
+      private List<DPcell>[] DPtable; // la tabella della dinamica, una riga ogni altezza dell'albero (max ndim)
       private int[]     cutdim;     // dimension on which each cut acts
       private double[]  cutval;     // value where the cut acts
       private int[]     dimValues;  // number of values (of cuts) acting on each dimension
@@ -90,16 +91,20 @@ namespace PlotTreeCsharp
 
       public TreePlotter()
       {  decTree = new List<Node>();
-         DPtable = new List<DPcell>();
       }
       public void run_plotter()
       {  string dataset = readConfig();
          Console.WriteLine($"Plotting {dataset}");
          readData(dataset); // gets the X and Y matrices (data and class)
+
+         DPtable = new List<DPcell>[ndim];
+         for(int i=0;i<ndim;i++) DPtable[i] = new List<DPcell>();
+
          if(method == "exact")
             exactTree();
          else
             heuristicTree();
+
          postProcessing();
          bool ok = checkSol();
          if(ok) plotTree(dataset);
@@ -126,7 +131,7 @@ namespace PlotTreeCsharp
          List<int>[] ptSlice = new List<int>[nclasses];
 
          // --------------------------------------------------------- node 0
-         idNode = DPtable.Count;
+         idNode = totNodes++;
          currNode = new NodeClus(idNode, ndim, nclasses);
          currNode.lstPartitions.Add(new List<int>());
          currNode.lstPartClass = new List<int>();
@@ -140,8 +145,7 @@ namespace PlotTreeCsharp
          dpc.depth = 0;
          dpc.nnodes = 1;
          dpc.isExpanded = false;
-         int h = nodeHash(currNode);
-         DPtable.Add(dpc);
+         DPtable[0].Add(dpc);
 
          // ogni cut come partiziona
          for (d = 0; d < ndim; d++)
@@ -187,9 +191,10 @@ namespace PlotTreeCsharp
             // qui ho il nodo figlio della partizione i-esima
             string jsonlst =JsonConvert.SerializeObject(nd);
             NodeClus newNode = JsonConvert.DeserializeObject<NodeClus>(jsonlst);
-            newNode.id  = DPtable.Count;
+            newNode.id  = totNodes++;
             newNode.dim = d;
             newNode.isUsedDim[d] = true;
+            newNode.hash = nodeHash(newNode);
          }
       }
 
