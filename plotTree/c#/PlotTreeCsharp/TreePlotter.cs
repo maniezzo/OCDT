@@ -60,7 +60,7 @@ namespace PlotTreeCsharp
    {  public NodeClus() { this.lstPartitions = new List<List<int>>(); }
       public NodeClus(int id, int ndim, int nclasses) 
       {  this.id = id;
-         this.isUsedDim = new bool[ndim];
+         this.usedDim       = new List<List<int?>> { };
          this.lstPartitions = new List<List<int>> { };
       }
 
@@ -68,9 +68,9 @@ namespace PlotTreeCsharp
       public int dim;      // dimension (attribute, column) associated with the node
       public int npoints;  // number of points (records) clustered in the node
       public int hash;     // hash code of the partition
-      public bool[] isUsedDim;    // dimensions already used in the path to the node
-      public List<List<int>> lstPartitions; // list of the point partitions at the node
-      public List<int> lstPartClass; // the class of each partition, -1 heterogeneous
+      public List<List<int?>> usedDim;      // dimensions used in the path to each partition of the node (will give the tree)
+      public List<List<int>> lstPartitions; // list of the point in each partitions at the node
+      public List<int> lstPartClass;        // the class of each partition, -1 heterogeneous
    }
 
    internal class TreePlotter
@@ -111,8 +111,7 @@ namespace PlotTreeCsharp
       }
 
       private void exactTree()
-      {  
-         int i, j, d, idNode;
+      {  int i, j, d, idNode;
          double maxVal = double.MaxValue; // limite superiore ai val da considerare per la dim corrente
          NodeClus currNode;
          bool[] fOut   = new bool[n];     // punti da escludere
@@ -137,7 +136,7 @@ namespace PlotTreeCsharp
          currNode.lstPartClass = new List<int>();
          currNode.lstPartClass.Add(-1);  // unica partizione, dati eterogenei
          for (i=0;i<n;i++) currNode.lstPartitions[0].Add(i);       // tutti i punti nell'unica partizione
-         for (i = 0; i < ndim; i++) currNode.isUsedDim[i] = false; // dim usate fino a lui (radice, nessuna)
+         for (i = 0; i < ndim; i++) currNode.usedDim[0].Add(null); // dim usate fino a lui (radice, nessuna)
          currNode.npoints = n;
          DPcell dpc = new DPcell();
          dpc.id   = 0;
@@ -149,7 +148,7 @@ namespace PlotTreeCsharp
 
          // ogni cut come partiziona
          for (d = 0; d < ndim; d++)
-            if (!currNode.isUsedDim[d] && dimValues[d] > 0)
+            if (dimValues[d] > 0)
                expandNode(currNode, cutdim[d]);
 
          Environment.Exit(0);
@@ -193,7 +192,7 @@ namespace PlotTreeCsharp
             NodeClus newNode = JsonConvert.DeserializeObject<NodeClus>(jsonlst);
             newNode.id  = totNodes++;
             newNode.dim = d;
-            newNode.isUsedDim[d] = true;
+            newNode.usedDim.Add(d);
             newNode.hash = nodeHash(newNode);
          }
       }
