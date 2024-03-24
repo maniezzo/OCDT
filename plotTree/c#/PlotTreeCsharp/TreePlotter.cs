@@ -112,8 +112,8 @@ namespace PlotTreeCsharp
 
       private void exactTree()
       {  int i, j, d, idNode;
-         double maxVal = double.MaxValue; // limite superiore ai val da considerare per la dim corrente
          NodeClus currNode;
+         double maxVal = double.MaxValue; // limite superiore ai val da considerare per la dim corrente
          bool[] fOut   = new bool[n];     // punti da escludere
 
          List<int>[] dimCuts = new List<int>[numcol]; // which cuts for each dim
@@ -121,13 +121,13 @@ namespace PlotTreeCsharp
          for (i = 0; i < cutdim.Length; i++) dimCuts[cutdim[i]].Add(i);   // dimesioni su cui agisce ogni cut
 
          Console.WriteLine("Exact tree construction");
-         int[,] idx;          // indices of sorted values for each column
+         int[,] idx;                                     // indices of sorted values for each column
          idx = getSortIdxAllDim();
 
          List<int> lstPoints = new List<int> ();         // indici punti del dataset
          for (i=0;i<n;i++) lstPoints.Add(i);
          List<int[]> lstNptClass = new List<int[]>();    // num punti di ogni slice individuata
-         List<int>[] ptSlice = new List<int>[nclasses];
+         List<int>[] ptSlice = new List<int>[nclasses];  // punti delle slice
 
          // --------------------------------------------------------- node 0
          idNode = totNodes++;
@@ -139,9 +139,9 @@ namespace PlotTreeCsharp
          for (i = 0; i < ndim; i++) currNode.usedDim[0].Add(null); // dim usate fino a lui (radice, nessuna)
          currNode.npoints = n;
          DPcell dpc = new DPcell();
-         dpc.id   = 0;
-         dpc.node = currNode;
-         dpc.depth = 0;
+         dpc.id     = 0;
+         dpc.node   = currNode;
+         dpc.depth  = 0;
          dpc.nnodes = 1;
          dpc.isExpanded = false;
          DPtable[0].Add(dpc);
@@ -188,12 +188,14 @@ namespace PlotTreeCsharp
             }
 
             // qui ho il nodo figlio della partizione i-esima
-            string jsonlst =JsonConvert.SerializeObject(nd);
+            string jsonlst   = JsonConvert.SerializeObject(nd);
             NodeClus newNode = JsonConvert.DeserializeObject<NodeClus>(jsonlst);
             newNode.id  = totNodes++;
             newNode.dim = d;
-            newNode.usedDim.Add(d);
             newNode.hash = nodeHash(newNode);
+            newNode.usedDim.Add(d);
+            newNode.lstPartitions = 
+            newNode.lstPartClass.Add(partClass);
          }
       }
 
