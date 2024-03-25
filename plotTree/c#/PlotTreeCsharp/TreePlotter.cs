@@ -57,11 +57,16 @@ namespace PlotTreeCsharp
 
    // Node of the exact tree, explicit point partitions into clusters
    public class NodeClus
-   {  public NodeClus() { this.lstPartitions = new List<List<int>>(); }
+   {  public NodeClus() 
+      {  this.lstPartitions = new List<List<int>>(); 
+         this.usedDim       = new List<List<int?>>();
+         this.lstPartClass  = new List<int>();
+      }
       public NodeClus(int id, int ndim, int nclasses) 
       {  this.id = id;
-         this.usedDim       = new List<List<int?>> { };
          this.lstPartitions = new List<List<int>> { };
+         this.usedDim       = new List<List<int?>> { };
+         this.lstPartClass  = new List<int>();
       }
 
       public int id;
@@ -131,14 +136,15 @@ namespace PlotTreeCsharp
 
          // --------------------------------------------------------- node 0
          idNode = totNodes++;
-         currNode = new NodeClus(idNode, ndim, nclasses);
+         currNode = new NodeClus(idNode, ndim, nclasses); // inizializza anche lstPartitions, lstPartClass, usedDim
          currNode.lstPartitions.Add(new List<int>());
-         currNode.lstPartClass = new List<int>();
+         currNode.usedDim.Add(new List<int?>());
          currNode.lstPartClass.Add(-1);  // unica partizione, dati eterogenei
          for (i=0;i<n;i++) currNode.lstPartitions[0].Add(i);       // tutti i punti nell'unica partizione
          for (i = 0; i < ndim; i++) currNode.usedDim[0].Add(null); // dim usate fino a lui (radice, nessuna)
          currNode.npoints = n;
-         DPcell dpc = new DPcell();
+
+         DPcell dpc = new DPcell(); // insert the node in a cell of the DP table (it is its state)
          dpc.id     = 0;
          dpc.node   = currNode;
          dpc.depth  = 0;
@@ -163,11 +169,23 @@ namespace PlotTreeCsharp
          {
             if (nd.lstPartClass[i] >= 0) continue;    // unique class, no expansion
 
-            List<int> partClass = new List<int>();    // la classe della partizione, -1 non univoca
+            // qui ho il nodo figlio della partizione i-esima
+            string jsonlst = JsonConvert.SerializeObject(nd);
+            NodeClus newNode = JsonConvert.DeserializeObject<NodeClus>(jsonlst);
+            newNode.id = totNodes++;
+            newNode.dim = d;  // possibly useless
+
+            List<int> newPartClass        = new List<int>();    // la classe della partizione, -1 non univoca
             List<List<int>> newpartitions = new List<List<int>>();
+            List<List<int?>> newUsedDim   = new List<List<int?>>();
             for (idpart = 0; idpart < dimValues[d]+1; idpart++) 
             {  newpartitions.Add(new List<int>());
-               partClass.Add(-2);
+
+               newUsedDim.Add(new List<int?>());   // per ogni partizione del nodo, lista delle dimensioni che hanno portato a lei
+               newUsedDim[idpart] = nd.usedDim[i]; 
+               newUsedDim[idpart].Add(d);         
+
+               newPartClass.Add(-2);
             }
 
             for (j = 0; j < nd.lstPartitions[i].Count;j++)  // for each point in the partition
@@ -181,21 +199,20 @@ namespace PlotTreeCsharp
                }
                newpartitions[idpart].Add(idpoint); // le nuove partizioni lungo la dimensione, sostituiscono la vecchia
 
-               if (partClass[idpart] == -2) // initialization
-                  partClass[idpart] = Y[idpoint];
-               else if (partClass[idpart] != Y[idpoint])
-                  partClass[idpart] = -1; // classi eterogenee
+               if (newPartClass[idpart] == -2) // initialization
+                  newPartClass[idpart] = Y[idpoint];
+               else if (newPartClass[idpart] != Y[idpoint])
+                  newPartClass[idpart] = -1; // classi eterogenee
             }
-
-            // qui ho il nodo figlio della partizione i-esima
-            string jsonlst   = JsonConvert.SerializeObject(nd);
-            NodeClus newNode = JsonConvert.DeserializeObject<NodeClus>(jsonlst);
-            newNode.id  = totNodes++;
-            newNode.dim = d;
+            // tolgo la partizione appena espansa
+            newNode.lstPartitions.RemoveAt(i); 
+            newNode.lstPartClass.RemoveAt(i);
+            newNode.usedDim.RemoveAt(i);
+            // aggiungo le nuove partizioni
+            newNode.lstPartitions.Concat(newpartitions);  // lista punti di ogni partizione
+            newNode.usedDim.Concat(newUsedDim);
+            newNode.lstPartClass  = newPartClass;         // la classe di ogni partizione se uniforme, sennò -1
             newNode.hash = nodeHash(newNode);
-            newNode.usedDim.Add(d);
-            newNode.lstPartitions = 
-            newNode.lstPartClass.Add(partClass);
          }
       }
 
