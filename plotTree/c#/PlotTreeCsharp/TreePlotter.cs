@@ -143,6 +143,7 @@ namespace PlotTreeCsharp
          for (i=0;i<n;i++) currNode.lstPartitions[0].Add(i);       // tutti i punti nell'unica partizione
          for (i = 0; i < ndim; i++) currNode.usedDim[0].Add(null); // dim usate fino a lui (radice, nessuna)
          currNode.npoints = n;
+         currNode.hash    = nodeHash(currNode);
 
          DPcell dpc = new DPcell(); // insert the node in a cell of the DP table (it is its state)
          dpc.id     = 0;
@@ -155,13 +156,13 @@ namespace PlotTreeCsharp
          // ogni cut come partiziona
          for (d = 0; d < ndim; d++)
             if (dimValues[d] > 0)
-               expandNode(currNode, cutdim[d]);
+               expandNode(currNode, cutdim[d], 0);
 
          Environment.Exit(0);
       }
 
       // raffina tutte le partizioni di un nodo in accordo con una dimensione (genera nodi figli)
-      private void expandNode(NodeClus nd, int d)
+      private void expandNode(NodeClus nd, int d, int depth)
       {  int i,j,k,id,idpoint,idpart,npartitions;
 
          npartitions = nd.lstPartitions.Count;
@@ -193,7 +194,7 @@ namespace PlotTreeCsharp
                k = 0;
                while (cutdim[k]!=d) k++; // first value for dimension d
                idpart=0;   // id of the new partiorn of the node
-               while (cutdim[k] == d && cutval[k] < X[idpoint,d]) // find the partition of idpoint
+               while (k<cutdim.Length && cutdim[k] == d && cutval[k] < X[idpoint,d]) // find the partition of idpoint
                {  k++;
                   idpart++;
                }
@@ -213,7 +214,41 @@ namespace PlotTreeCsharp
             newNode.usedDim.Concat(newUsedDim);
             newNode.lstPartClass  = newPartClass;         // la classe di ogni partizione se uniforme, sennò -1
             newNode.hash = nodeHash(newNode);
+
+            NodeClus nhash = checkHash(newNode.hash);
+            if(nhash != null)
+            {  Console.WriteLine($"STESSO Hash!!! nodi {newNode.id} {nhash.id}");
+               dominance(newNode,nhash);   // gestisce la dominanza fra nodi
+            }
+
+            DPcell dpc = new DPcell(); // insert the node in a cell of the DP table (it is its state)
+            dpc.id = DPtable.Length;
+            dpc.node = newNode;
+            dpc.depth = depth+1;
+            dpc.nnodes = 1;
+            dpc.isExpanded = false;
+            DPtable[dpc.depth].Add(dpc);
          }
+      }
+
+      // il nodo con lo stesso hash se h già in tabella, null altrimenti
+      private NodeClus checkHash(int h)
+      {  int i,j;
+         NodeClus res = null;
+
+         for(i=0;i<DPtable.Length;i++)
+            for (j = 0; j < DPtable[i].Count;j++)
+               if (DPtable[i][j].node.hash == h)
+               {  res = DPtable[i][j].node;
+                  break;
+               }
+         return res;
+      }
+
+      // confronta due nodi con lo stesso hash (dominanza)
+      private void dominance(NodeClus newnode, NodeClus nhash)
+      {
+         Console.WriteLine("\r\n=========================> DOMINANZA DA FARE !!!! <================= \r\n");
       }
 
       // hash function of a node (mod product of its points). Assumes id in partitions to be ordered
