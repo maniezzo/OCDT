@@ -186,9 +186,10 @@ namespace PlotTreeCsharp
             newNode.id = totNodes++;
             newNode.dim = d;  // possibly useless
 
-            List<int> newPartClass        = new List<int>();    // la classe della partizione, -1 non univoca
-            List<List<int>> newpartitions = new List<List<int>>();
-            List<List<int?>> newUsedDim   = new List<List<int?>>();
+            // inizializzo le nuove partizioni
+            List<int>        newPartClass  = new List<int>();    // la classe della partizione, -1 non univoca
+            List<List<int>>  newpartitions = new List<List<int>>();
+            List<List<int?>> newUsedDim    = new List<List<int?>>();
             for (idpart = 0; idpart < dimValues[d]+1; idpart++) 
             {  newpartitions.Add(new List<int>());
 
@@ -199,6 +200,7 @@ namespace PlotTreeCsharp
                newPartClass.Add(-2);
             }
 
+            // riempio le nuove partizioni
             for (j = 0; j < nd.lstPartitions[i].Count;j++)  // for each point in the partition
             {  idpoint = nd.lstPartitions[i][j];
                k = 0;
@@ -215,6 +217,18 @@ namespace PlotTreeCsharp
                else if (newPartClass[idpart] != Y[idpoint])
                   newPartClass[idpart] = -1; // classi eterogenee
             }
+
+            // tolgo eventuali nuove partizioni senza punti
+            idpart = 0;
+            while (idpart<newpartitions.Count)
+               if (newpartitions[idpart].Count == 0)
+               {  newpartitions.RemoveAt(idpart);
+                  newPartClass.RemoveAt(idpart);
+                  Console.WriteLine("-- removed partition "+idpart);
+               }
+               else
+                  idpart++;
+
             // tolgo la partizione appena espansa
             newNode.lstPartitions.RemoveAt(i); 
             newNode.lstPartClass.RemoveAt(i);
@@ -272,7 +286,7 @@ namespace PlotTreeCsharp
 
          for(i=0;i<idxPart.Length;i++)
             for (j = 0; j < ndClus.lstPartitions[idxPart[i]].Count;j++)
-               hash = (hash * (ndClus.lstPartitions[idxPart[i]][j] % 31 + 1)) % 193939;
+               hash = (hash * (j*ndClus.lstPartitions[idxPart[i]][j] % 31 + 1)) % 193939;
          return hash;
       }
 
