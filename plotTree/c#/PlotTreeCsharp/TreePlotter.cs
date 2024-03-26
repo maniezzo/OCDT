@@ -116,7 +116,7 @@ namespace PlotTreeCsharp
       }
 
       private void exactTree()
-      {  int i, j, d, idNode;
+      {  int i, j, d, idNode, iCell, iDepth;
          NodeClus currNode;
          double maxVal = double.MaxValue; // limite superiore ai val da considerare per la dim corrente
          bool[] fOut   = new bool[n];     // punti da escludere
@@ -153,10 +153,20 @@ namespace PlotTreeCsharp
          dpc.isExpanded = false;
          DPtable[0].Add(dpc);
 
-         // ogni cut come partiziona
-         for (d = 0; d < ndim; d++)
-            if (dimValues[d] > 0)
-               expandNode(currNode, cutdim[d], 0);
+         // espansione della tabella, per ogni livello (distanza dalla radice)
+         for(iDepth=0;iDepth<DPtable.Length;iDepth++)
+         {  // per ogni cella dek livello
+            iCell = 0;
+            while(iCell < DPtable[iDepth].Count)
+            {  currNode = DPtable[iDepth][iCell].node;
+               for (d = 0; d < ndim; d++)
+                  if (dimValues[d] > 0)
+                     expandNode(currNode, cutdim[d], 0);
+
+               DPtable[iDepth][iCell].isExpanded = true;
+               iCell++;
+            }
+         }
 
          Environment.Exit(0);
       }
@@ -210,8 +220,8 @@ namespace PlotTreeCsharp
             newNode.lstPartClass.RemoveAt(i);
             newNode.usedDim.RemoveAt(i);
             // aggiungo le nuove partizioni
-            newNode.lstPartitions.Concat(newpartitions);  // lista punti di ogni partizione
-            newNode.usedDim.Concat(newUsedDim);
+            newNode.lstPartitions = newNode.lstPartitions.Concat(newpartitions).ToList();  // lista punti di ogni partizione
+            newNode.usedDim       = newNode.usedDim.Concat(newUsedDim).ToList();
             newNode.lstPartClass  = newPartClass;         // la classe di ogni partizione se uniforme, sennò -1
             newNode.hash = nodeHash(newNode);
 
@@ -228,6 +238,7 @@ namespace PlotTreeCsharp
             dpc.nnodes = 1;
             dpc.isExpanded = false;
             DPtable[dpc.depth].Add(dpc);
+            Console.WriteLine($"exp. node {nd.id} into {newNode.id}");
          }
       }
 
@@ -255,6 +266,7 @@ namespace PlotTreeCsharp
       int nodeHash(NodeClus ndClus)
       {  int i,j,hash = 1;
          int[] firstElems = new int[ndClus.lstPartitions.Count];
+         // GESTIRE CASI PARTIZIONI CON 0 ELEMENTI
          for(i=0;i<firstElems.Length;i++) firstElems[i] = ndClus.lstPartitions[i][0]; // array con i primi elementi di ogni partizione
          int[] idxPart = getSortIdx(firstElems); // indici ordinati partizioni per primo elemento crescente
 
