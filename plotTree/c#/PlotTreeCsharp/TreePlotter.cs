@@ -10,6 +10,7 @@ using System.Reflection.Emit;
 using System.Globalization;
 using System.Collections.Specialized;
 using System.Xml.Linq;
+using System.Linq.Expressions;
 
 /* Data is in X, classes in Y. Attributes are columns of X
 */
@@ -70,6 +71,7 @@ namespace PlotTreeCsharp
       }
 
       public int id;
+      public int idDPcell; // id of the DP table cell the node is set into
       public int dim;      // dimension (attribute, column) associated with the node
       public int npoints;  // number of points (records) clustered in the node
       public int hash;     // hash code of the partition
@@ -147,6 +149,7 @@ namespace PlotTreeCsharp
 
          DPcell dpc = new DPcell(); // insert the node in a cell of the DP table (it is its state)
          dpc.id     = 0;
+         currNode.idDPcell = dpc.id;
          dpc.node   = currNode;
          dpc.depth  = 0;
          dpc.nnodes = 1;
@@ -240,13 +243,16 @@ namespace PlotTreeCsharp
             newNode.hash = nodeHash(newNode);
 
             NodeClus nhash = checkHash(newNode.hash);
+            bool fSamePartitions;
             if(nhash != null)
             {  Console.WriteLine($"STESSO Hash!!! nodi {newNode.id} {nhash.id}");
-               dominance(newNode,nhash);   // gestisce la dominanza fra nodi
+               fSamePartitions = isEqualPartition(newNode,nhash);   // gestisce la dominanza fra nodi
+               int depthNhash = DPtable[nhash.idDPcell].depth;
             }
 
             DPcell dpc = new DPcell(); // insert the node in a cell of the DP table (it is its state)
             dpc.id = DPtable.Length;
+            newNode.idDPcell = dpc.id;
             dpc.node = newNode;
             dpc.depth = depth+1;
             dpc.nnodes = 1;
@@ -270,10 +276,23 @@ namespace PlotTreeCsharp
          return res;
       }
 
-      // confronta due nodi con lo stesso hash (dominanza)
-      private void dominance(NodeClus newnode, NodeClus nhash)
-      {
-         Console.WriteLine("\r\n=========================> DOMINANZA DA FARE !!!! <================= \r\n");
+      // confronta due nodi con lo stesso hash. True davvero uguali, false partizioni diverse
+      private bool isEqualPartition(NodeClus newnode, NodeClus nhash)
+      {  int i,j;
+         bool res = false; 
+         if(newnode.lstPartitions.Count != nhash.lstPartitions.Count) goto lend;
+         for(i=0;i<nhash.lstPartitions.Count;i++)
+         {
+            if (nhash.lstPartitions[i].Count != newnode.lstPartitions[i].Count) goto lend;
+            for (j = 0; j < newnode.lstPartitions[i].Count;j++)
+               if (nhash.lstPartitions[i][j]!= newnode.lstPartitions[i][j])
+                  goto lend;
+         }
+         // qui stesse partizioni
+         res = true;
+
+lend:    Console.WriteLine($"Same partitions: {res}");
+         return res;
       }
 
       // hash function of a node (mod product of its points). Assumes id in partitions to be ordered
