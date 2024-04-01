@@ -18,10 +18,10 @@ using System.Linq.Expressions;
 namespace PlotTreeCsharp
 {
    // Each node of the non binary decision tree
-   public class Node
+   public class NodeHeu
    {
-      public Node() { }
-      public Node(int id, int ndim, int nclasses) 
+      public NodeHeu() { }
+      public NodeHeu(int id, int ndim, int nclasses) 
       {  this.id = id;
          this.visited = false;
          this.nPointClass = new int[nclasses];
@@ -56,7 +56,7 @@ namespace PlotTreeCsharp
       public bool isExpanded; // the cell was expanded
    }
 
-   // Node of the exact tree, explicit point partitions into clusters
+   // NodeHeu of the exact tree, explicit point partitions into clusters
    public class NodeClus
    {  public NodeClus() 
       {  this.lstPartitions = new List<List<int>>(); 
@@ -83,7 +83,7 @@ namespace PlotTreeCsharp
    internal class TreePlotter
    {  private double[,] X;
       private int[]     Y;
-      private List<Node> decTree;     // l'albero euristico
+      private List<NodeHeu> decTree;  // l'albero euristico
       private List<DPcell>[] DPtable; // la tabella della dinamica, una riga ogni altezza dell'albero (max ndim)
       private int[]     cutdim;     // dimension on which each cut acts
       private double[]  cutval;     // value where the cut acts
@@ -97,7 +97,7 @@ namespace PlotTreeCsharp
       private int totNodes=0, treeHeight=0, totLeaves=0;
 
       public TreePlotter()
-      {  decTree = new List<Node>();
+      {  decTree = new List<NodeHeu>();
       }
       public void run_plotter()
       {  string dataset = readConfig();
@@ -247,7 +247,9 @@ namespace PlotTreeCsharp
             if(nhash != null)
             {  Console.WriteLine($"STESSO Hash!!! nodi {newNode.id} {nhash.id}");
                fSamePartitions = isEqualPartition(newNode,nhash);   // gestisce la dominanza fra nodi
-               int depthNhash = DPtable[nhash.idDPcell].depth;
+               int depthNhash  = getDPcellDepth(nhash.idDPcell);
+               if(depthNhash < depth+1)
+                  GESTIRLO BENE
             }
 
             DPcell dpc = new DPcell(); // insert the node in a cell of the DP table (it is its state)
@@ -274,6 +276,19 @@ namespace PlotTreeCsharp
                   break;
                }
          return res;
+      }
+
+      // gets the depth of a node given its id in the DPtable
+      private int getDPcellDepth(int idCell)
+      {  int i,j,res=-1;
+         for(i=0;i<DPtable.Length;i++)
+            for (j = 0; j < DPtable[i].Count;j++)
+               if (DPtable[i][j].id == idCell)
+               {  res = DPtable[i][j].depth;
+                  goto lend;
+               }
+
+lend:    return res;
       }
 
       // confronta due nodi con lo stesso hash. True davvero uguali, false partizioni diverse
@@ -417,7 +432,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
       private void depthFirstConstruction(int[,] idx)
       {
          int i, j, idNode;
-         Node currNode;
+         NodeHeu currNode;
          // Initially mark all vertices as not visited
          // Boolean[] visited = new Boolean[V];
 
@@ -426,7 +441,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
 
          // Push the current source node
          idNode = decTree.Count;
-         currNode = new Node(idNode, ndim, nclasses);
+         currNode = new NodeHeu(idNode, ndim, nclasses);
          for (i = 0; i < ndim; i++) currNode.isUsedDim[i] = false;
          for (i = 0; i < nclasses; i++) currNode.nPointClass[i] = 0;
          for (i = 0; i < n; i++) currNode.lstPoints.Add(i);
@@ -549,15 +564,15 @@ lend:    return res;
       }
 
       // initializes fields of a new node
-      private void fillNode(Node currNode, int[,] idx)
+      private void fillNode(NodeHeu currNode, int[,] idx)
       {  int i,j,jj,d,pt,splitd;
          double h,splith; // split criterium value
          List<int[]> lstNptClass;
          List<int> lstp;
          bool[] fOut;
-         Node child;
+         NodeHeu child;
          bool fSkip,isLeaf;
-         Node prev;
+         NodeHeu prev;
 
          for (i = 0; i < currNode.npoints; i++)
          {  pt = currNode.lstPoints[i];
@@ -620,7 +635,7 @@ lend:    return res;
          {  if (cutdim[idcut] != splitd) continue;  // for each cut acting on the mind dimension
 
             j = idcut;
-            child = new Node(decTree.Count(), ndim, nclasses); // tentative son
+            child = new NodeHeu(decTree.Count(), ndim, nclasses); // tentative son
             List<int> lstPoints = separateNodePoints(currNode, lstNptClass, fOut, cutval[j], splitd);
             if(lstPoints.Count == 0 ) continue; // region with no points, no need for a son
 
@@ -677,7 +692,7 @@ lend:    return res;
                Console.WriteLine($"Nonleaf with no cuts {currNode.id}");
          }
          else
-         {  child = new Node(decTree.Count(), ndim, nclasses); // tentative son
+         {  child = new NodeHeu(decTree.Count(), ndim, nclasses); // tentative son
             if (lstPoints1.Count > 0)  // if empty son, do not include in the tree
             {
                Array.Copy(currNode.isUsedDim, child.isUsedDim, currNode.isUsedDim.Length);
@@ -697,7 +712,7 @@ l0:      if(currNode.lstSons.Count == 1)
       }
 
       // calcola i punti in ogni segmento definito dai cut, albero euristico
-      private List<int> separateNodePoints(Node currNode, List<int[]> lstNptClass, bool[] fOut, double maxVal, int d)
+      private List<int> separateNodePoints(NodeHeu currNode, List<int[]> lstNptClass, bool[] fOut, double maxVal, int d)
       {  int i,pt;
          List<int> ptslice; // points of each slice (not separated per class)
          int[] nptslice = new int[nclasses]; // num points of each slice, per class
