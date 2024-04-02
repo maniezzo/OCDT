@@ -176,7 +176,7 @@ namespace PlotTreeCsharp
 
       // raffina tutte le partizioni di un nodo in accordo con una dimensione (genera nodi figli)
       private void expandNode(NodeClus nd, int d, int depth)
-      {  int i,j,k,id,idpoint,idpart,npartitions;
+      {  int i,j,k,id,idcell,idpoint,idpart,npartitions;
 
          npartitions = nd.lstPartitions.Count;
          for(i=0;i<npartitions;i++)  // for each partition of the node
@@ -243,24 +243,36 @@ namespace PlotTreeCsharp
             newNode.hash = nodeHash(newNode);
 
             NodeClus nhash = checkHash(newNode.hash);
-            bool fSamePartitions;
+            bool fSamePartitions = false;
             if(nhash != null)
             {  Console.WriteLine($"STESSO Hash!!! nodi {newNode.id} {nhash.id}");
                fSamePartitions = isEqualPartition(newNode,nhash);   // gestisce la dominanza fra nodi
                int depthNhash  = getDPcellDepth(nhash.idDPcell);
-               if(depthNhash < depth+1)
-                  GESTIRLO BENE
+               if(fSamePartitions && depthNhash <= depth+1)
+               {  Console.WriteLine($"Nodo {newNode.id} dominato");
+                  continue; // newnode discarded
+               }
             }
 
-            DPcell dpc = new DPcell(); // insert the node in a cell of the DP table (it is its state)
-            dpc.id = DPtable.Length;
-            newNode.idDPcell = dpc.id;
-            dpc.node = newNode;
-            dpc.depth = depth+1;
-            dpc.nnodes = 1;
-            dpc.isExpanded = false;
-            DPtable[dpc.depth].Add(dpc);
-            Console.WriteLine($"exp. node {nd.id} into {newNode.id}");
+            if(fSamePartitions) // nuovo nodo domina cella nhash
+            {
+               idcell = nhash.idDPcell;
+               var colrow = getDPtablecell(idcell);
+               newNode.idDPcell = idcell;
+               DPtable[colrow.Item1][colrow.Item2].node  = newNode;
+               DPtable[colrow.Item1][colrow.Item2].depth = depth+1;
+            }
+            else
+            {  DPcell dpc = new DPcell(); // insert the node in a cell of the DP table (it is its state)
+               dpc.id = DPtable.Length;
+               newNode.idDPcell = dpc.id;
+               dpc.node = newNode;
+               dpc.depth = depth+1;
+               dpc.nnodes = 1;
+               dpc.isExpanded = false;
+               DPtable[dpc.depth].Add(dpc);
+               Console.WriteLine($"exp. node {nd.id} into {newNode.id}");
+            }
          }
       }
 
@@ -289,6 +301,17 @@ namespace PlotTreeCsharp
                }
 
 lend:    return res;
+      }
+
+      // gets coords of a DP table cell given its id
+      private (int,int) getDPtablecell(int idCell)
+      {  int i=-1,j=-1; // would cause an arror
+         for (i = 0; i < DPtable.Length; i++)
+            for (j = 0; j < DPtable[i].Count; j++)
+               if (DPtable[i][j].id == idCell)
+                  break;
+
+         return (i,j);
       }
 
       // confronta due nodi con lo stesso hash. True davvero uguali, false partizioni diverse
