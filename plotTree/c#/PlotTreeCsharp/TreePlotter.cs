@@ -72,7 +72,6 @@ namespace PlotTreeCsharp
 
       public int id;
       public int idDPcell; // id of the DP table cell the node is set into
-      public int dim;      // dimension (attribute, column) associated with the node
       public int npoints;  // number of points (records) clustered in the node
       public int hash;     // hash code of the partition
       public List<List<int?>> usedDim;      // dimensions used in the path to each partition of the node (will give the tree)
@@ -94,7 +93,7 @@ namespace PlotTreeCsharp
       private string splitDir;      // max o min
       private string method;        // exact or heuristic
       private string[] dataColumns;
-      private int totNodes=0, treeHeight=0, totLeaves=0;
+      private int totNodes=0, totcells = 0, treeHeight=0, totLeaves=0;
 
       public TreePlotter()
       {  decTree = new List<NodeHeu>();
@@ -104,8 +103,8 @@ namespace PlotTreeCsharp
          Console.WriteLine($"Plotting {dataset}");
          readData(dataset); // gets the X and Y matrices (data and class)
 
-         DPtable = new List<DPcell>[ndim];
-         for(int i=0;i<ndim;i++) DPtable[i] = new List<DPcell>();
+         DPtable = new List<DPcell>[ndim+1]; // la radice (level 0) poi max un livello per dim (non fissi!)
+         for(int i=0;i<ndim+1;i++) DPtable[i] = new List<DPcell>();
 
          if(method == "exact")
             exactTree();
@@ -143,12 +142,11 @@ namespace PlotTreeCsharp
          currNode.usedDim.Add(new List<int?>());
          currNode.lstPartClass.Add(-1);  // unica partizione, dati eterogenei
          for (i=0;i<n;i++) currNode.lstPartitions[0].Add(i);       // tutti i punti nell'unica partizione
-         for (i = 0; i < ndim; i++) currNode.usedDim[0].Add(null); // dim usate fino a lui (radice, nessuna)
          currNode.npoints = n;
          currNode.hash    = nodeHash(currNode);
 
          DPcell dpc = new DPcell(); // insert the node in a cell of the DP table (it is its state)
-         dpc.id     = 0;
+         dpc.id     = totcells; totcells++;
          currNode.idDPcell = dpc.id;
          dpc.node   = currNode;
          dpc.depth  = 0;
@@ -164,7 +162,7 @@ namespace PlotTreeCsharp
             {  currNode = DPtable[iDepth][iCell].node;
                for (d = 0; d < ndim; d++)
                   if (dimValues[d] > 0)
-                     expandNode(currNode, cutdim[d], 0);
+                     expandNode(currNode, cutdim[d], iDepth);
 
                DPtable[iDepth][iCell].isExpanded = true;
                iCell++;
@@ -179,17 +177,18 @@ namespace PlotTreeCsharp
       {  int i,j,k,id,idcell,idpoint,idpart,npartitions;
 
          npartitions = nd.lstPartitions.Count;
-         for(i=0;i<npartitions;i++)  // for each partition of the node
-         {
-            if (nd.lstPartClass[i] >= 0) continue;    // unique class, no expansion
+         // ogni partizione del padre genera un figlio, con la partizione partizionata secondo dim d
+         for(i=0;i<npartitions;i++)                   // for each partition of the father node
+         {  if (nd.lstPartClass[i] >= 0)   continue;  // unique class, no expansion
+            if (nd.usedDim[i].Contains(d)) continue;  // dimension already used to get the partition
+            Console.WriteLine($" -- Partitioning node {nd.id} along dim {d}");
 
             // qui ho il nodo figlio della partizione i-esima
             string jsonlst = JsonConvert.SerializeObject(nd);
             NodeClus newNode = JsonConvert.DeserializeObject<NodeClus>(jsonlst);
             newNode.id = totNodes++;
-            newNode.dim = d;  // possibly useless
 
-            // inizializzo le nuove partizioni
+            // inizializzo le nuove partizioni del figlio
             List<int>        newPartClass  = new List<int>();    // la classe della partizione, -1 non univoca
             List<List<int>>  newpartitions = new List<List<int>>();
             List<List<int?>> newUsedDim    = new List<List<int?>>();
@@ -197,14 +196,14 @@ namespace PlotTreeCsharp
             {  newpartitions.Add(new List<int>());
 
                newUsedDim.Add(new List<int?>());   // per ogni partizione del nodo, lista delle dimensioni che hanno portato a lei
-               newUsedDim[idpart] = nd.usedDim[i]; 
+               newUsedDim[idpart] = new( nd.usedDim[i] ); 
                newUsedDim[idpart].Add(d);         
 
                newPartClass.Add(-2);
             }
 
-            // riempio le nuove partizioni
-            for (j = 0; j < nd.lstPartitions[i].Count;j++)  // for each point in the partition
+            // riempio le partizioni che ottengo nei figli
+            for (j = 0; j < nd.lstPartitions[i].Count;j++)  // for each point in the father node partition
             {  idpoint = nd.lstPartitions[i][j];
                k = 0;
                while (cutdim[k]!=d) k++; // first value for dimension d
@@ -264,14 +263,14 @@ namespace PlotTreeCsharp
             }
             else
             {  DPcell dpc = new DPcell(); // insert the node in a cell of the DP table (it is its state)
-               dpc.id = DPtable.Length;
+               dpc.id = totcells; totcells++;
                newNode.idDPcell = dpc.id;
                dpc.node = newNode;
                dpc.depth = depth+1;
                dpc.nnodes = 1;
                dpc.isExpanded = false;
                DPtable[dpc.depth].Add(dpc);
-               Console.WriteLine($"exp. node {nd.id} into {newNode.id}");
+               Console.WriteLine($"expanded node {nd.id} into {newNode.id}");
             }
          }
       }
