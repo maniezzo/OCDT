@@ -59,7 +59,8 @@ namespace PlotTreeCsharp
    // Node of the exact tree, explicit point partitions into clusters
    public class NodeDP
    {  public NodeDP() 
-      {  this.lstPartitions = new List<List<int>>(); 
+      {  this.lstPartitions = new List<List<int>>();
+         this.lstFathers    = new List<List<int>>();
          this.usedDim       = new List<List<int?>>();
          this.lstPartClass  = new List<int>();
          this.lstPartDepth  = new List<int>();
@@ -67,6 +68,7 @@ namespace PlotTreeCsharp
       public NodeDP(int id, int ndim, int nclasses) 
       {  this.id = id;
          this.lstPartitions = new List<List<int>> { };
+         this.lstFathers    = new List<List<int>> { };
          this.usedDim       = new List<List<int?>> { };
          this.lstPartClass  = new List<int>();
          this.lstPartDepth  = new List<int>();
@@ -78,6 +80,7 @@ namespace PlotTreeCsharp
       public int hash;     // hash code of the partition
       public List<List<int?>> usedDim;      // dimensions used in the path to each partition of the node (will give the tree)
       public List<List<int>> lstPartitions; // list of the point in each partitions at the node
+      public List<List<int>> lstFathers;    // list of father nodes (originating partition)
       public List<int> lstPartClass;        // the class of each partition, -1 heterogeneous
       public List<int> lstPartDepth;        // the depth of each partition
    }
@@ -120,7 +123,7 @@ namespace PlotTreeCsharp
       }
 
       private void exactTree()
-      {  int i, j, d, idNode, iCell, iDepth;
+      {  int i, j, d, idNode, iCell, iDepth, idDPcell=-1;
          NodeDP currNode;
          double maxVal = double.MaxValue; // limite superiore ai val da considerare per la dim corrente
          bool[] fOut   = new bool[n];     // punti da escludere
@@ -142,10 +145,12 @@ namespace PlotTreeCsharp
          idNode = totNodes++;
          currNode = new NodeDP(idNode, ndim, nclasses); // inizializza anche lstPartitions, lstPartClass, usedDim
          currNode.lstPartitions.Add(new List<int>());
+         currNode.lstFathers.Add(new List<int>());
          currNode.usedDim.Add(new List<int?>());
          currNode.lstPartClass.Add(-1);  // unica partizione, dati eterogenei
          currNode.lstPartDepth.Add(0);
          for (i=0;i<n;i++) currNode.lstPartitions[0].Add(i); // tutti i punti nell'unica partizione
+         currNode.lstFathers[0].Add(-1); // no father node, root node
          currNode.npoints = n;
          currNode.hash    = nodeHash(currNode);
 
@@ -166,19 +171,26 @@ namespace PlotTreeCsharp
             {  currNode = DPtable[iDepth][iCell].node;
                for (d = 0; d < ndim; d++)
                   if (dimValues[d] > 0)
-                     expandNode(currNode, cutdim[d], iDepth);
+                  {  idNode = expandNode(currNode, cutdim[d], iDepth);
+                     if(idDPcell < 0 && idNode >= 0) idDPcell = idNode;
+                  }
 
                DPtable[iDepth][iCell].isExpanded = true;
                iCell++;
             }
          }
 
-         Environment.Exit(0);
+         if(idDPcell > 0)
+            marshalTree(idDPcell);
       }
 
-      // raffina tutte le partizioni di un nodo lungo una dimensione (un nodo figlio per partizione)
-      private void expandNode(NodeDP nd, int d, int depth)
-      {  int i,j,k,id,idcell,idpoint,idpart,npartitions;
+      /* raffina tutte le partizioni di un nodo lungo una dimensione 
+       * (un nodo figlio per partizione)
+       * ritorna idCell di un nodo completato, se trovato
+       */
+      private int expandNode(NodeDP nd, int d, int depth)
+      {  int i,j,k,id,idcell,idpoint,idpart,npartitions,res=-1;
+         bool isComplete;
 
          npartitions = nd.lstPartitions.Count;
          // ogni partizione del padre genera un figlio, con la partizione partizionata secondo dim d
@@ -195,14 +207,17 @@ namespace PlotTreeCsharp
             // inizializzo le nuove partizioni del figlio
             List<int>        newPartClass  = new List<int>();    // la classe della partizione, -1 non univoca
             List<int>        newPartDepth  = new List<int>();
+            List<int>        newFathers    = new List<int>();
             List<List<int>>  newpartitions = new List<List<int>>();
             List<List<int?>> newUsedDim    = new List<List<int?>>();
             for (idpart = 0; idpart < dimValues[d]+1; idpart++) 
             {  newpartitions.Add(new List<int>());
 
-               newUsedDim.Add(new List<int?>());   // per ogni partizione del nodo, lista delle dimensioni che hanno portato a lei
+               newUsedDim.Add(new List<int?>()); // per ogni partizione del nodo, lista delle dimensioni che hanno portato a lei
                newUsedDim[idpart] = new( nd.usedDim[i] ); 
-               newUsedDim[idpart].Add(d);         
+               newUsedDim[idpart].Add(d);    
+               
+               newFathers.Add(i);  // for each partirion, the father's originating one
 
                newPartClass.Add(-2);
                newPartDepth.Add(nd.lstPartDepth[i]+1);
@@ -248,7 +263,9 @@ namespace PlotTreeCsharp
             newNode.usedDim       = newNode.usedDim.Concat(newUsedDim).ToList();
             newNode.lstPartClass  = newNode.lstPartClass.Concat(newPartClass).ToList();         // la classe di ogni partizione se uniforme, sennò -1
             newNode.lstPartDepth  = newNode.lstPartDepth.Concat(newPartDepth).ToList();
+            newNode.lstFathers.Add(newFathers);
             newNode.hash = nodeHash(newNode);
+            isComplete = false;
 
             int minDepth = ndim+1, maxDepth = 0; // min and max depth of node partitions
             for(j=0;j<newNode.lstPartitions.Count;j++)
@@ -259,6 +276,7 @@ namespace PlotTreeCsharp
             }
             if(minDepth > ndim)
             {  minDepth = maxDepth;
+               isComplete = true;
                Console.WriteLine($"Node completed, depth {maxDepth}");
             }
 
@@ -291,8 +309,10 @@ namespace PlotTreeCsharp
                dpc.isExpanded = false;
                DPtable[dpc.depth].Add(dpc);
                Console.WriteLine($"expanded node {nd.id} into {newNode.id}");
+               if(isComplete && res < 0) res = dpc.id;
             }
          }
+         return res;
       }
 
       // il nodo con lo stesso hash se h già in tabella, null altrimenti
@@ -324,13 +344,13 @@ lend:    return res;
 
       // gets coords of a DP table cell given its id
       private (int,int) getDPtablecell(int idCell)
-      {  int i=-1,j=-1; // would cause an arror
+      {  int i=-1,j=-1; // would cause an error
          for (i = 0; i < DPtable.Length; i++)
             for (j = 0; j < DPtable[i].Count; j++)
                if (DPtable[i][j].id == idCell)
-                  break;
+                  goto lend;
 
-         return (i,j);
+lend:    return (i,j);
       }
 
       // confronta due nodi con lo stesso hash. True davvero uguali, false partizioni diverse
@@ -364,6 +384,32 @@ lend:    Console.WriteLine($"Same partitions: {res}");
             for (j = 0; j < ndClus.lstPartitions[idxPart[i]].Count;j++)
                hash = (hash * (j*ndClus.lstPartitions[idxPart[i]][j] % 31 + 1)) % 193939;
          return hash;
+      }
+
+      // translates tree structure into decTreee for plotting
+      private void marshalTree(int idDPcell)
+      {  int i,j,nid=0,idFather;
+         List<List<int>> nodes = new List<List<int>>();
+         var cellCoord = getDPtablecell(idDPcell);
+         NodeDP  ndp = DPtable[cellCoord.Item1][cellCoord.Item2].node;
+
+         for(i=0;i<ndp.lstFathers.Count;i++)
+         {  nodes.Add(new List<int>());
+            for (j = 0; j < ndp.lstFathers[i].Count;j++)
+            {  NodeHeu n0 = new NodeHeu();
+               n0.id = nid++;
+               n0.lstSons = new List<int>();
+               decTree.Add(n0);
+               nodes[i].Add(n0.id); // le id dei nodi, invece delle partizioni in fathers
+               if(i>0)
+               { 
+                  idFather = ndp.lstFathers[i][j]; // qui solo l'indice della partizione nel padre
+                  idFather = nodes[i - 1][idFather]; // qui l'id del nodo padre
+                  Console.WriteLine($" -- arco {idFather}-{n0.id}");
+                  decTree[idFather].lstSons.Add(n0.id);
+               }
+            }
+         }
       }
 
       // removes nodes with no points
