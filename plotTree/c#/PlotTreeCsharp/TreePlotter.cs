@@ -11,6 +11,7 @@ using System.Globalization;
 using System.Collections.Specialized;
 using System.Xml.Linq;
 using System.Linq.Expressions;
+using System.Collections;
 
 /* Data is in X, classes in Y. Attributes are columns of X
 */
@@ -388,7 +389,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
 
       // translates tree structure into decTreee for plotting
       private void marshalTree(int idDPcell)
-      {  int i,j,nid=0,idFather;
+      {  int i,j,d,nid=0,idFather,idNode,idLeaf;
          List<List<int>> nodes = new List<List<int>>();
          var cellCoord = getDPtablecell(idDPcell);
          NodeDP  ndp = DPtable[cellCoord.Item1][cellCoord.Item2].node;
@@ -398,15 +399,63 @@ lend:    Console.WriteLine($"Same partitions: {res}");
             for (j = 0; j < ndp.lstFathers[i].Count;j++)
             {  NodeHeu n0 = new NodeHeu();
                n0.id = nid++;
-               n0.lstSons = new List<int>();
+               n0.lstSons   = new List<int>();
+               n0.lstPoints = new List<int>(); // punti nel nodo (se foglia)
+               n0.lstCuts   = new List<int>(); // tutti i cut attivi al nodo (se interno)
                decTree.Add(n0);
                nodes[i].Add(n0.id); // le id dei nodi, invece delle partizioni in fathers
                if(i>0)
                { 
                   idFather = ndp.lstFathers[i][j]; // qui solo l'indice della partizione nel padre
-                  idFather = nodes[i - 1][idFather]; // qui l'id del nodo padre
+                  idFather = nodes[i-1][idFather]; // qui l'id del nodo padre
                   Console.WriteLine($" -- arco {idFather}-{n0.id}");
                   decTree[idFather].lstSons.Add(n0.id);
+               }
+            }
+         }
+
+         // --------------- DFS to recontruct node assignments
+         Queue<int> que = new Queue<int>();
+         List<int> lstPath = new List<int>(); // path to the current leaf
+         NodeHeu currNode;
+
+         // Push the current source node
+         idNode = decTree[0].id;
+         que.Enqueue(idNode);
+         idLeaf = 0;
+
+         while (que.Count > 0)
+         {
+            idNode = que.Dequeue();
+            lstPath.Add(idNode);
+            currNode = decTree[idNode];
+
+            // we work on the popped item if it is not visited.
+            if (!currNode.visited)
+            {  Console.WriteLine($"expanding node {idNode}");
+               currNode.visited = true;
+            }
+
+            // Get all offsprings of the popped vertex s, if not visited, then push it to the que.
+            if(currNode.lstSons.Count > 0)
+            {  foreach (int v in decTree[idNode].lstSons)
+                  if (!decTree[v].visited)
+                     que.Enqueue(v);
+            }
+            else
+            {  Console.WriteLine($"{idNode} is a leaf");
+               lstPath.Remove(idNode);
+               decTree[idNode].isLeaf = true;
+               decTree[idNode].npoints = ndp.lstPartitions[idLeaf].Count;
+               for (i=0;i<ndp.lstPartitions[idLeaf].Count;i++)
+                  decTree[idNode].lstPoints.Add(ndp.lstPartitions[idLeaf][i]);
+               for (j = 0; j < ndp.usedDim[idLeaf].Count;j++)
+               {  i = lstPath[j];
+                  d = (int) ndp.usedDim[idLeaf][j];
+                  decTree[i].dim = d;
+                  for(int k = 0; k < cutdim.Length;k++)
+                     if (cutdim[k] == d)
+                        decTree[i].lstCuts.Add(k);
                }
             }
          }
@@ -524,7 +573,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
          // Initially mark all vertices as not visited
          // Boolean[] visited = new Boolean[V];
 
-         // Create a stack for DFS
+         // Create a que for DFS
          Stack<int> stack = new Stack<int>();
 
          // Push the current source node
@@ -541,8 +590,8 @@ lend:    Console.WriteLine($"Same partitions: {res}");
 
          while (stack.Count > 0)
          {
-            // Pop a vertex from stack and print it
-            // idNode = stack.Peek();
+            // Pop a vertex from que and print it
+            // idNode = que.Peek();
             idNode = stack.Pop();
             currNode = decTree[idNode];
 
@@ -555,7 +604,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
                   fillNode(currNode, idx);
             }
 
-            // Get all offsprings of the popped vertex s, if not visited, then push it to the stack.
+            // Get all offsprings of the popped vertex s, if not visited, then push it to the que.
             foreach (int v in decTree[idNode].lstSons)
                if (!decTree[v].visited)
                   stack.Push(v);
@@ -574,7 +623,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
             currnode = 0;
             while (!decTree[currnode].isLeaf)
             {
-               d = decTree[currnode].dim;
+               d  = decTree[currnode].dim;
                nc = decTree[currnode].lstCuts.Count;
                for(j=0;j<nc;j++)
                   if (X[i,d] < cutval[decTree[currnode].lstCuts[j]])
