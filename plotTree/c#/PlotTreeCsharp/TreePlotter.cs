@@ -466,7 +466,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
       {  int i,j;
 
          for(i=0;i<decTree.Count;i++) 
-            if (decTree[i].npoints == 0)
+            if (decTree[i].npoints == 0 && method != "exact")
                Console.WriteLine(">>>>>> EMPTY NODE IN TREE !! PostProcessing needed for removal");
             else if (decTree[i].lstSons.Count == 1)
                Console.WriteLine(">>>>>> SINGLE OFFSPRING NODE. PostProcessing needed for removal");
