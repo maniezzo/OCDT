@@ -249,6 +249,8 @@ namespace PlotTreeCsharp
                {  newpartitions.RemoveAt(idpart);
                   newPartClass.RemoveAt(idpart);
                   newPartDepth.RemoveAt(idpart);
+                  newFathers.RemoveAt(idpart);
+                  newUsedDim.RemoveAt(idpart);
                   Console.WriteLine("-- removed partition "+idpart);
                }
                else
@@ -405,8 +407,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
                decTree.Add(n0);
                nodes[i].Add(n0.id); // le id dei nodi, invece delle partizioni in fathers
                if(i>0)
-               { 
-                  idFather = ndp.lstFathers[i][j]; // qui solo l'indice della partizione nel padre
+               {  idFather = ndp.lstFathers[i][j]; // qui solo l'indice della partizione nel padre
                   idFather = nodes[i-1][idFather]; // qui l'id del nodo padre
                   Console.WriteLine($" -- arco {idFather}-{n0.id}");
                   decTree[idFather].lstSons.Add(n0.id);
