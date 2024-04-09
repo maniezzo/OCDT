@@ -172,7 +172,7 @@ namespace PlotTreeCsharp
             {  currNode = DPtable[iDepth][iCell].node;
                for (d = 0; d < ndim; d++)
                   if (dimValues[d] > 0)
-                  {  idNode = expandNode(currNode, cutdim[d], iDepth);
+                  {  idNode = expandNode(currNode, d, iDepth);
                      if(idDPcell < 0 && idNode >= 0) idDPcell = idNode;
                   }
 
@@ -443,8 +443,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
                      que.Enqueue(v);
             }
             else
-            {  Console.WriteLine($"{idNode} is a leaf");
-               lstPath.Remove(idNode);
+            {  lstPath.Remove(idNode);
                decTree[idNode].isLeaf = true;
                decTree[idNode].npoints = ndp.lstPartitions[idLeaf].Count;
                for (i=0;i<ndp.lstPartitions[idLeaf].Count;i++)
@@ -454,9 +453,11 @@ lend:    Console.WriteLine($"Same partitions: {res}");
                   d = (int) ndp.usedDim[idLeaf][j];
                   decTree[i].dim = d;
                   for(int k = 0; k < cutdim.Length;k++)
-                     if (cutdim[k] == d)
+                     if (cutdim[k] == d && !decTree[i].lstCuts.Contains(k))
                         decTree[i].lstCuts.Add(k);
                }
+               idLeaf++;
+               Console.WriteLine($"{idNode} is a leaf, n.points {decTree[idNode].npoints}");
             }
          }
       }
