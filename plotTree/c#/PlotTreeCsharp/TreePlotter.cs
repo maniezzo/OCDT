@@ -83,7 +83,7 @@ namespace PlotTreeCsharp
       public List<List<int>> lstPartitions; // list of the point in each partitions at the node
       public List<List<int>> lstFathers;    // list of father nodes (originating partition)
       public List<int> lstPartClass;        // the class of each partition, -1 heterogeneous
-      public List<int> lstPartDepth;        // the depth of each partition
+      public List<int> lstPartDepth;        // the iDepth of each partition
    }
 
    internal class TreePlotter
@@ -189,7 +189,7 @@ namespace PlotTreeCsharp
        * (un nodo figlio per partizione)
        * ritorna idCell di un nodo completato, se trovato
        */
-      private int expandNode(NodeDP nd, int d, int depth)
+      private int expandNode(NodeDP nd, int d, int iDepth)
       {  int i,j,k,id,idcell,idpoint,idpart,npartitions,res=-1;
          bool isComplete;
 
@@ -204,6 +204,7 @@ namespace PlotTreeCsharp
             string jsonlst = JsonConvert.SerializeObject(nd);
             NodeDP newNode = JsonConvert.DeserializeObject<NodeDP>(jsonlst);
             newNode.id = totNodes++;
+            newNode.lstFathers.Add(new List<int>());
 
             // inizializzo le nuove partizioni del figlio
             List<int>        newPartClass  = new List<int>();    // la classe della partizione, -1 non univoca
@@ -266,11 +267,11 @@ namespace PlotTreeCsharp
             newNode.usedDim       = newNode.usedDim.Concat(newUsedDim).ToList();
             newNode.lstPartClass  = newNode.lstPartClass.Concat(newPartClass).ToList();         // la classe di ogni partizione se uniforme, sennò -1
             newNode.lstPartDepth  = newNode.lstPartDepth.Concat(newPartDepth).ToList();
-            newNode.lstFathers.Add(newFathers);
+            newNode.lstFathers[iDepth] = newNode.lstFathers[iDepth].Concat(newFathers).ToList();
             newNode.hash = nodeHash(newNode);
             isComplete = false;
 
-            int minDepth = ndim+1, maxDepth = 0; // min and max depth of node partitions
+            int minDepth = ndim+1, maxDepth = 0; // min and max iDepth of node partitions
             for(j=0;j<newNode.lstPartitions.Count;j++)
             {  if (newNode.lstPartDepth[j] > maxDepth)
                   maxDepth = newNode.lstPartDepth[j];
@@ -300,7 +301,7 @@ namespace PlotTreeCsharp
                var colrow = getDPtablecell(idcell);
                newNode.idDPcell = idcell;
                DPtable[colrow.Item1][colrow.Item2].node  = newNode;
-               DPtable[colrow.Item1][colrow.Item2].depth = depth+1;
+               DPtable[colrow.Item1][colrow.Item2].depth = iDepth+1;
             }
             else
             {  DPcell dpc = new DPcell(); // insert the node in a cell of the DP table (it is its state)
@@ -332,7 +333,7 @@ namespace PlotTreeCsharp
          return res;
       }
 
-      // gets the depth of a node given its id in the DPtable
+      // gets the iDepth of a node given its id in the DPtable
       private int getDPcellDepth(int idCell)
       {  int i,j,res=-1;
          for(i=0;i<DPtable.Length;i++)
