@@ -218,7 +218,7 @@ namespace PlotTreeCsharp
                newUsedDim[idpart] = new( nd.usedDim[i] ); 
                newUsedDim[idpart].Add(d);    
                
-               newFathers.Add(i);  // for each partirion, the father's originating one
+               newFathers.Add(i);      // for each partirion, the father's originating one
 
                newPartClass.Add(-2);
                newPartDepth.Add(nd.lstPartDepth[i]+1);
@@ -251,7 +251,7 @@ namespace PlotTreeCsharp
                   newPartDepth.RemoveAt(idpart);
                   newFathers.RemoveAt(idpart);
                   newUsedDim.RemoveAt(idpart);
-                  Console.WriteLine("-- removed partition "+idpart);
+                  Console.WriteLine("-- removed pointless partition "+idpart);
                }
                else
                   idpart++;
@@ -634,7 +634,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
                      //heights[child] = heights[currnode]+1;
                      //if (heights[child]>treeHeight) treeHeight = heights[child];
                      //currnode = child;
-                     nc = int.MaxValue; // to avoid entering the following if
+                     nc = int.MaxValue; // to avoid entering the following if, useless when if commented out
                      break;
                   }
                //if(j==nc)
