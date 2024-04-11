@@ -281,7 +281,7 @@ namespace PlotTreeCsharp
                if (newNode.lstPartDepth[j] < minDepth && newNode.lstPartClass[j] < 0)
                   minDepth = newNode.lstPartDepth[j];
             }
-            if(minDepth > ndim)
+            if(minDepth > ndim)  // da cambiare controllando che non ci siano lstPartClass negativi ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
             {  minDepth = maxDepth;
                isComplete = true;
                Console.WriteLine($"Node completed, depth {maxDepth}");
