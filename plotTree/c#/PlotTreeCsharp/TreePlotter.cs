@@ -209,6 +209,22 @@ namespace PlotTreeCsharp
             NodeDP newNode = JsonConvert.DeserializeObject<NodeDP>(jsonlst);
             newNode.id = totNodes++;
 
+            // find original father partition
+            int idFathPart = 0;
+            if(nd.id==0) idFathPart = i;
+            else
+            {  int dim = (int) newNode.usedDim[i][newNode.usedDim[i].Count-1]; // last used dimension
+               idpoint = newNode.lstPartitions[i][0];
+               k = 0;   // index in cutdim
+               while (cutdim[k] != dim) k++; // first value for dimension d
+               idpart = 0;  // id of the partiorn of the node in the father
+               while (k < cutdim.Length && cutdim[k] == dim && cutval[k] < X[idpoint, dim]) // find the partition of idpoint
+               {  k++;
+                  idpart++;
+               }
+               idFathPart = idpart;
+            }
+
             // inizializzo le nuove partizioni del figlio
             List<int>        newPartClass  = new List<int>();    // la classe della partizione, -1 non univoca
             List<int>        newPartDepth  = new List<int>();
@@ -222,7 +238,7 @@ namespace PlotTreeCsharp
                newUsedDim[idpart] = new( nd.usedDim[i] ); 
                newUsedDim[idpart].Add(d);    
                
-               newFathers.Add(i);      // for each partition, the father's originating one
+               newFathers.Add(idFathPart);      // for each partition, the father's originating one
 
                newPartClass.Add(-2);
                newPartDepth.Add(nd.lstPartDepth[i]+1);
@@ -401,7 +417,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
 
       // translates tree structure into decTreee for plotting
       private void marshalTree(int idDPcell)
-      {  int i,j,d,nid=0,idFather,idNode,idLeaf;
+      {  int i,j,k,d,nid=0,idFather,idNode,idLeaf;
          List<List<int>> nodes = new List<List<int>>();
          var cellCoord = getDPtablecell(idDPcell);
          NodeDP  ndp = DPtable[cellCoord.Item1][cellCoord.Item2].node;
@@ -415,6 +431,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
                   n0.lstSons   = new List<int>();
                   n0.lstPoints = new List<int>(); // punti nel nodo (se foglia)
                   n0.lstCuts   = new List<int>(); // tutti i cut attivi al nodo (se interno)
+                  n0.isLeaf    = true;
                   decTree.Add(n0);
                   nodes[iDepth].Add(n0.id); // le id dei nodi, invece delle partizioni in fathers
                   if(iDepth>0)
@@ -422,6 +439,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
                      idFather = nodes[iDepth-1][idFather]; // qui l'id del nodo padre
                      Console.WriteLine($" -- arco {idFather}-{n0.id}");
                      decTree[idFather].lstSons.Add(n0.id);
+                     decTree[idFather].isLeaf = false;
                   }
             }
          }
@@ -456,15 +474,17 @@ lend:    Console.WriteLine($"Same partitions: {res}");
             }
             else
             {  lstPath.Remove(idNode);
-               decTree[idNode].isLeaf = true;
+               if(!decTree[idNode].isLeaf) Console.WriteLine(">> ERROR << unrecognized leaf");
                decTree[idNode].npoints = ndp.lstPartitions[idLeaf].Count;
+               // i punti della partizione
                for (i=0;i<ndp.lstPartitions[idLeaf].Count;i++)
                   decTree[idNode].lstPoints.Add(ndp.lstPartitions[idLeaf][i]);
+               // per ogni antenato, che cut ha usato (attivi nella sua dimensione)
                for (j = 0; j < ndp.usedDim[idLeaf].Count;j++)
                {  i = lstPath[j];
                   d = (int) ndp.usedDim[idLeaf][j];
                   decTree[i].dim = d;
-                  for(int k = 0; k < cutdim.Length;k++)
+                  for(k=0; k < cutdim.Length; k++)
                      if (cutdim[k] == d && !decTree[i].lstCuts.Contains(k))
                         decTree[i].lstCuts.Add(k);
                }
