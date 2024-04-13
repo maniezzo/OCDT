@@ -215,9 +215,9 @@ namespace PlotTreeCsharp
             else
             {  int dim = (int) newNode.usedDim[i][newNode.usedDim[i].Count-1]; // last used dimension
                idpoint = newNode.lstPartitions[i][0];
-               k = 0;   // index in cutdim
+               k = 0;      // index in cutdim
                while (cutdim[k] != dim) k++; // first value for dimension d
-               idpart = 0;  // id of the partiorn of the node in the father
+               idpart = 0; // id of the partiorn of the node in the father
                while (k < cutdim.Length && cutdim[k] == dim && cutval[k] < X[idpoint, dim]) // find the partition of idpoint
                {  k++;
                   idpart++;
@@ -259,7 +259,7 @@ namespace PlotTreeCsharp
                if (newPartClass[idpart] == -2) // initialization
                   newPartClass[idpart] = Y[idpoint];
                else if (newPartClass[idpart] != Y[idpoint])
-                  newPartClass[idpart] = -1; // classi eterogenee
+                  newPartClass[idpart] = -1;   // classi eterogenee
             }
 
             // tolgo eventuali nuove partizioni senza punti
@@ -486,7 +486,18 @@ lend:    Console.WriteLine($"Same partitions: {res}");
                   decTree[i].dim = d;
                   for(k=0; k < cutdim.Length; k++)
                      if (cutdim[k] == d && !decTree[i].lstCuts.Contains(k))
-                        decTree[i].lstCuts.Add(k);
+                     {  // controllo che ci sia n punto sopra e uno sotto 
+                        bool oneAbove = false,oneBelow = false;
+                        for(int ii = 0; ii < decTree[i].lstPoints.Count; ii++)
+                        {  int iPoint = decTree[i].lstPoints[ii];
+                           if (X[iPoint, d] < cutval[k])
+                              oneBelow = true;
+                           if (X[iPoint, d] > cutval[k])
+                              oneAbove = true;
+                        }
+                        if(oneAbove && oneBelow)
+                           decTree[i].lstCuts.Add(k);
+                     }
                }
                idLeaf++;
                Console.WriteLine($"{idNode} is a leaf, n.points {decTree[idNode].npoints}");
