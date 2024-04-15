@@ -445,18 +445,18 @@ lend:    Console.WriteLine($"Same partitions: {res}");
          }
 
          // --------------- DFS to recontruct node assignments
-         Queue<int> que = new Queue<int>();
+         Stack<int> stk = new Stack<int>();
          List<int> lstPath = new List<int>(); // path to the current leaf
          NodeHeu currNode;
 
          // Push the current source node
          idNode = decTree[0].id;
-         que.Enqueue(idNode);
+         stk.Push(idNode);
          idLeaf = 0;
 
-         while (que.Count > 0)
+         while (stk.Count > 0)
          {
-            idNode = que.Dequeue();
+            idNode = stk.Pop();
             lstPath.Add(idNode);
             currNode = decTree[idNode];
 
@@ -466,11 +466,11 @@ lend:    Console.WriteLine($"Same partitions: {res}");
                currNode.visited = true;
             }
 
-            // Get all offsprings of the popped vertex s, if not visited, then push it to the que.
+            // Get all offsprings of the popped vertex s, if not visited, then push it to the stk.
             if(currNode.lstSons.Count > 0)
-            {  foreach (int v in decTree[idNode].lstSons)
-                  if (!decTree[v].visited)
-                     que.Enqueue(v);
+            {  for(int v = decTree[idNode].lstSons.Count -1;v>=0;v--)
+                  if (!decTree[decTree[idNode].lstSons[v]].visited)
+                     stk.Push(decTree[idNode].lstSons[v]);
             }
             else
             {  lstPath.Remove(idNode);
@@ -617,7 +617,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
          // Initially mark all vertices as not visited
          // Boolean[] visited = new Boolean[V];
 
-         // Create a que for DFS
+         // Create a stk for DFS
          Stack<int> stack = new Stack<int>();
 
          // Push the current source node
@@ -634,8 +634,8 @@ lend:    Console.WriteLine($"Same partitions: {res}");
 
          while (stack.Count > 0)
          {
-            // Pop a vertex from que and print it
-            // idNode = que.Peek();
+            // Pop a vertex from stk and print it
+            // idNode = stk.Peek();
             idNode = stack.Pop();
             currNode = decTree[idNode];
 
@@ -648,7 +648,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
                   fillNode(currNode, idx);
             }
 
-            // Get all offsprings of the popped vertex s, if not visited, then push it to the que.
+            // Get all offsprings of the popped vertex s, if not visited, then push it to the stk.
             foreach (int v in decTree[idNode].lstSons)
                if (!decTree[v].visited)
                   stack.Push(v);
