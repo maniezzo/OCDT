@@ -449,7 +449,8 @@ lend:    Console.WriteLine($"Same partitions: {res}");
 
          // --------------- BFS to recontruct node assignments
          Queue<int> que = new Queue<int>();
-         List<int> lstPath = new List<int>(); // path to the current leaf
+         List<int> lstPath = new List<int>();   // path to the current leaf
+         List<int> leaf2node = new List<int>(); // the node corrsponding to each leaf
          NodeHeu currNode;
 
          // Push the current source node
@@ -458,8 +459,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
          idLeaf = 0;
 
          while (que.Count > 0)
-         {
-            idNode = que.Dequeue();
+         {  idNode = que.Dequeue();
             lstPath.Clear();
             currNode = decTree[idNode];
             while (currNode.id != 0)
@@ -486,32 +486,53 @@ lend:    Console.WriteLine($"Same partitions: {res}");
             else
             {  lstPath.Remove(idNode);
                if(!decTree[idNode].isLeaf) Console.WriteLine(">> ERROR << unrecognized leaf");
-               // per ogni antenato, che cut ha usato (attivi nella sua dimensione)
-               for (j = 0; j < ndp.usedDim[idLeaf].Count;j++)
-               {  i = lstPath[j];
-                  d = (int) ndp.usedDim[idLeaf][j];
-                  decTree[i].dim = d;
-                  for(k=0; k < cutdim.Length; k++)
-                     if (cutdim[k] == d && !decTree[i].lstCuts.Contains(k))
-                     {  // controllo che ci sia n punto sopra e uno sotto 
-                        bool oneAbove = false,oneBelow = false;
-                        for(int ii = 0; ii < decTree[i].lstPoints.Count; ii++)
-                        {  int iPoint = decTree[i].lstPoints[ii];
-                           if (X[iPoint, d] < cutval[k])
-                              oneBelow = true;
-                           if (X[iPoint, d] > cutval[k])
-                              oneAbove = true;
-                        }
-                        if(oneAbove && oneBelow)
-                           decTree[i].lstCuts.Add(k);
-                     }
-               }
                decTree[idNode].npoints = ndp.lstPartitions[idLeaf].Count;
                // i punti della partizione
                for (i = 0; i < ndp.lstPartitions[idLeaf].Count; i++)
                   decTree[idNode].lstPoints.Add(ndp.lstPartitions[idLeaf][i]);
+               leaf2node.Add(idNode);
                idLeaf++;
                Console.WriteLine($"{idNode} is a leaf, n.points {decTree[idNode].npoints}");
+            }
+         }
+
+         // --------------- recostruction of node points (for each node, add its points to its ancestors)
+         for (i = 0; i < decTree.Count; i++)
+         {  k = i;
+            while (k > 0)
+            {  k = decTree[k].idFather;
+               for (j = 0; j < decTree[i].lstPoints.Count; j++)
+               {  int ip = decTree[i].lstPoints[j];
+                  if (!decTree[k].lstPoints.Contains(ip))
+                  {  decTree[k].lstPoints.Add(ip);
+                     decTree[k].npoints++;
+                  }
+               }
+            }
+         }
+
+         // -------------- reconstruction of cuts used at each node (if any)
+         // per ogni antenato, che cut ha usato (attivi nella sua dimensione)
+         for(idLeaf=0; idLeaf < leaf2node.Count; idLeaf++)
+         {  i = leaf2node[idLeaf]; 
+            for (j = 0; j < ndp.usedDim[idLeaf].Count; j++)
+            {  i = decTree[i].idFather;
+               d = (int)ndp.usedDim[idLeaf][j];
+               decTree[i].dim = d;
+               for (k = 0; k < cutdim.Length; k++)
+                  if (cutdim[k] == d && !decTree[i].lstCuts.Contains(k))
+                  {  // controllo che ci sia n punto sopra e uno sotto 
+                     bool oneAbove = false, oneBelow = false;
+                     for (int ii = 0; ii < decTree[i].lstPoints.Count; ii++)
+                     {  int iPoint = decTree[i].lstPoints[ii];
+                        if (X[iPoint, d] < cutval[k])
+                           oneBelow = true;
+                        if (X[iPoint, d] > cutval[k])
+                           oneAbove = true;
+                     }
+                     if (oneAbove && oneBelow)
+                        decTree[i].lstCuts.Add(k);
+                  }
             }
          }
       }
