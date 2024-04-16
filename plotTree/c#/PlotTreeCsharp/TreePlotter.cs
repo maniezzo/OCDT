@@ -92,6 +92,7 @@ namespace PlotTreeCsharp
       private int[]     Y;
       private List<NodeHeu> decTree;  // l'albero euristico
       private List<DPcell>[] DPtable; // la tabella della dinamica, una riga ogni altezza dell'albero (max ndim)
+      private List<int> leaf2node;  // mapping of tree leaves (parittions) to tree nodes
       private int[]     cutdim;     // dimension on which each cut acts
       private double[]  cutval;     // value where the cut acts
       private int[]     dimValues;  // number of values (of cuts) acting on each dimension
@@ -450,7 +451,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
          // --------------- BFS to recontruct node assignments
          Queue<int> que = new Queue<int>();
          List<int> lstPath = new List<int>();   // path to the current leaf
-         List<int> leaf2node = new List<int>(); // the node corrsponding to each leaf
+         leaf2node = new List<int>(); // the node corrsponding to each leaf
          NodeHeu currNode;
 
          // Push the current source node
@@ -515,7 +516,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
          // per ogni antenato, che cut ha usato (attivi nella sua dimensione)
          for(idLeaf=0; idLeaf < leaf2node.Count; idLeaf++)
          {  i = leaf2node[idLeaf]; 
-            for (j = 0; j < ndp.usedDim[idLeaf].Count; j++)
+            for (j = ndp.usedDim[idLeaf].Count-1;j>=0; j--)
             {  i = decTree[i].idFather;
                d = (int)ndp.usedDim[idLeaf][j];
                decTree[i].dim = d;
@@ -689,7 +690,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
 
       // check the correctness of the tree
       private bool checkSol()
-      {  int i,j,d,nc,idcut,currnode,child;
+      {  int i,j,k,d,nc,idcut,currnode,child;
          bool res=true;
          int[] heights = new int[decTree.Count];
 
@@ -719,13 +720,25 @@ lend:    Console.WriteLine($"Same partitions: {res}");
                if (heights[child] > treeHeight) treeHeight = heights[child];
                currnode = child;
             }
-            if (Y[i] != Y[decTree[currnode].lstPoints[0]])
-            {  res = false;
-               Console.WriteLine($"ERROR, misclassification of record {i}");
-               goto lend;
+            if(method=="exact")
+            {
+               for(j=0;j<leaf2node.Count;j++)
+               {  k = leaf2node[j];
+                  if (decTree[k].lstPoints.Contains(i))
+                     if (Y[i] != Y[decTree[k].lstPoints[0]])
+                     {  res = false;
+                        Console.WriteLine($"ERROR, misclassification of record {i}");
+                        goto lend;
+                     }
+               }
             }
             else
-               Console.WriteLine($"Record {i} node {currnode} class {Y[i]}"); 
+               if (Y[i] != Y[decTree[currnode].lstPoints[0]])
+               {  res = false;
+                  Console.WriteLine($"ERROR, misclassification of record {i}");
+                  goto lend;
+               }
+            Console.WriteLine($"Record {i} node {currnode} class {Y[i]}"); 
          }
          if (res) Console.WriteLine("Checked. Solution is ok");
          Console.WriteLine($"Tree height = {treeHeight}");
