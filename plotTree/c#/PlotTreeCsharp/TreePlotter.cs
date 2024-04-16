@@ -515,23 +515,35 @@ lend:    Console.WriteLine($"Same partitions: {res}");
          // -------------- reconstruction of cuts used at each node (if any)
          // per ogni antenato, che cut ha usato (attivi nella sua dimensione)
          for(idLeaf=0; idLeaf < leaf2node.Count; idLeaf++)
-         {  i = leaf2node[idLeaf]; 
-            for (j = ndp.usedDim[idLeaf].Count-1;j>=0; j--)
-            {  i = decTree[i].idFather;
+         {  i = leaf2node[idLeaf]; // nodo di cui troverò tutti i cut che hanno portato a lui
+            for (j = ndp.usedDim[idLeaf].Count-1;j>=0; j--) // dimensioni che lo hanno individuato
+            {  i = decTree[i].idFather; // a turno, tutti gli antenati
                d = (int)ndp.usedDim[idLeaf][j];
-               decTree[i].dim = d;
+               decTree[i].dim = d;      // dimensione di taglio dell'antenato corrente
                for (k = 0; k < cutdim.Length; k++)
                   if (cutdim[k] == d && !decTree[i].lstCuts.Contains(k))
-                  {  // controllo che ci sia n punto sopra e uno sotto 
-                     bool oneAbove = false, oneBelow = false;
-                     for (int ii = 0; ii < decTree[i].lstPoints.Count; ii++)
-                     {  int iPoint = decTree[i].lstPoints[ii];
-                        if (X[iPoint, d] < cutval[k])
-                           oneBelow = true;
-                        if (X[iPoint, d] > cutval[k])
-                           oneAbove = true;
+                  {  // controllo che ci sia un punto sopra e uno sotto 
+                     bool fInsert = false;
+                     for (int i1 = 0; i1 < decTree[i].lstPoints.Count; i1++)
+                     {  int iPoint1 = decTree[i].lstPoints[i1];
+                        for (int i2 = 0; i2 < decTree[i].lstPoints.Count; i2++)
+                        {  int iPoint2 = decTree[i].lstPoints[i2];
+                           if (X[iPoint1, d] < cutval[k] && X[iPoint2, d] > cutval[k])
+                              fInsert = true;
+                           if (X[iPoint1, d] > cutval[k] && X[iPoint2, d] < cutval[k])
+                              fInsert = true;
+                           if(fInsert)
+                              for(int kk = 0; kk < decTree[i].lstCuts.Count; kk++)
+                              {  int kkCut = decTree[i].lstCuts[kk];
+                                 if (X[iPoint1, d] < cutval[kkCut] && X[iPoint2, d] > cutval[kkCut] ||
+                                     X[iPoint1, d] > cutval[kkCut] && X[iPoint2, d] < cutval[kkCut])
+                                    fInsert = false; // punti già separati da un altro cut incluso
+                              }
+                           if(fInsert)
+                              goto l0;
+                        }
                      }
-                     if (oneAbove && oneBelow)
+l0:                  if (fInsert)
                         decTree[i].lstCuts.Add(k);
                   }
             }
