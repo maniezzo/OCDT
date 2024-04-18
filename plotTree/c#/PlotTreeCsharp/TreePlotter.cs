@@ -226,6 +226,9 @@ namespace PlotTreeCsharp
                }
                idFathPart = idpart;
             }
+            int newDepth = nd.lstPartDepth[i] + 1;   // depth dei nodi figli
+            while (newNode.lstFathers.Count < newDepth+1) 
+               newNode.lstFathers.Add(new List<List<int>>());
 
             // inizializzo le nuove partizioni del figlio
             List<int>        newPartClass  = new List<int>();    // la classe della partizione, -1 non univoca
@@ -233,6 +236,7 @@ namespace PlotTreeCsharp
             List<int>        newFathers    = new List<int>();
             List<List<int>>  newpartitions = new List<List<int>>();
             List<List<int?>> newUsedDim    = new List<List<int?>>();
+
             for (idpart = 0; idpart < dimValues[d]+1; idpart++) 
             {  newpartitions.Add(new List<int>());
 
@@ -243,7 +247,7 @@ namespace PlotTreeCsharp
                newFathers.Add(idFathPart);      // for each partition, the father's originating one
 
                newPartClass.Add(-2);
-               newPartDepth.Add(nd.lstPartDepth[i]+1);
+               newPartDepth.Add(newDepth);
             }
 
             // riempio le partizioni che ottengo nei figli
@@ -288,7 +292,7 @@ namespace PlotTreeCsharp
             newNode.usedDim       = newNode.usedDim.Concat(newUsedDim).ToList();
             newNode.lstPartClass  = newNode.lstPartClass.Concat(newPartClass).ToList();    // la classe di ogni partizione se uniforme, sennò -1
             newNode.lstPartDepth  = newNode.lstPartDepth.Concat(newPartDepth).ToList();
-            newNode.lstFathers[iDepth+1].Add(newFathers);
+            newNode.lstFathers[newDepth].Add(newFathers);
             newNode.hash = nodeHash(newNode);
             isComplete = false;
 
