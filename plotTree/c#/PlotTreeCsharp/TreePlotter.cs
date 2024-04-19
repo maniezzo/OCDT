@@ -154,7 +154,7 @@ namespace PlotTreeCsharp
          currNode.lstPartClass.Add(-1);  // unica partizione, dati eterogenei
          currNode.lstPartDepth.Add(0);
          for (i=0;i<n;i++) currNode.lstPartitions[0].Add(i); // tutti i punti nell'unica partizione
-         currNode.lstFathers[0][0].Add((0,0)); // no father node, root node
+         currNode.lstFathers[0][0].Add((0,-1)); // root node, no father, no partition comig from
          currNode.npoints = n;
          currNode.hash    = nodeHash(currNode);
 
@@ -213,24 +213,27 @@ namespace PlotTreeCsharp
 
             // find original father partition
             int idFathPart = 0;  // partizione nodo padre
-            int idFathNode = 0; // partizione nodo nonno (id nodo padre)
+            int idLevFath  = 0;  // posizione del padre nella lista dei fathers al suo livello
             if(nd.id==0) idFathPart = i;
             else
             {  int dim = (int) newNode.usedDim[i][newNode.usedDim[i].Count-1]; // last used dimension
-               idpoint = newNode.lstPartitions[i][0];
-               k = 0;      // index in cutdim
+               idpoint = newNode.lstPartitions[i][0]; // any point of the partion is above the cut used to find the partition
+               k = 0;      // index of the defining cut, in cutdim/cutval
                while (cutdim[k] != dim) k++; // first value for dimension d
-               idpart = 0; // id of the partiorn of the node in the father
+               idpart = 0; // id of the partition of the node in the father
                while (k < cutdim.Length && cutdim[k] == dim && cutval[k] < X[idpoint, dim]) // find the partition of idpoint
                {  k++;
                   idpart++;
                }
-               idFathPart = idpart;
-               idFathNode =i;
+               idFathPart = idpart; // partizione del nodo padre
+               int ppp = findFatherPos(nd, idpoint, nd.usedDim[i], newNode.usedDim[i].Count - 1);
+               if(ppp!=idpart)
+                  Console.WriteLine("ALERT: ppp != idpart");
             }
             int newDepth = nd.lstPartDepth[i] + 1;   // depth dei nodi figli
             while (newNode.lstFathers.Count < newDepth+1) 
-               newNode.lstFathers.Add(new List<List<(int,int)>>());
+               newNode.lstFathers.Add(new List<List<(int,int)>>()); // per essere sicuri che il livello ci sia
+            idLevFath = newDepth;
 
             // inizializzo le nuove partizioni del figlio
             List<int>        newPartClass  = new List<int>();    // la classe della partizione, -1 non univoca
@@ -246,7 +249,7 @@ namespace PlotTreeCsharp
                newUsedDim[idpart] = new( nd.usedDim[i] ); 
                newUsedDim[idpart].Add(d);    
                
-               newFathers.Add((idFathNode, idFathPart));      // for each partition, the father's originating one
+               newFathers.Add((idLevFath, idFathPart));      // for each partition, the father's originating one
 
                newPartClass.Add(-2);
                newPartDepth.Add(newDepth);
@@ -349,6 +352,29 @@ namespace PlotTreeCsharp
          }
          if (nd.lstFathers[nd.lstFathers.Count - 1].Count == 0)   // last level empty, added for cloning at the beginning of the method
             nd.lstFathers.RemoveAt(nd.lstFathers.Count - 1);
+         return res;
+      }
+
+      // trova la posizione del nodo contenente il punto nella lista dei fathers al livello iDepth
+      private int findFatherPos(NodeDP nd, int idPoint, List<int?> usedDim, int iDepth)
+      {  int i=-1,k,d,id,res = -1;
+         List<int> lstFathId = new List<int>(); // lista posizioni padri nei livelli father
+
+         id=0; // depth id
+         while(id<=iDepth)
+         {  d = (int) usedDim[id];
+            k = 0;
+            while (cutdim[k] != d) k++; // first value for dimension d
+            i = 0;   // id of the new partiorn of the node
+            while (k < cutdim.Length && cutdim[k] == d && cutval[k] < X[idPoint, d]) // find the partition of idpoint
+            {  k++;
+               i++;
+            }
+            lstFathId.Add(i);
+            id++;
+         }
+         res = i;
+
          return res;
       }
 
