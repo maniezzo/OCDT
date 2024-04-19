@@ -18,7 +18,7 @@ using System.Collections;
 
 namespace PlotTreeCsharp
 {
-   // Each node of the non binary decision tree
+   // Each node of the nonbinary decision tree
    public class NodeHeu
    {
       public NodeHeu() { }
@@ -35,7 +35,7 @@ namespace PlotTreeCsharp
       public int id;
       public int dim;      // dimension (attribute, column) associated with the node
       public int npoints;  // number of points (records) clustered in the node
-      public int idFather; // id of father node
+      public int idFather; // id of father node 
       public bool visited; // node already visited during search
       public bool isLeaf;  // node is a leaf node
       public int[] nPointClass;   // number of node points of each class (sum is npoints)
@@ -62,7 +62,7 @@ namespace PlotTreeCsharp
    public class NodeDP
    {  public NodeDP() 
       {  this.lstPartitions = new List<List<int>>();
-         this.lstFathers    = new List<List<List<int>>>();
+         this.lstFathers    = new List<List<List<(int,int)>>>();
          this.usedDim       = new List<List<int?>>();
          this.lstPartClass  = new List<int>();
          this.lstPartDepth  = new List<int>();
@@ -70,7 +70,7 @@ namespace PlotTreeCsharp
       public NodeDP(int id, int ndim, int nclasses) 
       {  this.id = id;
          this.lstPartitions = new List<List<int>> { };
-         this.lstFathers    = new List<List<List<int>>> { };
+         this.lstFathers    = new List<List<List<(int,int)>>> { };
          this.usedDim       = new List<List<int?>> { };
          this.lstPartClass  = new List<int>();
          this.lstPartDepth  = new List<int>();
@@ -82,7 +82,7 @@ namespace PlotTreeCsharp
       public int hash;     // hash code of the partition
       public List<List<int?>> usedDim;      // dimensions used in the path to each partition of the node (will give the tree)
       public List<List<int>> lstPartitions; // list of the point in each partitions at the node
-      public List<List<List<int>>> lstFathers; // list of father nodes (originating partition): depth->sons->fathers
+      public List<List<List<(int node,int part)>>> lstFathers; // list of father nodes (originating node/partition): depth->sons->fathers
       public List<int> lstPartClass;        // the class of each partition, -1 heterogeneous
       public List<int> lstPartDepth;        // the iDepth of each partition
    }
@@ -148,13 +148,13 @@ namespace PlotTreeCsharp
          idNode = totNodes++;
          currNode = new NodeDP(idNode, ndim, nclasses); // inizializza anche lstPartitions, lstPartClass, usedDim
          currNode.lstPartitions.Add(new List<int>());
-         currNode.lstFathers.Add(new List<List<int>>());
-         currNode.lstFathers[0].Add(new List<int>());
+         currNode.lstFathers.Add(new List<List<(int,int)>>());
+         currNode.lstFathers[0].Add(new List<(int,int)>());
          currNode.usedDim.Add(new List<int?>());
          currNode.lstPartClass.Add(-1);  // unica partizione, dati eterogenei
          currNode.lstPartDepth.Add(0);
          for (i=0;i<n;i++) currNode.lstPartitions[0].Add(i); // tutti i punti nell'unica partizione
-         currNode.lstFathers[0][0].Add(-1); // no father node, root node
+         currNode.lstFathers[0][0].Add((-1,-1)); // no father node, root node
          currNode.npoints = n;
          currNode.hash    = nodeHash(currNode);
 
@@ -197,7 +197,7 @@ namespace PlotTreeCsharp
          bool isComplete;
 
          // add list of pointers to father one level below, if not yet initialized
-         if(nd.lstFathers.Count == (iDepth+1)) nd.lstFathers.Add(new List<List<int>>());
+         if(nd.lstFathers.Count == (iDepth+1)) nd.lstFathers.Add(new List<List<(int,int)>>());
 
          npartitions = nd.lstPartitions.Count;
          // ogni partizione del padre genera un figlio, con la partizione partizionata secondo dim d
@@ -228,12 +228,12 @@ namespace PlotTreeCsharp
             }
             int newDepth = nd.lstPartDepth[i] + 1;   // depth dei nodi figli
             while (newNode.lstFathers.Count < newDepth+1) 
-               newNode.lstFathers.Add(new List<List<int>>());
+               newNode.lstFathers.Add(new List<List<(int,int)>>());
 
             // inizializzo le nuove partizioni del figlio
             List<int>        newPartClass  = new List<int>();    // la classe della partizione, -1 non univoca
             List<int>        newPartDepth  = new List<int>();
-            List<int>        newFathers    = new List<int>();
+            List<(int,int)>  newFathers    = new List<(int,int)>();
             List<List<int>>  newpartitions = new List<List<int>>();
             List<List<int?>> newUsedDim    = new List<List<int?>>();
 
@@ -244,7 +244,7 @@ namespace PlotTreeCsharp
                newUsedDim[idpart] = new( nd.usedDim[i] ); 
                newUsedDim[idpart].Add(d);    
                
-               newFathers.Add(idFathPart);      // for each partition, the father's originating one
+               newFathers.Add((i,idFathPart));      // for each partition, the father's originating one
 
                newPartClass.Add(-2);
                newPartDepth.Add(newDepth);
@@ -441,7 +441,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
                   n0.isLeaf    = true;
                   nodes[iDepth].Add(n0.id); // le id dei nodi, invece delle partizioni in fathers
                   if(iDepth>0)
-                  {  idFather = ndp.lstFathers[iDepth][i][j]; // qui solo l'indice della partizione nel padre
+                  {  idFather = ndp.lstFathers[iDepth][i][j].node; // qui solo l'indice della partizione nel padre
                      idFather = nodes[iDepth-1][idFather]; // qui l'id del nodo padre
                      n0.idFather = idFather;
                      Console.WriteLine($" -- arco {idFather}-{n0.id}");
