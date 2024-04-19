@@ -154,7 +154,7 @@ namespace PlotTreeCsharp
          currNode.lstPartClass.Add(-1);  // unica partizione, dati eterogenei
          currNode.lstPartDepth.Add(0);
          for (i=0;i<n;i++) currNode.lstPartitions[0].Add(i); // tutti i punti nell'unica partizione
-         currNode.lstFathers[0][0].Add((-1,-1)); // no father node, root node
+         currNode.lstFathers[0][0].Add((0,0)); // no father node, root node
          currNode.npoints = n;
          currNode.hash    = nodeHash(currNode);
 
@@ -212,7 +212,8 @@ namespace PlotTreeCsharp
             newNode.id = totNodes++;
 
             // find original father partition
-            int idFathPart = 0;
+            int idFathPart = 0;  // partizione nodo padre
+            int idFathNode = 0; // partizione nodo nonno (id nodo padre)
             if(nd.id==0) idFathPart = i;
             else
             {  int dim = (int) newNode.usedDim[i][newNode.usedDim[i].Count-1]; // last used dimension
@@ -225,6 +226,7 @@ namespace PlotTreeCsharp
                   idpart++;
                }
                idFathPart = idpart;
+               idFathNode =i;
             }
             int newDepth = nd.lstPartDepth[i] + 1;   // depth dei nodi figli
             while (newNode.lstFathers.Count < newDepth+1) 
@@ -244,7 +246,7 @@ namespace PlotTreeCsharp
                newUsedDim[idpart] = new( nd.usedDim[i] ); 
                newUsedDim[idpart].Add(d);    
                
-               newFathers.Add((i,idFathPart));      // for each partition, the father's originating one
+               newFathers.Add((idFathNode, idFathPart));      // for each partition, the father's originating one
 
                newPartClass.Add(-2);
                newPartDepth.Add(newDepth);
