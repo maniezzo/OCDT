@@ -218,22 +218,15 @@ namespace PlotTreeCsharp
             else
             {  int dim = (int) newNode.usedDim[i][newNode.usedDim[i].Count-1]; // last used dimension
                idpoint = newNode.lstPartitions[i][0]; // any point of the partion is above the cut used to find the partition
-               k = 0;      // index of the defining cut, in cutdim/cutval
-               while (cutdim[k] != dim) k++; // first value for dimension d
-               idpart = 0; // id of the partition of the node in the father
-               while (k < cutdim.Length && cutdim[k] == dim && cutval[k] < X[idpoint, dim]) // find the partition of idpoint
-               {  k++;
-                  idpart++;
-               }
-               idFathPart = idpart; // partizione del nodo padre
-               int ppp = findFatherPos(nd, idpoint, nd.usedDim[i], newNode.usedDim[i].Count - 1);
-               if(ppp!=idpart)
-                  Console.WriteLine("ALERT: ppp != idpart");
+               List<int> lstFathId = findFatherPos(nd, idpoint, nd.usedDim[i], newNode.usedDim[i].Count - 1);
+               idFathPart = lstFathId[^1]; // partizione del nodo padre
+               if(iDepth > 1)
+                  idLevFath  = lstFathId[^2];
+               else idLevFath = 0;
             }
             int newDepth = nd.lstPartDepth[i] + 1;   // depth dei nodi figli
             while (newNode.lstFathers.Count < newDepth+1) 
                newNode.lstFathers.Add(new List<List<(int,int)>>()); // per essere sicuri che il livello ci sia
-            idLevFath = newDepth;
 
             // inizializzo le nuove partizioni del figlio
             List<int>        newPartClass  = new List<int>();    // la classe della partizione, -1 non univoca
@@ -356,8 +349,8 @@ namespace PlotTreeCsharp
       }
 
       // trova la posizione del nodo contenente il punto nella lista dei fathers al livello iDepth
-      private int findFatherPos(NodeDP nd, int idPoint, List<int?> usedDim, int iDepth)
-      {  int i=-1,k,d,id,res = -1;
+      private List<int> findFatherPos(NodeDP nd, int idPoint, List<int?> usedDim, int iDepth)
+      {  int i=-1,k,d,id;
          List<int> lstFathId = new List<int>(); // lista posizioni padri nei livelli father
 
          id=0; // depth id
@@ -373,9 +366,8 @@ namespace PlotTreeCsharp
             lstFathId.Add(i);
             id++;
          }
-         res = i;
 
-         return res;
+         return lstFathId;
       }
 
       // il nodo con lo stesso hash se h già in tabella, null altrimenti
