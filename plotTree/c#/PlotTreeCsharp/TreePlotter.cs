@@ -174,7 +174,7 @@ namespace PlotTreeCsharp
             while(iCell < DPtable[iDepth].Count)
             {  currNode = DPtable[iDepth][iCell].node;
                for (d = 0; d < ndim; d++)
-                  if (dimValues[d] > 0)
+                  if (dimValues[d] > 0) // if any cut was selected acting on dimension d
                   {  idNode = expandNode(currNode, d, iDepth);
                      if(idDPcell < 0 && idNode >= 0) idDPcell = idNode;
                   }
@@ -301,10 +301,15 @@ namespace PlotTreeCsharp
                if (newNode.lstPartDepth[j] < minDepth && newNode.lstPartClass[j] < 0)
                   minDepth = newNode.lstPartDepth[j];
             }
-            if(minDepth > ndim)  // da cambiare controllando che non ci siano lstPartClass negativi ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
+
+            isComplete = true;
+            for(int ii=0;ii<newNode.lstPartClass.Count;ii++)
+               if (newNode.lstPartClass[ii] < 0)
+                  isComplete = false;
+            if(isComplete)  
             {  minDepth = maxDepth;
-               isComplete = true;
                Console.WriteLine($"Node completed, depth {maxDepth}");
+
                int nLevels = newNode.lstFathers.Count;
                if (newNode.lstFathers[nLevels-1].Count == 0)   // last level empty
                   newNode.lstFathers.RemoveAt(nLevels-1);
@@ -340,7 +345,9 @@ namespace PlotTreeCsharp
                DPtable[dpc.depth].Add(dpc);
                Console.WriteLine($"expanded node {nd.id} into {newNode.id}");
                if(isComplete && res < 0) 
-                  res = dpc.id;
+               {  res = dpc.id;
+                  break;
+               }
             }
          }
          if (nd.lstFathers[nd.lstFathers.Count - 1].Count == 0)   // last level empty, added for cloning at the beginning of the method
@@ -461,7 +468,10 @@ lend:    Console.WriteLine($"Same partitions: {res}");
                   n0.isLeaf    = true;
                   nodes[iDepth].Add(n0.id); // le id dei nodi, invece delle partizioni in fathers
                   if(iDepth>0)
-                  {  idFather = ndp.lstFathers[iDepth][i][j].node; // qui solo l'indice della partizione nel padre
+                  {  idFather = k = 0;
+                     while(k < ndp.lstFathers[iDepth][i][j].node)
+                        idFather += ndp.lstFathers[iDepth][k].Count; // scorro gli array al livello sopra
+                     idFather += ndp.lstFathers[iDepth][i][j].part;  // qui indice posizione in nodes
                      idFather = nodes[iDepth-1][idFather]; // qui l'id del nodo padre
                      n0.idFather = idFather;
                      Console.WriteLine($" -- arco {idFather}-{n0.id}");
