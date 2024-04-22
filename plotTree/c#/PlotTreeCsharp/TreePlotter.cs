@@ -204,7 +204,7 @@ namespace PlotTreeCsharp
          for(i=0;i<npartitions;i++)                   // for each partition of the father node
          {  if (nd.lstPartClass[i] >= 0)   continue;  // unique class, no expansion
             if (nd.usedDim[i].Contains(d)) continue;  // dimension already used to get the partition
-            Console.WriteLine($" -- Partitioning node {nd.id} partition {i} along dim {d}");
+            Console.WriteLine($" -- Partitioning node {nd.id} depth {iDepth} partition {i} along dim {d}");
 
             // qui ho il nodo figlio della partizione i-esima
             string jsonlst = JsonConvert.SerializeObject(nd);
@@ -213,16 +213,16 @@ namespace PlotTreeCsharp
 
             // find original father partition
             int idFathPart = 0;  // partizione nodo padre
-            int idLevFath  = 0;  // posizione del padre nella lista dei fathers al suo livello
+            int idArrFath  = 0;  // posizione dell'array con le partizioni del padre nella lista dei fathers al suo livello
             if(nd.id==0) idFathPart = i;
             else
             {  int dim = (int) newNode.usedDim[i][newNode.usedDim[i].Count-1]; // last used dimension
                idpoint = newNode.lstPartitions[i][0]; // any point of the partion is above the cut used to find the partition
                List<int> lstFathId = findFatherPos(nd, idpoint, nd.usedDim[i], newNode.usedDim[i].Count - 1);
                idFathPart = lstFathId[^1]; // partizione del nodo padre
-               if(iDepth > 1)
-                  idLevFath  = lstFathId[^2];
-               else idLevFath = 0;
+               if(lstFathId.Count > 1)
+                  idArrFath  = lstFathId[^2];
+               else idArrFath = 0;
             }
             int newDepth = nd.lstPartDepth[i] + 1;   // depth dei nodi figli
             while (newNode.lstFathers.Count < newDepth+1) 
@@ -242,7 +242,7 @@ namespace PlotTreeCsharp
                newUsedDim[idpart] = new( nd.usedDim[i] ); 
                newUsedDim[idpart].Add(d);    
                
-               newFathers.Add((idLevFath, idFathPart));      // for each partition, the father's originating one
+               newFathers.Add((idArrFath, idFathPart));      // for each partition, the father's originating one
 
                newPartClass.Add(-2);
                newPartDepth.Add(newDepth);
@@ -470,7 +470,9 @@ lend:    Console.WriteLine($"Same partitions: {res}");
                   if(iDepth>0)
                   {  idFather = k = 0;
                      while(k < ndp.lstFathers[iDepth][i][j].node)
-                        idFather += ndp.lstFathers[iDepth][k].Count; // scorro gli array al livello sopra
+                     {  idFather += ndp.lstFathers[iDepth][k].Count; // scorro gli array al livello sopra
+                        k++;
+                     }
                      idFather += ndp.lstFathers[iDepth][i][j].part;  // qui indice posizione in nodes
                      idFather = nodes[iDepth-1][idFather]; // qui l'id del nodo padre
                      n0.idFather = idFather;
