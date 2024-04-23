@@ -452,6 +452,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
       private void marshalTree(int idDPcell)
       {  int i,j,k,d,nid=0,idFather,idNode,idLeaf;
          List<List<int>> nodes = new List<List<int>>();
+         List<int> l2n = new List<int>(); // the node corrsponding to each leaf
          var cellCoord = getDPtablecell(idDPcell);
          NodeDP  ndp = DPtable[cellCoord.Item1][cellCoord.Item2].node;
 
@@ -482,6 +483,28 @@ lend:    Console.WriteLine($"Same partitions: {res}");
                   }
                   decTree.Add(n0);
                }
+         }
+         // --------------- DFS
+         bool[] visited = new bool[decTree.Count];
+         Stack<int> stack = new Stack<int>();
+
+         stack.Push(0);
+
+         while (stack.Count > 0)
+         {
+            int current = stack.Pop();
+
+            if (!visited[current])
+            {
+               Console.Write(" " +current + " ");
+               visited[current] = true;
+
+               for(j=0;j< decTree[current].lstSons.Count;j++)
+               {  i = decTree[current].lstSons[j];
+                  if (!visited[i])
+                     stack.Push(i);
+               }
+            }
          }
 
          // --------------- BFS to recontruct node assignments
