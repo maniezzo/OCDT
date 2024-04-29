@@ -616,8 +616,13 @@ lend:    Console.WriteLine($"Same partitions: {res}");
 
          for(idPart=0;idPart<ndp.lstPartitions.Count;idPart++)
          {  i = ndp.lstPartitions[idPart][0];
-            k = 1;
+            k = 0; // faccio cadere il punto nell'albero 
+            while(k != decTree[k].idFather)
+            {
+               k = decTree[k].idFather;
+            }
          }
+         Debug.Assert(Y[decTree[idNode].lstPoints[0]] == ndp.lstPartClass[idPart]);
 
          return idPart;
       }
