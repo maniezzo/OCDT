@@ -12,6 +12,7 @@ using System.Collections.Specialized;
 using System.Xml.Linq;
 using System.Linq.Expressions;
 using System.Collections;
+using System.Runtime.Intrinsics.Arm;
 
 /* Data is in X, classes in Y. Attributes are columns of X
 */
@@ -469,7 +470,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
 
       // translates tree structure into decTreee for plotting
       private void marshalTree(int idDPcell)
-      {  int i,j,k,d,nid=0,idFather,idNode,idLeaf=0;
+      {  int i,j,k,d,nid=0,idFather,idNode,idPart,idLeaf=0;
          List<List<int>> nodes = new List<List<int>>();
          List<int> l2n = new List<int>(); // the node corrsponding to each leaf
          var cellCoord = getDPtablecell(idDPcell);
@@ -483,7 +484,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
                   n0.id  = nid++;
                   n0.dim = -1;
                   n0.lstSons   = new List<int>();
-                  n0.lstPoints = new List<int>(); // punti nel nodo (se foglia)
+                  n0.lstPoints = new List<int>(); // punti nel nodo
                   n0.lstCuts   = new List<int>(); // tutti i cut attivi al nodo (se interno)
                   n0.isLeaf    = true;
                   nodes[iDepth].Add(n0.id); // le id dei nodi, invece delle partizioni in fathers
@@ -500,13 +501,15 @@ lend:    Console.WriteLine($"Same partitions: {res}");
                      decTree[idFather].lstSons.Add(n0.id);
                      decTree[idFather].isLeaf = false;
                      decTree[idFather].dim    = ndp.lstFcut[iDepth][i][j].fdim;
-                     if(ndp.lstFcut[iDepth][i][j].fpart > 0)
+                     //if (ndp.lstFcut[iDepth][i][j].fpart > 0) // la partizione più bassa non è selezionata da un cut
+                     if (j > 0) // la partizione più bassa non è selezionata da un cut
                         decTree[idFather].lstCuts.Add(ndp.lstFcut[iDepth][i][j].fpart-1); // il cut che identifica la partizione
                   }
                   decTree.Add(n0);
                }
          }
-         // --------------- DFS
+
+         // --------------- DFS, to find the leaf node corresponding to each partition
          bool[] visited = new bool[decTree.Count];
          Stack<int> stack = new Stack<int>();
          leaf2node = new List<int>(); // the node corrsponding to each leaf
@@ -527,10 +530,10 @@ lend:    Console.WriteLine($"Same partitions: {res}");
                         stack.Push(i);
                   }
                else
-               {
-                  if (decTree[current].isLeaf)
+               {  if (decTree[current].isLeaf)
                   {  leaf2node.Add(current);
-                     Console.WriteLine($"{current} is a leaf, n.points {decTree[current].npoints}");
+                     idPart = whichPartition(current,ndp);
+                     Console.WriteLine($"DFS: {current} is a leaf, leaf {idLeaf}, partition {idPart}, n.points {decTree[current].npoints}");
                      idLeaf++;
                   }
                   else
@@ -538,6 +541,10 @@ lend:    Console.WriteLine($"Same partitions: {res}");
                }
             }
          }
+
+         Console.Write("Leaves: ");
+         for(i=0;i<leaf2node.Count;i++) Console.Write($" {leaf2node[i]}");
+         Console.WriteLine();
 
          // --------------- BFS to reconstruct node assignments
          Queue<int> que = new Queue<int>();
@@ -570,7 +577,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
                for (i = 0; i < ndp.lstPartitions[idLeaf].Count; i++)
                   decTree[idNode].lstPoints.Add(ndp.lstPartitions[idLeaf][i]);
                idLeaf++;
-               Console.WriteLine($"{idNode} is a leaf, n.points {decTree[idNode].npoints}");
+               Console.WriteLine($"BFS: {idNode} is a leaf, n.points {decTree[idNode].npoints}");
             }
          }
 
@@ -589,50 +596,30 @@ lend:    Console.WriteLine($"Same partitions: {res}");
             }
          }
 
-         // -------------- reconstruction of cuts used at each node (if any)
-         // per ogni antenato, che cut ha usato (attivi nella sua dimensione)
-         for(idLeaf=0; idLeaf < leaf2node.Count; idLeaf++)
-         {  i = leaf2node[idLeaf]; // nodo di cui troverò tutti i cut che hanno portato a lui
-            for (j = ndp.usedDim[idLeaf].Count-1;j>=0; j--) // dimensioni che lo hanno individuato
-            {  i = decTree[i].idFather; // a turno, tutti gli antenati
-               d = (int)ndp.usedDim[idLeaf][j];
-//             decTree[i].dim = d;      // dimensione di taglio dell'antenato corrente
-               for (k = 0; k < cutdim.Length; k++)
-                  if (cutdim[k] == d && !decTree[i].lstCuts.Contains(k))
-                  {  // controllo che ci sia un punto sopra e uno sotto 
-                     bool fInsert = false;
-                     for (int i1 = 0; i1 < decTree[i].lstPoints.Count; i1++)
-                     {  int iPoint1 = decTree[i].lstPoints[i1];
-                        for (int i2 = 0; i2 < decTree[i].lstPoints.Count; i2++)
-                        {  int iPoint2 = decTree[i].lstPoints[i2];
-                           if (X[iPoint1, d] < cutval[k] && X[iPoint2, d] > cutval[k])
-                              fInsert = true;
-                           if (X[iPoint1, d] > cutval[k] && X[iPoint2, d] < cutval[k])
-                              fInsert = true;
-                           if(fInsert)
-                              for(int kk = 0; kk < decTree[i].lstCuts.Count; kk++)
-                              {  int kkCut = decTree[i].lstCuts[kk];
-                                 if (X[iPoint1, d] < cutval[kkCut] && X[iPoint2, d] > cutval[kkCut] ||
-                                     X[iPoint1, d] > cutval[kkCut] && X[iPoint2, d] < cutval[kkCut])
-                                    fInsert = false; // punti già separati da un altro cut incluso
-                              }
-                           if(fInsert)
-                              goto l0;
-                        }
-                     }
-l0:                  if (fInsert && false)
-                        decTree[i].lstCuts.Add(k);
-                  }
+         // -------------- reconstruction of cuts used to come to each node (if any)
+         // da indice del cut nella dimensione a indice assoluto
+         for(i=0; i < decTree.Count;i++)
+         {  if (decTree[i].lstCuts.Count > 0)
+            {  d = decTree[i].dim;
+               k = 0;
+               while (cutdim[k] != d) k++; // first value for dimension d
+               for(j=0;j< decTree[i].lstCuts.Count;j++)
+                  decTree[i].lstCuts[j] += k;
             }
          }
       }
 
       // finds the partition coresponding to a decision tree leaf
-      private int whichPartition()
-      {  int i,j;
-         int res = -1;
+      private int whichPartition(int idNode, NodeDP ndp)
+      {  int i,j,k;
+         int idPart = -1;
 
-         return res;
+         for(idPart=0;idPart<ndp.lstPartitions.Count;idPart++)
+         {  i = ndp.lstPartitions[idPart][0];
+            k = 1;
+         }
+
+         return idPart;
       }
 
       // removes nodes with no points
@@ -792,25 +779,14 @@ l0:                  if (fInsert && false)
          int[] heights = new int[decTree.Count];
 
          heights[0]=0;
-         for(i=0;i<n;i++)
-         {
-            currnode = 0;
+         for(i=0;i<n;i++) // for each point, I look for the child conteining it
+         {  currnode = 0;
             while (!decTree[currnode].isLeaf)
-            {
-               d  = decTree[currnode].dim;
+            {  d  = decTree[currnode].dim;
                nc = decTree[currnode].lstCuts.Count;
                for(j=0;j<nc;j++)
                   if (X[i,d] < cutval[decTree[currnode].lstCuts[j]])
-                  {  
-                     //child = decTree[currnode].lstSons[j];
-                     //heights[child] = heights[currnode]+1;
-                     //if (heights[child]>treeHeight) treeHeight = heights[child];
-                     //currnode = child;
-                     nc = int.MaxValue; // to avoid entering the following if, useless when if commented out
-                     break;
-                  }
-               //if(j==nc)
-               //   currnode = decTree[currnode].lstSons[j];
+                     break; // trovato il figlio contenente il punto
 
                child = decTree[currnode].lstSons[j];
                heights[child] = heights[currnode] + 1;
@@ -819,8 +795,7 @@ l0:                  if (fInsert && false)
             }
 
             if(method=="exact")
-            {
-               for(j=0;j<leaf2node.Count;j++)
+            {  for(j=0;j<leaf2node.Count;j++)
                {  k = leaf2node[j];
                   if (decTree[k].lstPoints.Contains(i))
                      if (Y[i] != Y[decTree[k].lstPoints[0]])
@@ -836,8 +811,33 @@ l0:                  if (fInsert && false)
                   Console.WriteLine($"ERROR, misclassification of record {i}");
                   goto lend;
                }
-            Console.WriteLine($"Record {i} node {currnode} class {Y[i]}"); 
+            Console.WriteLine($"Record {i} node {currnode} class {Y[i]}");
          }
+
+         // per ogni cut attivo, controllo che ci sia un punto sopra e uno sotto
+         for(i=0;i<decTree.Count;i++)
+         {  d = decTree[i].dim;
+            if(d<0) continue; // a leaf
+            for (k = 0; k < decTree[i].lstCuts.Count; k++)
+            {  Console.WriteLine($"cutdim[decTree[i].lstCuts[k]] = {cutdim[decTree[i].lstCuts[k]]} d={d}");
+               Debug.Assert(cutdim[decTree[i].lstCuts[k]] == d);
+               int kkCut = decTree[i].lstCuts[k];
+               for (int i1 = 0; i1 < decTree[i].lstPoints.Count; i1++)
+               {  int iPoint1 = decTree[i].lstPoints[i1];
+                  for (int i2 = 0; i2 < decTree[i].lstPoints.Count; i2++)
+                  {  int iPoint2 = decTree[i].lstPoints[i2];
+                     if (X[iPoint1, d] < cutval[kkCut] && X[iPoint2, d] > cutval[kkCut] ||
+                         X[iPoint1, d] > cutval[kkCut] && X[iPoint2, d] < cutval[kkCut])
+                        goto l0; // punti separati 
+                  }
+               }
+               res = false;
+               Console.WriteLine($"ERROR, cut not active {kkCut}");
+               goto lend;
+l0:            continue;
+            }
+         }
+
          if (res) Console.WriteLine("Checked. Solution is ok");
          Console.WriteLine($"Tree height = {treeHeight}");
 lend:    return res;
