@@ -234,14 +234,14 @@ namespace PlotTreeCsharp
                   idArrFath  = lstFathId[^2];
                else idArrFath = 0;
             }
-            int newDepth = nd.lstPartDepth[i] + 1;   // depth dei nodi figli
+            int newDepth = nd.lstPartDepth[i] + 1;                  // depth of child nodes
             while (newNode.lstFathers.Count < newDepth+1) 
             {  newNode.lstFathers.Add(new List<List<(int,int)>>()); // per essere sicuri che il livello ci sia
                newNode.lstFcut.Add(new List<List<(int fdim, int fpart)>>());
             }
 
             // inizializzo le nuove partizioni del figlio
-            List<int>        newPartClass  = new List<int>();    // la classe della partizione, -1 non univoca
+            List<int>        newPartClass  = new List<int>();       // la classe della partizione, -1 non univoca
             List<int>        newPartDepth  = new List<int>();
             List<(int,int)>  newFathers    = new List<(int,int)>();
             List<(int,int)>  newFcut       = new List<(int,int)>();
@@ -290,10 +290,33 @@ namespace PlotTreeCsharp
                   newFathers.RemoveAt(idpart);
                   newFcut.RemoveAt(idpart);
                   newUsedDim.RemoveAt(idpart);
-                  Console.WriteLine("-- removed pointless partition "+idpart);
+                  Console.WriteLine("-- removed pointless partition "+idpart);  // pun intended
                }
                else
                   idpart++;
+
+            // unisco eventuali partizioni contigue della sessa classe
+            idpart = 1;
+            while (idpart < newpartitions.Count)
+            {
+               if (newPartClass[idpart] > -1 && newPartClass[idpart] == newPartClass[idpart-1])
+               {  // merge the thwo partitions and remove idpart-1
+                  for (j = 0; j < newpartitions[idpart-1].Count; j++)
+                     newpartitions[idpart].Insert(0,newpartitions[idpart-1][j]);
+                  newpartitions[idpart].Sort();
+                  newFcut[idpart] = newFcut[idpart-1];
+
+                  newpartitions.RemoveAt(idpart-1);
+                  newPartClass.RemoveAt(idpart-1);
+                  newPartDepth.RemoveAt(idpart-1);
+                  newFathers.RemoveAt(idpart-1);
+                  newFcut.RemoveAt(idpart-1);
+                  newUsedDim.RemoveAt(idpart-1);
+                  Console.WriteLine("-- merged mergeable partitions into " + idpart);
+                  idpart = 0;
+               }
+               idpart++;
+            }
 
             // tolgo la partizione appena espansa
             newNode.lstPartitions.RemoveAt(i); 
@@ -494,13 +517,12 @@ lend:    Console.WriteLine($"Same partitions: {res}");
                         k++;
                      }
                      idFather += ndp.lstFathers[iDepth][i][j].part;  // qui indice posizione in nodes
-                     idFather = nodes[iDepth-1][idFather]; // qui l'id del nodo padre
+                     idFather = nodes[iDepth-1][idFather];           // qui l'id del nodo padre
                      n0.idFather = idFather;
                      Console.WriteLine($" -- arco {idFather}-{n0.id}");
                      decTree[idFather].lstSons.Add(n0.id);
                      decTree[idFather].isLeaf = false;
                      decTree[idFather].dim    = ndp.lstFcut[iDepth][i][j].fdim;
-                     //if (ndp.lstFcut[iDepth][i][j].fpart > 0) // la partizione più bassa non è selezionata da un cut
                      if (j > 0) // la partizione più bassa non è selezionata da un cut
                         decTree[idFather].lstCuts.Add(ndp.lstFcut[iDepth][i][j].fpart-1); // il cut che identifica la partizione
                   }
@@ -513,8 +535,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
          for (i = 0; i < decTree.Count; i++)
          {
             if (decTree[i].lstCuts.Count > 0)
-            {
-               d = decTree[i].dim;
+            {  d = decTree[i].dim;
                k = 0;
                while (cutdim[k] != d) k++; // first value for dimension d
                for (j = 0; j < decTree[i].lstCuts.Count; j++)
