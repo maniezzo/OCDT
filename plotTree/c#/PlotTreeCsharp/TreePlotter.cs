@@ -500,6 +500,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
 
          for(int iDepth=0; iDepth < ndp.lstFathers.Count; iDepth++)
          {  nodes.Add(new List<int>());
+            sortFatherLists(ndp,iDepth);
             for (i = 0; i < ndp.lstFathers[iDepth].Count; i++)
                for (j = 0; j < ndp.lstFathers[iDepth][i].Count; j++)
                {  NodeHeu n0 = new NodeHeu();
@@ -513,10 +514,10 @@ lend:    Console.WriteLine($"Same partitions: {res}");
                   if(iDepth>0)
                   {  idFather = k = 0;
                      while(k < ndp.lstFathers[iDepth][i][j].node)
-                     {  idFather += ndp.lstFathers[iDepth][k].Count; // scorro gli array al livello sopra
+                     {  idFather += ndp.lstFathers[iDepth][k].Count; // shifto degli array al livello sopra
                         k++;
                      }
-                     idFather += ndp.lstFathers[iDepth][i][j].part;  // qui indice posizione in nodes
+                     idFather += ndp.lstFathers[iDepth][i][j].part;  // shifto dell'indice della partizione
                      idFather = nodes[iDepth-1][idFather];           // qui l'id del nodo padre
                      n0.idFather = idFather;
                      Console.WriteLine($" -- arco {idFather}-{n0.id}");
@@ -601,6 +602,30 @@ lend:    Console.WriteLine($"Same partitions: {res}");
                   }
                }
             }
+         }
+      }
+
+      // ordina le liste fathes (e collegata fcuts) per campo part crescente
+      void sortFatherLists(NodeDP ndp, int iDepth)
+      {  int i,j;
+         bool loopAgain = true;
+         List<(int,int)> temp = new List<(int,int)>();
+
+         while(loopAgain)
+         {  loopAgain = false;
+            for (i = 0; i < ndp.lstFathers[iDepth].Count-1;i++)
+               // assumo tutti elementi array interno stessa partizione (ex. [01 01][00 00 00])
+               if (ndp.lstFathers[iDepth][i][0].part > ndp.lstFathers[iDepth][i+1][0].part)
+               {  temp = ndp.lstFathers[iDepth][i];
+                  ndp.lstFathers[iDepth][i] = ndp.lstFathers[iDepth][i+1];
+                  ndp.lstFathers[iDepth][i+1] = temp;
+
+                  temp = ndp.lstFcut[iDepth][i];
+                  ndp.lstFcut[iDepth][i] = ndp.lstFcut[iDepth][i + 1];
+                  ndp.lstFcut[iDepth][i + 1] = temp;
+
+                  loopAgain = true;
+               }
          }
       }
 
