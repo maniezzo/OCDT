@@ -514,7 +514,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
                   if(iDepth>0)
                   {  idFather = k = 0;
                      while(k < ndp.lstFathers[iDepth][i][j].node)
-                     {  idFather += ndp.lstFathers[iDepth][k].Count; // shifto degli array al livello sopra
+                     {  idFather += ndp.lstFathers[iDepth-1][k].Count; // shifto degli array al livello sopra
                         k++;
                      }
                      idFather += ndp.lstFathers[iDepth][i][j].part;  // shifto dell'indice della partizione
@@ -605,7 +605,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
          }
       }
 
-      // ordina le liste fathes (e collegata fcuts) per campo part crescente
+      // ordina le liste fathes (e collegata fcuts) per campo part crescente. Bubble sort.
       void sortFatherLists(NodeDP ndp, int iDepth)
       {  int i,j;
          bool loopAgain = true;
