@@ -102,6 +102,7 @@ namespace PlotTreeCsharp
       private int[]     dimValues;  // number of values (of cuts) acting on each dimension
       private int numcol,ndim;      // num dimensions (attributes, columns of X)
       private int n, nclasses;      // num of records, num of classes
+      private int numDominated;     // num dominated nodes
       private string splitRule;     // criterium for node plitting
       private string splitDir;      // max o min
       private string method;        // exact or heuristic
@@ -173,6 +174,7 @@ namespace PlotTreeCsharp
          dpc.nnodes = 1;
          dpc.isExpanded = false;
          DPtable[0].Add(dpc);
+         numDominated = 0;
 
          // espansione della tabella, per ogni livello (distanza dalla radice)
          for(iDepth=0;iDepth<DPtable.Length;iDepth++)
@@ -364,6 +366,7 @@ namespace PlotTreeCsharp
                int depthNhash  = getDPcellDepth(nhash.idDPcell);
                if(fSamePartitions && depthNhash <= maxDepth+1)
                {  Console.WriteLine($"Nodo {newNode.id} dominato");
+                  numDominated++;
                   continue; // newnode discarded
                }
             }
@@ -462,13 +465,29 @@ lend:    return (i,j);
       private bool isEqualPartition(NodeDP newnode, NodeDP nhash)
       {  int i,j;
          bool res = false; 
-         if(newnode.lstPartitions.Count != nhash.lstPartitions.Count) goto lend;
+         if(newnode.lstPartitions.Count != nhash.lstPartitions.Count)
+         {  Console.WriteLine("  -- different number of partitions");
+            goto lend;
+         }
+         int[] first1=new int[nhash.lstPartitions.Count], first2=new int[nhash.lstPartitions.Count]; // first elements of each partition
          for(i=0;i<nhash.lstPartitions.Count;i++)
+         {  first1[i] = newnode.lstPartitions[i][0];
+            first2[i] = nhash.lstPartitions[i][0];
+         }
+         int[] idxNew  = getSortIdx(first1);
+         int[] idxHash = getSortIdx(first2);
+
+         for (i=0;i<nhash.lstPartitions.Count;i++)
          {
-            if (nhash.lstPartitions[i].Count != newnode.lstPartitions[i].Count) goto lend;
-            for (j = 0; j < newnode.lstPartitions[i].Count;j++)
-               if (nhash.lstPartitions[i][j]!= newnode.lstPartitions[i][j])
+            if (nhash.lstPartitions[idxHash[i]].Count != newnode.lstPartitions[idxNew[i]].Count)
+            {  Console.WriteLine($"  -- different num nodes of partition {i} : {nhash.lstPartitions[idxHash[i]].Count} {newnode.lstPartitions[idxNew[i]].Count}");
+               goto lend;
+            }
+            for (j = 0; j < newnode.lstPartitions[idxNew[i]].Count;j++)
+               if (nhash.lstPartitions[idxHash[i]][j] != newnode.lstPartitions[idxNew[i]][j])
+               {  Console.WriteLine($"  -- different node: i {i} j {j} : {nhash.lstPartitions[idxHash[i]][j]} {newnode.lstPartitions[idxNew[i]][j]}");
                   goto lend;
+               }
          }
          // qui stesse partizioni
          res = true;
@@ -487,7 +506,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
 
          for(i=0;i<idxPart.Length;i++)
             for (j = 0; j < ndClus.lstPartitions[idxPart[i]].Count;j++)
-               hash = (hash * (j*ndClus.lstPartitions[idxPart[i]][j] % 31 + 1)) % 193939;
+               hash = (hash * ( ((j*7)*ndClus.lstPartitions[idxPart[i]][j]) % 31 + 1)) % 193939;
          return hash;
       }
 
@@ -869,7 +888,7 @@ l0:            continue;
          }
 
          if (res) Console.WriteLine("Checked. Solution is ok");
-         Console.WriteLine($"Tree height = {treeHeight}");
+         Console.WriteLine($"Tree height   = {treeHeight}");
 lend:    return res;
       }
 
@@ -912,9 +931,10 @@ lend:    return res;
          string parameters = $"/k \"{batfile}\"";
          Process.Start("cmd", parameters);
          totNodes = decTree.Count;
-         Console.WriteLine($"Tot cuts   = {cutdim.Length}");
-         Console.WriteLine($"Tot nodes  = {totNodes}");
-         Console.WriteLine($"Tot leaves = {totLeaves}");
+         Console.WriteLine($"Tot cuts      = {cutdim.Length}");
+         Console.WriteLine($"Tot nodes     = {totNodes}");
+         Console.WriteLine($"Tot leaves    = {totLeaves}");
+         Console.WriteLine($"Num dominated = {numDominated}");
       }
 
       // initializes fields of a new node
