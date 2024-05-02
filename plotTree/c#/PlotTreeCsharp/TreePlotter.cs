@@ -216,7 +216,7 @@ namespace PlotTreeCsharp
          for(i=0;i<npartitions;i++)                   // for each partition of the father node
          {  if (nd.lstPartClass[i] >= 0)   continue;  // unique class, no expansion
             if (nd.usedDim[i].Contains(d)) continue;  // dimension already used to get the partition
-            Console.WriteLine($" -- Partitioning node {nd.id} depth {iDepth} partition {i} along dim {d}");
+            Console.WriteLine($" -- Partitioning node {nd.id} depth {iDepth} partition {i} depth {nd.usedDim[i].Count} num.part. {nd.lstPartitions.Count} along dim {d}");
 
             // qui ho il nodo figlio della partizione i-esima
             string jsonlst = JsonConvert.SerializeObject(nd);
@@ -387,7 +387,7 @@ namespace PlotTreeCsharp
                dpc.nnodes = 1;
                dpc.isExpanded = false;
                DPtable[dpc.depth].Add(dpc);
-               Console.WriteLine($"expanded node {nd.id} into {newNode.id}");
+               Console.WriteLine($"expanded node {nd.id} into {newNode.id} num.part {newNode.lstPartitions.Count}");
                if(isComplete && res < 0) 
                {  res = dpc.id;
                   break;
