@@ -108,6 +108,7 @@ namespace PlotTreeCsharp
       private string method;        // exact or heuristic
       private string[] dataColumns;
       private int totNodes=0, totcells = 0, treeHeight=0, totLeaves=0;
+      private int verbose;          // 0 no print, 1 average, 2 extended
 
       public TreePlotter()
       {  decTree = new List<NodeHeu>();
@@ -202,7 +203,7 @@ namespace PlotTreeCsharp
        * ritorna idCell di un nodo completato, se trovato
        */
       private int expandNode(NodeDP nd, int d, int iDepth)
-      {  int i,j,k,id,idcell,idpoint,idpart,npartitions,res=-1;
+      {  int i,j,h,k,id,idcell,idpoint,idpart,npartitions,res=-1;
          bool isComplete;
 
          // add list of pointers to father one level below, if not yet initialized
@@ -216,12 +217,14 @@ namespace PlotTreeCsharp
          for(i=0;i<npartitions;i++)                   // for each partition of the father node
          {  if (nd.lstPartClass[i] >= 0)   continue;  // unique class, no expansion
             if (nd.usedDim[i].Contains(d)) continue;  // dimension already used to get the partition
-            Console.WriteLine($" -- Partitioning node {nd.id} depth {iDepth} partition {i} depth {nd.usedDim[i].Count} num.part. {nd.lstPartitions.Count} along dim {d}");
+            if(verbose >= 1)
+               Console.WriteLine($" -- Partitioning node {nd.id} depth {iDepth} partition {i} depth {nd.usedDim[i].Count} num.part. {nd.lstPartitions.Count} along dim {d}");
 
             // qui ho il nodo figlio della partizione i-esima
             string jsonlst = JsonConvert.SerializeObject(nd);
             NodeDP newNode = JsonConvert.DeserializeObject<NodeDP>(jsonlst);
             newNode.id = totNodes++;
+            if(newNode.id % 1000 == 0) Console.WriteLine($"Expanding node {nd.id} Generating node {newNode.id} depth {iDepth+1}");
 
             // find original father partition
             int idFathPart = 0;  // partizione nodo padre
@@ -292,7 +295,8 @@ namespace PlotTreeCsharp
                   newFathers.RemoveAt(idpart);
                   newFcut.RemoveAt(idpart);
                   newUsedDim.RemoveAt(idpart);
-                  Console.WriteLine("-- removed pointless partition "+idpart);  // pun intended
+                  if(verbose>=1)
+                     Console.WriteLine("-- removed pointless partition "+idpart);  // pun intended
                }
                else
                   idpart++;
@@ -314,7 +318,8 @@ namespace PlotTreeCsharp
                   newFathers.RemoveAt(idpart-1);
                   newFcut.RemoveAt(idpart-1);
                   newUsedDim.RemoveAt(idpart-1);
-                  Console.WriteLine("-- merged mergeable partitions into " + idpart);
+                  if(verbose>=1)
+                     Console.WriteLine("-- merged mergeable partitions into " + idpart);
                   idpart = 0;
                }
                idpart++;
@@ -349,7 +354,8 @@ namespace PlotTreeCsharp
                   isComplete = false;
             if(isComplete)  
             {  minDepth = maxDepth;
-               Console.WriteLine($"Node completed, depth {maxDepth}");
+               if(verbose>=0)
+                  Console.WriteLine($"Node completed, depth {maxDepth}");
 
                int nLevels = newNode.lstFathers.Count;
                if (newNode.lstFathers[nLevels-1].Count == 0)   // last level empty
@@ -358,21 +364,30 @@ namespace PlotTreeCsharp
                }
             }
 
-            NodeDP nhash = checkHash(newNode.hash);
+            List<NodeDP> lstHash = checkHash(newNode.hash);
             bool fSamePartitions = false;
-            if(nhash != null)
-            {  Console.WriteLine($"STESSO Hash!!! nodi {newNode.id} {nhash.id}");
-               fSamePartitions = isEqualPartition(newNode,nhash);   // gestisce la dominanza fra nodi
-               int depthNhash  = getDPcellDepth(nhash.idDPcell);
-               if(fSamePartitions && depthNhash <= maxDepth+1)
-               {  Console.WriteLine($"Nodo {newNode.id} dominato");
-                  numDominated++;
-                  continue; // newnode discarded
+            h = -1;
+            if(lstHash != null)
+            {  for(h=0;h<lstHash.Count;h++)
+               {  if(verbose>=1)
+                     Console.WriteLine($"STESSO Hash!!! nodi {newNode.id} {lstHash[h].id}");
+                  fSamePartitions = isEqualPartition(newNode, lstHash[h]);   // gestisce la dominanza fra nodi
+                  int depthNhash  = getDPcellDepth(lstHash[h].idDPcell);
+                  if(fSamePartitions && depthNhash <= maxDepth+1)
+                  {  if(verbose>=1)
+                        Console.WriteLine($"Nodo {newNode.id} dominato");
+                     numDominated++;
+                     break;
+                  }
+                  else
+                     fSamePartitions = false;
                }
+               if (fSamePartitions)
+                  continue; // newnode discarded
             }
 
-            if(fSamePartitions) // nuovo nodo domina cella nhash
-            {  idcell = nhash.idDPcell;
+            if(fSamePartitions) // nuovo nodo domina cella lstHash
+            {  idcell = lstHash[h].idDPcell;
                var colrow = getDPtablecell(idcell);
                newNode.idDPcell = idcell;
                DPtable[colrow.Item1][colrow.Item2].node  = newNode;
@@ -387,7 +402,10 @@ namespace PlotTreeCsharp
                dpc.nnodes = 1;
                dpc.isExpanded = false;
                DPtable[dpc.depth].Add(dpc);
-               Console.WriteLine($"expanded node {nd.id} into {newNode.id} num.part {newNode.lstPartitions.Count}");
+               if(verbose>=1)
+                  Console.WriteLine($"expanded node {nd.id} into {newNode.id} num.part {newNode.lstPartitions.Count}");
+               if(verbose>=2)
+                  printPartitions(newNode);
                if(isComplete && res < 0) 
                {  res = dpc.id;
                   break;
@@ -424,16 +442,14 @@ namespace PlotTreeCsharp
       }
 
       // il nodo con lo stesso hash se h già in tabella, null altrimenti
-      private NodeDP checkHash(int h)
+      private List<NodeDP> checkHash(int h)
       {  int i,j;
-         NodeDP res = null;
+         List<NodeDP> res = new List<NodeDP>();
 
          for(i=0;i<DPtable.Length;i++)
             for (j = 0; j < DPtable[i].Count;j++)
                if (DPtable[i][j].node.hash == h)
-               {  res = DPtable[i][j].node;
-                  break;
-               }
+                  res.Add(DPtable[i][j].node);
          return res;
       }
 
@@ -466,7 +482,8 @@ lend:    return (i,j);
       {  int i,j;
          bool res = false; 
          if(newnode.lstPartitions.Count != nhash.lstPartitions.Count)
-         {  Console.WriteLine("  -- different number of partitions");
+         {  if(verbose>=1)
+               Console.WriteLine("  -- different number of partitions");
             goto lend;
          }
          int[] first1=new int[nhash.lstPartitions.Count], first2=new int[nhash.lstPartitions.Count]; // first elements of each partition
@@ -480,19 +497,21 @@ lend:    return (i,j);
          for (i=0;i<nhash.lstPartitions.Count;i++)
          {
             if (nhash.lstPartitions[idxHash[i]].Count != newnode.lstPartitions[idxNew[i]].Count)
-            {  Console.WriteLine($"  -- different num nodes of partition {i} : {nhash.lstPartitions[idxHash[i]].Count} {newnode.lstPartitions[idxNew[i]].Count}");
+            {  if(verbose>=1)
+                  Console.WriteLine($"  -- different num nodes of partition {i} : {nhash.lstPartitions[idxHash[i]].Count} {newnode.lstPartitions[idxNew[i]].Count}");
                goto lend;
             }
             for (j = 0; j < newnode.lstPartitions[idxNew[i]].Count;j++)
                if (nhash.lstPartitions[idxHash[i]][j] != newnode.lstPartitions[idxNew[i]][j])
-               {  Console.WriteLine($"  -- different node: i {i} j {j} : {nhash.lstPartitions[idxHash[i]][j]} {newnode.lstPartitions[idxNew[i]][j]}");
+               {  if(verbose>=1)
+                     Console.WriteLine($"  -- different node: i {i} j {j} : {nhash.lstPartitions[idxHash[i]][j]} {newnode.lstPartitions[idxNew[i]][j]}");
                   goto lend;
                }
          }
          // qui stesse partizioni
          res = true;
 
-lend:    Console.WriteLine($"Same partitions: {res}");
+lend:    if(verbose>=1) Console.WriteLine($"Same partitions: {res}");
          return res;
       }
 
@@ -539,7 +558,8 @@ lend:    Console.WriteLine($"Same partitions: {res}");
                      idFather += ndp.lstFathers[iDepth][i][j].part;  // shifto dell'indice della partizione
                      idFather = nodes[iDepth-1][idFather];           // qui l'id del nodo padre
                      n0.idFather = idFather;
-                     Console.WriteLine($" -- arco {idFather}-{n0.id}");
+                     if(verbose>=1)
+                        Console.WriteLine($" -- arco {idFather}-{n0.id}");
                      decTree[idFather].lstSons.Add(n0.id);
                      decTree[idFather].isLeaf = false;
                      decTree[idFather].dim    = ndp.lstFcut[iDepth][i][j].fdim;
@@ -587,7 +607,8 @@ lend:    Console.WriteLine($"Same partitions: {res}");
                {  if (decTree[current].isLeaf)
                   {  idPart = whichPartition(current,ndp);
                      part2node[idPart] = current;
-                     Console.WriteLine($"DFS: {current} is a leaf, leaf {idLeaf}, partition {idPart}");
+                     if(verbose>=1) 
+                        Console.WriteLine($"DFS: {current} is a leaf, leaf {idLeaf}, partition {idPart}");
                      idLeaf++;
                   }
                   else
@@ -596,9 +617,11 @@ lend:    Console.WriteLine($"Same partitions: {res}");
             }
          }
 
-         Console.Write("Leaves: ");
-         for(i=0;i<part2node.Length;i++) Console.Write($" {part2node[i]}");
-         Console.WriteLine();
+         if(verbose>=1)
+         {  Console.Write("Leaves: ");
+            for(i=0;i<part2node.Length;i++) Console.Write($" {part2node[i]}");
+            Console.WriteLine();
+         }
 
          // --------------- points at each leaf
          for(idPart=0;idPart<ndp.lstPartitions.Count;idPart++)
@@ -695,6 +718,7 @@ lend:    Console.WriteLine($"Same partitions: {res}");
             splitRule = Convert.ToString(config.splitRule);
             splitDir  = Convert.ToString(config.splitDir);
             method    = Convert.ToString(config.method);
+            verbose   = Convert.ToInt32(config.verbose);
             dataset = path + file;
          }
          catch (Exception ex)
@@ -860,7 +884,8 @@ lend:    Console.WriteLine($"Same partitions: {res}");
                   Console.WriteLine($"ERROR, misclassification of record {i}");
                   goto lend;
                }
-            Console.WriteLine($"Record {i} node {currnode} class {Y[i]}");
+            if(verbose>=1)
+               Console.WriteLine($"Record {i} node {currnode} class {Y[i]}");
          }
 
          // per ogni cut attivo, controllo che ci sia un punto sopra e uno sotto
@@ -1180,6 +1205,17 @@ l0:      if(currNode.lstSons.Count == 1)
             idxSort[i] = i;
          Array.Sort<int>(idxSort, (a, b) => A[a].CompareTo(A[b]));
          return idxSort;
+      }
+
+      // outputs all partitions
+      private void printPartitions(NodeDP ndp)
+      {  int i,j;
+         for(i=0;i<ndp.lstPartitions.Count;i++)
+         {  Console.Write($" part.{i} - ");
+            for (j = 0; j < ndp.lstPartitions[i].Count;j++)
+               Console.Write($" {ndp.lstPartitions[i][j]}");
+            Console.WriteLine();
+         }
       }
    }
 }
