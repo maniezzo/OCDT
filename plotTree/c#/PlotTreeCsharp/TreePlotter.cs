@@ -613,39 +613,10 @@ lend:    if(verbose>=1) Console.WriteLine($"Same partitions: {res}");
             }
          }
 
-         // --------------- DFS, to find the leaf node corresponding to each partition
-         bool[] visited = new bool[decTree.Count];
-         Stack<int> stack = new Stack<int>();
+         // --------------- the leaf node corresponding to each partition
          part2node = new int[ndp.lstPartitions.Count]; // the node corrsponding to each partition
-         NodeHeu currNode;
-
-         stack.Push(0);
-         while (stack.Count > 0)
-         {  int current = stack.Pop();
-
-            if (!visited[current])
-            {  //Console.Write(" " +current);
-               visited[current] = true;
-
-               if (decTree[current].lstSons.Count > 0)
-                  for(j=0;j< decTree[current].lstSons.Count;j++)
-                  {  i = decTree[current].lstSons[j];
-                     if (!visited[i])
-                        stack.Push(i);
-                  }
-               else
-               {  if (decTree[current].isLeaf)
-                  {  idPart = whichPartition(current,ndp);
-                     part2node[idPart] = current;
-                     if(verbose>=1) 
-                        Console.WriteLine($"DFS: {current} is a leaf, leaf {idLeaf}, partition {idPart}");
-                     idLeaf++;
-                  }
-                  else
-                     Debug.Assert(decTree[current].isLeaf);
-               }
-            }
-         }
+         for(i=0;i<part2node.Length;i++)
+            part2node[i] = mapId[ndp.lstPartNode[i]];
 
          if(verbose>=1)
          {  Console.Write("Leaves: ");
