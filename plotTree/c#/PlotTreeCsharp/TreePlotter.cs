@@ -12,6 +12,7 @@ using System.Collections.Specialized;
 using System.Xml.Linq;
 using System.Linq.Expressions;
 using System.Collections;
+using System.Reflection;
 
 /* Data is in X, classes in Y. Attributes are columns of X
 */
@@ -206,6 +207,9 @@ namespace PlotTreeCsharp
                iCell++;
             }
          }
+
+         // this is for debug
+         printPartitions();
 
          // -------------------------------------------- recover the best decision tree
          if(idDPcell > 0)
@@ -451,6 +455,42 @@ namespace PlotTreeCsharp
          return res;
       }
 
+      // print all partitionings on a file
+      void printPartitions()
+      {  int i,j,k;
+         StreamWriter fout = new StreamWriter("partitions.out");
+
+         for (int iDepth = 0; iDepth < DPtable.Length; iDepth++)
+         {  if (DPtable[iDepth].Count == 0) continue;
+            for (i = 0; i < DPtable[iDepth].Count;i++)
+            {
+               var cellCoord = getDPtablecell(i);
+               NodeDP ndp = DPtable[cellCoord.Item1][cellCoord.Item2].node;
+               int[] firsts = new int[ndp.lstPartitions.Count];
+               int[] idx = new int[ndp.lstPartitions.Count];
+               for (j = 0; j < ndp.lstPartitions.Count; j++)
+               {  firsts[j] = ndp.lstPartitions[j][0];
+                  idx[j] = j;
+               }
+               Array.Sort(idx, (a, b) => firsts[a].CompareTo(firsts[b]));
+
+               for (int jj=0;jj<ndp.lstPartitions.Count;jj++)
+               {  j = idx[jj];
+                  for(k=0;k<ndp.lstPartitions[j].Count;k++)
+                  {
+                     Console.Write(" " + ndp.lstPartitions[j][k]);
+                     fout.Write(" " + ndp.lstPartitions[j][k]);
+                  }
+                  Console.WriteLine();
+                  fout.Write(" *");
+               }
+               Console.WriteLine("==================");
+               fout.WriteLine();
+            }
+         }
+         fout.Close();
+      }
+
       // trova la posizione del nodo contenente il punto nella lista dei fathers al livello iDepth
       private List<int> findFatherPos(NodeDP nd, int idPoint, List<int?> usedDim, int iDepth)
       {  int i=-1,k,d,id;
@@ -567,7 +607,7 @@ lend:    if(verbose>=1) Console.WriteLine($"Same partitions: {res}");
          List<List<int>> nodes = new List<List<int>>();
          Dictionary<int,int> mapId = new Dictionary<int, int>(); // maps random node id in lstIdNode to actual ones
          var cellCoord = getDPtablecell(idDPcell);
-         NodeDP  ndp = DPtable[cellCoord.Item1][cellCoord.Item2].node;
+         NodeDP ndp = DPtable[cellCoord.Item1][cellCoord.Item2].node;
 
          for(int iDepth=0; iDepth < ndp.lstFathers.Count; iDepth++)
          {  nodes.Add(new List<int>());
