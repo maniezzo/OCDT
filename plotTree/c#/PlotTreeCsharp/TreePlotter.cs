@@ -209,7 +209,7 @@ namespace PlotTreeCsharp
          }
 
          // this is for debug
-         printPartitions();
+         // printPartitions();
 
          // -------------------------------------------- recover the best decision tree
          if(idDPcell > 0)
