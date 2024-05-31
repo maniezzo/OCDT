@@ -13,6 +13,7 @@ using System.Xml.Linq;
 using System.Linq.Expressions;
 using System.Collections;
 using System.Reflection;
+using System.Reflection.Metadata.Ecma335;
 
 /* Data is in X, classes in Y. Attributes are columns of X
 */
@@ -88,6 +89,7 @@ namespace PlotTreeCsharp
       public int idDPcell; // id of the DP table cell the node is set into
       public int npoints;  // number of points (records) clustered in the node
       public int hash;     // hash code of the partition
+      public int bound;    // a bound to the cost of a complete solution from the node
       public List<int> lstPartClass;    // the class of each partition, -1 heterogeneous
       public List<int> lstPartDepth;    // the iDepth of each partition
       public List<int> lstPartNode;     // the node of the tree the partition is associated with
@@ -115,9 +117,9 @@ namespace PlotTreeCsharp
       private string method;    // exact or heuristic
       private string[] dataColumns;
       private int totNodes=0, totcells = 0, treeHeight=0, totLeaves=0;
-      private int verbose;          // 0 no print, 1 average, 2 extended
+      private int verbose;      // 0 no print, 1 average, 2 extended
+      private bool fBeamSearch; // true beam search, false exact
       Random rnd;
-
 
       public TreePlotter()
       {  decTree = new List<NodeHeu>();
@@ -179,6 +181,7 @@ namespace PlotTreeCsharp
          currNode.lstIdNode[0].Add(0);
          currNode.npoints = n;
          currNode.hash    = nodeHash(currNode);
+         currNode.bound   = completionBound(currNode.lstPartitions[0]);
 
          // ----------------------------------------- inizializzazione matrice DP
          DPcell dpc = new DPcell(); // insert the node in a cell of the DP table (it is its state)
@@ -192,21 +195,26 @@ namespace PlotTreeCsharp
          numDominated = 0;
 
          // ------------------------------------------ espansione della tabella, per ogni livello (distanza dalla radice)
-         for(iDepth=0;iDepth<DPtable.Length;iDepth++)
-         {  // per ogni cella dek livello
-            iCell = 0;
-            while(iCell < DPtable[iDepth].Count)
-            {  currNode = DPtable[iDepth][iCell].node;
-               for (d = 0; d < ndim; d++)
-                  if (dimValues[d] > 0) // if any cut was selected acting on dimension d
-                  {  idNode = expandNode(currNode, d, iDepth);
-                     if(idDPcell < 0 && idNode >= 0) idDPcell = idNode;
-                  }
-
-               DPtable[iDepth][iCell].isExpanded = true;
-               iCell++;
-            }
+         if(fBeamSearch)
+         {  int beamWidth = 3;     // just because
+            idDPcell = beamSearch(beamWidth);
          }
+         else
+            for(iDepth=0;iDepth<DPtable.Length;iDepth++)
+            {  // per ogni cella dek livello
+               iCell = 0;
+               while(iCell < DPtable[iDepth].Count)
+               {  currNode = DPtable[iDepth][iCell].node;
+                  for (d = 0; d < ndim; d++)
+                     if (dimValues[d] > 0) // if any cut was selected acting on dimension d
+                     {  idNode = expandNode(currNode, d, iDepth);
+                        if(idDPcell < 0 && idNode >= 0) idDPcell = idNode;  // node completed
+                     }
+
+                  DPtable[iDepth][iCell].isExpanded = true;
+                  iCell++;
+               }
+            }
 
          // this is for debug
          // printPartitions();
@@ -214,6 +222,45 @@ namespace PlotTreeCsharp
          // -------------------------------------------- recover the best decision tree
          if(idDPcell > 0)
             marshalTree(idDPcell);
+      }
+
+      // beam search expansion
+      int beamSearch(int beamWidth)
+      {  int i,j,d,iDepth,iCell, idNode, nExpanded;
+         int idDPcell=-1;
+         NodeDP currNode;
+         bool fTerminate = false;
+
+         while(!fTerminate)
+         { 
+            for (iDepth = 0; iDepth < DPtable.Length; iDepth++)
+            {  // per ogni cella dek livello
+               iCell = 0;
+               nExpanded = 0;
+               while (iCell < DPtable[iDepth].Count && nExpanded < beamWidth)
+               {
+                  if(!DPtable[iDepth][iCell].isExpanded)
+                  {  currNode = DPtable[iDepth][iCell].node;
+                     for (d = 0; d < ndim; d++)
+                        if (dimValues[d] > 0) // if any cut was selected acting on dimension d
+                        {
+                           idNode = expandNode(currNode, d, iDepth);
+                           if (idDPcell < 0 && idNode >= 0) idDPcell = idNode;  // node completed
+                        }
+
+                     DPtable[iDepth][iCell].isExpanded = true;
+                     nExpanded++;
+                  }
+                  iCell++;
+               }
+            }
+            if(idDPcell >= 0)
+               fTerminate = true;
+            else
+               Console.WriteLine($"Nother round, iDepth={iDepth} idDPcell {idDPcell}");
+         }
+
+         return idDPcell;
       }
 
       /* raffina tutte le partizioni di un nodo lungo una dimensione 
@@ -294,6 +341,7 @@ namespace PlotTreeCsharp
             }
 
             // riempio le partizioni che ottengo nei figli
+            int complBound;
             for (j = 0; j < nd.lstPartitions[i].Count;j++)  // for each point in the father node partition
             {  idpoint = nd.lstPartitions[i][j];
                k = 0;
@@ -305,10 +353,11 @@ namespace PlotTreeCsharp
                }
                newpartitions[idpart].Add(idpoint); // le nuove partizioni lungo la dimensione, sostituiscono la vecchia
 
+               complBound = 0;   // bound to the number of cuts needed to disentangle the partition
                if (newPartClass[idpart] == -2) // initialization
-                  newPartClass[idpart] = Y[idpoint];
+                  newPartClass[idpart] = Y[idpoint];  // classi omogenee
                else if (newPartClass[idpart] != Y[idpoint])
-                  newPartClass[idpart] = -1;   // classi eterogenee
+                  newPartClass[idpart] = -1;          // classi eterogenee
             }
 
             // tolgo eventuali nuove partizioni senza punti
@@ -356,30 +405,41 @@ namespace PlotTreeCsharp
             }
 
             // tolgo la partizione appena espansa
-            newNode.lstPartitions.RemoveAt(i); 
-            newNode.lstPartClass.RemoveAt(i);
-            newNode.lstPartDepth.RemoveAt(i);
-            newNode.lstPartNode.RemoveAt(i);
-            newNode.usedDim.RemoveAt(i);
+            {  newNode.lstPartitions.RemoveAt(i); 
+               newNode.lstPartClass.RemoveAt(i);
+               newNode.lstPartDepth.RemoveAt(i);
+               newNode.lstPartNode.RemoveAt(i);
+               newNode.usedDim.RemoveAt(i);
+            }
             // aggiungo le nuove partizioni
-            newNode.lstPartitions = newNode.lstPartitions.Concat(newpartitions).ToList();  // lista punti di ogni partizione
-            newNode.usedDim       = newNode.usedDim.Concat(newUsedDim).ToList();
-            newNode.lstPartClass  = newNode.lstPartClass.Concat(newPartClass).ToList();    // la classe di ogni partizione se uniforme, sennò -1
-            newNode.lstPartDepth  = newNode.lstPartDepth.Concat(newPartDepth).ToList();
-            newNode.lstPartNode   = newNode.lstPartNode.Concat(newPartNode).ToList();
-            newNode.lstFathers[newDepth].Add(newFathers);
-            newNode.lstFcut[newDepth].Add(newFcut);
-            newNode.lstIdNode[newDepth].AddRange(newIdNodes);
-            newNode.hash = nodeHash(newNode);
-            isComplete = false;
+            {  newNode.lstPartitions = newNode.lstPartitions.Concat(newpartitions).ToList();  // lista punti di ogni partizione
+               newNode.usedDim       = newNode.usedDim.Concat(newUsedDim).ToList();
+               newNode.lstPartClass  = newNode.lstPartClass.Concat(newPartClass).ToList();    // la classe di ogni partizione se uniforme, sennò -1
+               newNode.lstPartDepth  = newNode.lstPartDepth.Concat(newPartDepth).ToList();
+               newNode.lstPartNode   = newNode.lstPartNode.Concat(newPartNode).ToList();
+               newNode.lstFathers[newDepth].Add(newFathers);
+               newNode.lstFcut[newDepth].Add(newFcut);
+               newNode.lstIdNode[newDepth].AddRange(newIdNodes);
+               newNode.hash = nodeHash(newNode);
+            }
 
-            int minDepth = ndim+1, maxDepth = 0; // min and max iDepth of node partitions
+            // min and max iDepth of node partitions
+            int minDepth = ndim+1, maxDepth = 0, boundCost = 0;
             for(j=0;j<newNode.lstPartitions.Count;j++)
             {  if (newNode.lstPartDepth[j] > maxDepth)
                   maxDepth = newNode.lstPartDepth[j];
                if (newNode.lstPartDepth[j] < minDepth && newNode.lstPartClass[j] < 0)
                   minDepth = newNode.lstPartDepth[j];
+
+               complBound = completionBound(newNode.lstPartitions[j]);
+               int expCost = newNode.lstPartDepth[j] + complBound;
+               if (expCost > boundCost) boundCost = expCost;
+               if(verbose > 1)
+                  Console.WriteLine($" Expanded node {newNode.id} partition {j} depth {newNode.lstPartDepth[j]} bound {complBound} exp.cost {expCost}");
             }
+            if (verbose >= 1)
+               Console.WriteLine($"Node {newNode.id} depth {newDepth} exp.cost {boundCost}");
+            newNode.bound = boundCost;
 
             isComplete = true;
             for(int ii=0;ii<newNode.lstPartClass.Count;ii++)
@@ -428,7 +488,7 @@ namespace PlotTreeCsharp
                DPtable[colrow.Item1][colrow.Item2].node  = newNode;
                DPtable[colrow.Item1][colrow.Item2].depth = iDepth+1;
             }
-            else
+            else  // nuovo nodo NON domina cella lstHash
             {  DPcell dpc = new DPcell(); // insert the node in a cell of the DP table (it is its state)
                dpc.id = totcells; totcells++;
                newNode.idDPcell = dpc.id;
@@ -438,7 +498,7 @@ namespace PlotTreeCsharp
                dpc.isExpanded = false;
                DPtable[dpc.depth].Add(dpc);
                if(verbose>=1)
-                  Console.WriteLine($"expanded node {nd.id} into {newNode.id} num.part {newNode.lstPartitions.Count}");
+                  Console.WriteLine($"expanded node {nd.id} into {newNode.id} num.part {newNode.lstPartitions.Count} bound {newNode.bound}");
                if(verbose>=2)
                   printPartitions(newNode);
                if(isComplete && res < 0) 
@@ -453,6 +513,47 @@ namespace PlotTreeCsharp
             nd.lstIdNode.RemoveAt(nd.lstIdNode.Count - 1);
          }
          return res;
+      }
+
+      // computes a bound to the number of dimensions that will need to be cut to complete a partition
+      int completionBound(List<int> partition)
+      {  int i,j,d,idPoint;
+         int bound=0;
+         double[,] mind = new double[nclasses, ndim]; // min values taken by elements of each class along each dim
+         double[,] maxd = new double[nclasses, ndim]; // max values taken by elements of each class along each dim
+
+         for (i=0;i<nclasses;i++)
+            for(d=0;d<ndim;d++)
+            {  mind[i,d] = double.MaxValue;
+               maxd[i,d] = double.MinValue;
+            }
+
+         // find the bounding box of the AABB containing points of each class for the partition
+         for (j = 0; j < partition.Count; j++)
+         {  idPoint = partition[j];
+            i = Y[idPoint];
+            for(d=0;d<ndim;d++)
+            {  if (X[idPoint, d] < mind[i,d])
+                  mind[i, d] = X[idPoint,d];
+               if (X[idPoint, d] > maxd[i, d])
+                  maxd[i, d] = X[idPoint, d];
+            }
+         }
+
+         // check for interseactions
+         int[,] numIntersect = new int[nclasses, nclasses];
+         bound = 0;
+         for (int i1 = 0; i1 < nclasses - 1; i1++)
+            for (int i2 = i1+1; i2 < nclasses; i2++)
+               for (d = 0; d < ndim; d++)
+                  if ( ((maxd[i1,d] > mind[i2,d]) && (mind[i1,d] < maxd[i2,d])) ||
+                       ((maxd[i2,d] > mind[i1,d]) && (mind[i2,d] < maxd[i1,d])) )   // if the classes intersect on the dimension
+                  {  numIntersect[i1,i2]++;
+                     if (numIntersect[i1,i2] > bound)
+                        bound = numIntersect[i1,i2];
+                  }
+
+         return bound;
       }
 
       // print all partitionings on a file
@@ -757,10 +858,11 @@ lend:    if(verbose>=1) Console.WriteLine($"Same partitions: {res}");
          try
          {  string path = Convert.ToString(config.datapath);
             string file = Convert.ToString(config.datafile);
-            splitRule = Convert.ToString(config.splitRule);
-            splitDir  = Convert.ToString(config.splitDir);
-            method    = Convert.ToString(config.method);
-            verbose   = Convert.ToInt32(config.verbose);
+            splitRule   = Convert.ToString(config.splitRule);
+            splitDir    = Convert.ToString(config.splitDir);
+            method      = Convert.ToString(config.method);
+            verbose     = Convert.ToInt32(config.verbose);
+            fBeamSearch = (Convert.ToInt32(config.beam) == 1 ? true : false);
             dataset = path + file;
          }
          catch (Exception ex)
