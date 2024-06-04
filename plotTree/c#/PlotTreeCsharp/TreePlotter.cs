@@ -6,14 +6,10 @@ using System.IO;
 using Newtonsoft.Json;
 using System.Data;
 using System.Diagnostics;
-using System.Reflection.Emit;
 using System.Globalization;
-using System.Collections.Specialized;
 using System.Xml.Linq;
-using System.Linq.Expressions;
 using System.Collections;
 using System.Reflection;
-using System.Reflection.Metadata.Ecma335;
 
 /* Data is in X, classes in Y. Attributes are columns of X
 */
@@ -235,11 +231,19 @@ namespace PlotTreeCsharp
          { 
             for (iDepth = 0; iDepth < DPtable.Length; iDepth++)
             {  // per ogni cella dek livello
-               iCell = 0;
+               int jj = 0;
                nExpanded = 0;
-               while (iCell < DPtable[iDepth].Count && nExpanded < beamWidth)
+
+               while (jj < DPtable[iDepth].Count && nExpanded < beamWidth)
                {
-                  if(!DPtable[iDepth][iCell].isExpanded)
+                  // repeated avery cicle as new cells are added at the same level
+                  int[] idx = new int[DPtable[iDepth].Count];
+                  for (j = 0; j < DPtable[iDepth].Count; j++)
+                     idx[j] = j;
+                  Array.Sort(idx, (a, b) => DPtable[iDepth][a].node.bound.CompareTo(DPtable[iDepth][b].node.bound));
+                  iCell = idx[jj]; // cells by increasing bound
+
+                  if (!DPtable[iDepth][iCell].isExpanded)
                   {  currNode = DPtable[iDepth][iCell].node;
                      for (d = 0; d < ndim; d++)
                         if (dimValues[d] > 0) // if any cut was selected acting on dimension d
@@ -251,7 +255,7 @@ namespace PlotTreeCsharp
                      DPtable[iDepth][iCell].isExpanded = true;
                      nExpanded++;
                   }
-                  iCell++;
+                  jj++;
                }
             }
             if(idDPcell >= 0)
