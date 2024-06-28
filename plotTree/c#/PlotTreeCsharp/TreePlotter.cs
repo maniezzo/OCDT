@@ -19,7 +19,7 @@ namespace PlotTreeCsharp
    // Each node of the nonbinary decision tree
    public class NodeHeu
    {
-      public NodeHeu() { }
+      public NodeHeu() {}
       public NodeHeu(int id, int ndim, int nclasses) 
       {  this.id = id;
          this.visited = false;
