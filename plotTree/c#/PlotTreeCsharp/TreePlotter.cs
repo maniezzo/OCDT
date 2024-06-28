@@ -87,7 +87,7 @@ namespace PlotTreeCsharp
       public int hash;     // hash code of the partition
       public int bound;    // a bound to the cost of a complete solution from the node
       public List<int> lstPartClass;    // the class of each partition, -1 heterogeneous
-      public List<int> lstPartDepth;    // the iDepth of each partition
+      public List<int> lstPartDepth;    // the iPartNum of each partition
       public List<int> lstPartNode;     // the node of the tree the partition is associated with
       public List<List<int>> lstIdNode; // random id assogned to each tree node
       public List<List<int?>> usedDim;      // dimensions used in the path to each partition of the node (will give the tree)
@@ -110,11 +110,12 @@ namespace PlotTreeCsharp
       private int numDominated; // num dominated nodes
       private string splitRule; // criterium for node plitting
       private string splitDir;  // max o min
-      private string method;    // exact or heuristic
+      private string method;    // exact (depth tree), heuristic, part_tree
       private string[] dataColumns;
       private int totNodes=0, totcells = 0, treeHeight=0, totLeaves=0;
       private int verbose;      // 0 no print, 1 average, 2 extended
       private bool fBeamSearch; // true beam search, false exact
+      private bool fDPpartition;// true tree based on number of partitions
       Random rnd;
 
       public TreePlotter()
@@ -126,10 +127,14 @@ namespace PlotTreeCsharp
          rnd = new Random(666);
          readData(dataset); // gets the X and Y matrices (data and class)
 
-         DPtable = new List<DPcell>[ndim+1]; // la radice (level 0) poi max un livello per dim (non fissi!)
-         for(int i=0;i<ndim+1;i++) DPtable[i] = new List<DPcell>();
+         if(method == "part_tree")
+            DPtable = new List<DPcell>[X.Length];
+         else
+            DPtable = new List<DPcell>[ndim+1]; // la radice (level 0) poi max un livello per dim (non fissi!)
 
-         if(method == "exact")
+         for(int i=0;i<DPtable.Length;i++) DPtable[i] = new List<DPcell>();
+
+         if(method == "exact" || method == "part_tree")
             exactTree();
          else
             heuristicTree();
@@ -191,7 +196,7 @@ namespace PlotTreeCsharp
          numDominated = 0;
 
          // ------------------------------------------ dinamica basata sul numero di partizioni
-         bool fDPpartition = true;
+         if(method == "part_tree") fDPpartition = true;
          if(fDPpartition)
          {  int beamWidth = 3;     // just because
             idDPcell = beamSearchPart(beamWidth);
@@ -230,15 +235,46 @@ namespace PlotTreeCsharp
 
       // bean search based on number of partitions
       int beamSearchPart(int beamWidth)
-      {
+      {  int i, j, d, iPartNum, iCell, idNode, nExpanded;
          int idDPcell = -1;
          NodeDP currNode;
          bool fTerminate = false;
 
          while (!fTerminate)
-         {
-         }
+         {  // ogni livello contiene partizionamenti con lo stesso numero di partizioni
+            for (iPartNum = 0; iPartNum < DPtable.Length; iPartNum++)
+            {  // per ogni cella del livello
+               int jj = 0;
+               nExpanded = 0;
 
+               while (jj < DPtable[iPartNum].Count && nExpanded < beamWidth)
+               {
+                  // re-sort at avery cicle as new cells are added at the same level
+                  int[] idx = new int[DPtable[iPartNum].Count];
+                  for (j = 0; j < DPtable[iPartNum].Count; j++) idx[j] = j;
+                  Array.Sort(idx, (a, b) => DPtable[iPartNum][a].node.bound.CompareTo(DPtable[iPartNum][b].node.bound));
+                  iCell = idx[jj]; // cells by increasing bound
+
+                  // actual nose expansion
+                  if (!DPtable[iPartNum][iCell].isExpanded)
+                  {  currNode = DPtable[iPartNum][iCell].node;
+                     for (d = 0; d < ndim; d++)
+                        if (dimValues[d] > 0) // if any cut was selected acting on dimension d
+                        {  idNode = expandNode(currNode, d, iPartNum);
+                           if (idDPcell < 0 && idNode >= 0) idDPcell = idNode;  // node completed
+                        }
+
+                     DPtable[iPartNum][iCell].isExpanded = true;
+                     nExpanded++;
+                  }
+                  jj++;
+               }
+            }
+            if (idDPcell >= 0)
+               fTerminate = true;
+            else
+               Console.WriteLine($"Nother round, iDepth={iPartNum} idDPcell {idDPcell}");
+         }
          return idDPcell; 
       }
 
@@ -449,7 +485,7 @@ namespace PlotTreeCsharp
                newNode.hash = nodeHash(newNode);
             }
 
-            // min and max iDepth of node partitions
+            // min and max iPartNum of node partitions
             int minDepth = ndim+1, maxDepth = 0, boundCost = 0;
             for(j=0;j<newNode.lstPartitions.Count;j++)
             {  if (newNode.lstPartDepth[j] > maxDepth)
@@ -522,7 +558,10 @@ namespace PlotTreeCsharp
                dpc.depth  = minDepth; // profondità nodo quella min di partizione ancora da espandere
                dpc.nnodes = 1;
                dpc.isExpanded = false;
-               DPtable[dpc.depth].Add(dpc);
+               if(fDPpartition)
+                  DPtable[newNode.lstPartitions.Count].Add(dpc); // recursion based on the number of partitions
+               else
+                  DPtable[dpc.depth].Add(dpc); // recursion based on the depth of the trees
                if(verbose>=1)
                   Console.WriteLine($"expanded node {nd.id} into {newNode.id} num.part {newNode.lstPartitions.Count} bound {newNode.bound}");
                if(verbose>=2)
@@ -618,7 +657,7 @@ namespace PlotTreeCsharp
          fout.Close();
       }
 
-      // trova la posizione del nodo contenente il punto nella lista dei fathers al livello iDepth
+      // trova la posizione del nodo contenente il punto nella lista dei fathers al livello iPartNum
       private List<int> findFatherPos(NodeDP nd, int idPoint, List<int?> usedDim, int iDepth)
       {  int i=-1,k,d,id;
          List<int> lstFathId = new List<int>(); // lista posizioni padri nei livelli father
@@ -652,7 +691,7 @@ namespace PlotTreeCsharp
          return res;
       }
 
-      // gets the iDepth of a node given its id in the DPtable
+      // gets the iPartNum of a node given its id in the DPtable
       private int getDPcellDepth(int idCell)
       {  int i,j,res=-1;
          for(i=0;i<DPtable.Length;i++)
