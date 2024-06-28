@@ -55,24 +55,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\vittorio.maniezzo\\.nuget\\packages\\": {},
-    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
+    "C:\\Users\\vittorio.maniezzo\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\git\\ODT\\plotTree\\c#\\PlotTreeCsharp\\PlotTreeCsharp.csproj",
+      "projectUniqueName": "C:\\git\\OCDT\\plotTree\\c#\\PlotTreeCsharp\\PlotTreeCsharp.csproj",
       "projectName": "PlotTreeCsharp",
-      "projectPath": "C:\\git\\ODT\\plotTree\\c#\\PlotTreeCsharp\\PlotTreeCsharp.csproj",
+      "projectPath": "C:\\git\\OCDT\\plotTree\\c#\\PlotTreeCsharp\\PlotTreeCsharp.csproj",
       "packagesPath": "C:\\Users\\vittorio.maniezzo\\.nuget\\packages\\",
-      "outputPath": "C:\\git\\ODT\\plotTree\\c#\\PlotTreeCsharp\\obj\\",
+      "outputPath": "C:\\git\\OCDT\\plotTree\\c#\\PlotTreeCsharp\\obj\\",
       "projectStyle": "PackageReference",
-      "fallbackFolders": [
-        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-      ],
       "configFilePaths": [
         "C:\\Users\\vittorio.maniezzo\\AppData\\Roaming\\NuGet\\NuGet.Config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
@@ -125,7 +120,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.300\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.302\\RuntimeIdentifierGraph.json"
       }
     }
   }

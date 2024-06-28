@@ -190,6 +190,14 @@ namespace PlotTreeCsharp
          DPtable[0].Add(dpc);
          numDominated = 0;
 
+         // ------------------------------------------ dinamica basata sul numero di partizioni
+         bool fDPpartition = true;
+         if(fDPpartition)
+         {  int beamWidth = 3;     // just because
+            idDPcell = beamSearchPart(beamWidth);
+            return;
+         }
+
          // ------------------------------------------ espansione della tabella, per ogni livello (distanza dalla radice)
          if(fBeamSearch)
          {  int beamWidth = 3;     // just because
@@ -218,6 +226,20 @@ namespace PlotTreeCsharp
          // -------------------------------------------- recover the best decision tree
          if(idDPcell > 0)
             marshalTree(idDPcell);
+      }
+
+      // bean search based on number of partitions
+      int beamSearchPart(int beamWidth)
+      {
+         int idDPcell = -1;
+         NodeDP currNode;
+         bool fTerminate = false;
+
+         while (!fTerminate)
+         {
+         }
+
+         return idDPcell; 
       }
 
       // beam search expansion
