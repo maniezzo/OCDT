@@ -200,7 +200,7 @@ namespace PlotTreeCsharp
          if(fDPpartition)
          {  int beamWidth = 3;     // just because
             idDPcell = beamSearchPart(beamWidth);
-            return;
+            goto l0;
          }
 
          // ------------------------------------------ espansione della tabella, per ogni livello (distanza dalla radice)
@@ -229,7 +229,7 @@ namespace PlotTreeCsharp
          // printPartitions();
 
          // -------------------------------------------- recover the best decision tree
-         if(idDPcell > 0)
+l0:      if(idDPcell > 0)
             marshalTree(idDPcell);
       }
 
@@ -1076,7 +1076,7 @@ lend:    if(verbose>=1) Console.WriteLine($"Same partitions: {res}");
                currnode = child;
             }
 
-            if(method=="exact")
+            if(method!="heuristic")
             {  for(j=0;j<part2node.Length;j++)
                {  k = part2node[j];
                   if (decTree[k].lstPoints.Contains(i))
