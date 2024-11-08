@@ -13,6 +13,7 @@ using System.Runtime.InteropServices;
 using Newtonsoft.Json;
 //using Google.OrTools.ConstraintSolver;
 
+
 namespace ODTMIPmodel
 {
    internal class MIPmodel
@@ -286,6 +287,8 @@ l1:               continue;
                lstHash.Add(hash);
                lstTableauRows.Add(lstCols);
                numConstr++;
+               if(numConstr % 10000 == 0)
+                  Console.Write($"numconstr = {numConstr}");
 l0:            continue;
             }
 
