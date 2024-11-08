@@ -10,6 +10,7 @@ using Google.OrTools.LinearSolver;
 using static Google.OrTools.LinearSolver.Solver; // I guess this and the former one could be united
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Newtonsoft.Json;
 //using Google.OrTools.ConstraintSolver;
 
 namespace ODTMIPmodel
@@ -34,10 +35,11 @@ namespace ODTMIPmodel
       {
          Console.Write("C# MIP model ");
 
-         StreamReader fconf = new StreamReader("config.json");
+         string confPath = File.Exists("config.json") ? "config.json" : @"..\..\..\config.json";
+         StreamReader fconf = new StreamReader(confPath);
          string jconf = fconf.ReadToEnd();
          fconf.Close();
-         JsonNode jobj = JsonSerializer.Deserialize<JsonNode>(jconf)!;
+         JsonNode jobj = System.Text.Json.JsonSerializer.Deserialize<JsonNode>(jconf)!;
 
          string dataset  = jobj["datafile"].GetValue<string>();
          string datapath = jobj["datapath"].GetValue<string>();

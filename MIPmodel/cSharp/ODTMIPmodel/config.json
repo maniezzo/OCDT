@@ -1,0 +1,6 @@
+{ 
+   "datafile" : "monks-1-train", 
+   "datapath" : "c:\\git\\OCDT\\data\\",
+	"LPsolver" : "GLOP",
+	"IPsolver" : "SCIP"
+}

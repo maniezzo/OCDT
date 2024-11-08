@@ -277,26 +277,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\vitto\\.nuget\\packages\\": {},
-    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {},
-    "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder": {}
+    "C:\\Users\\vittorio.maniezzo\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\git\\ODT\\MIPmodel\\cSharp\\ODTMIPmodel\\ODTMIPmodel.csproj",
+      "projectUniqueName": "C:\\git\\OCDT\\MIPmodel\\cSharp\\ODTMIPmodel\\ODTMIPmodel.csproj",
       "projectName": "ODTMIPmodel",
-      "projectPath": "C:\\git\\ODT\\MIPmodel\\cSharp\\ODTMIPmodel\\ODTMIPmodel.csproj",
-      "packagesPath": "C:\\Users\\vitto\\.nuget\\packages\\",
-      "outputPath": "C:\\git\\ODT\\MIPmodel\\cSharp\\ODTMIPmodel\\obj\\",
+      "projectPath": "C:\\git\\OCDT\\MIPmodel\\cSharp\\ODTMIPmodel\\ODTMIPmodel.csproj",
+      "packagesPath": "C:\\Users\\vittorio.maniezzo\\.nuget\\packages\\",
+      "outputPath": "C:\\git\\OCDT\\MIPmodel\\cSharp\\ODTMIPmodel\\obj\\",
       "projectStyle": "PackageReference",
-      "fallbackFolders": [
-        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",
-        "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
-      ],
       "configFilePaths": [
-        "C:\\Users\\vitto\\AppData\\Roaming\\NuGet\\NuGet.Config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+        "C:\\Users\\vittorio.maniezzo\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
@@ -317,6 +310,11 @@
         "warnAsError": [
           "NU1605"
         ]
+      },
+      "restoreAuditProperties": {
+        "enableAudit": "true",
+        "auditLevel": "low",
+        "auditMode": "direct"
       }
     },
     "frameworks": {
@@ -348,7 +346,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.100\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.403\\RuntimeIdentifierGraph.json"
       }
     }
   }
