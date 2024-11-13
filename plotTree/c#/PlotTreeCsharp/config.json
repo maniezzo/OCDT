@@ -1,0 +1,11 @@
+{ 
+   "datafile" : "points", 
+   "datapath" : "c:\\git\\OCDT\\data\\",
+   "LPsolver" : "CPLEX",
+   "IPsolver" : "CPLEX",
+   "splitRule": "entropy",
+   "splitDir" : "max",
+   "method"   : "heuristic",
+   "verbose"  : 0,
+   "beam"     : 5
+}

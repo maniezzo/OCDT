@@ -233,7 +233,7 @@ l0:      if(idDPcell > 0)
             marshalTree(idDPcell);
       }
 
-      // bean search based on number of partitions
+      // beam search based on number of partitions
       int beamSearchPart(int beamWidth)
       {  int i, j, d, iPartNum, iCell, idNode, nExpanded;
          int idDPcell = -1;
@@ -915,9 +915,10 @@ lend:    if(verbose>=1) Console.WriteLine($"Same partitions: {res}");
 
       private string readConfig()
       {  string dataset = "";
-         StreamReader fin = new StreamReader("config.json");
-         string jconfig = fin.ReadToEnd();
-         fin.Close();
+         string confPath = File.Exists("config.json") ? "config.json" : @"..\..\..\config.json";
+         StreamReader fconf = new StreamReader(confPath);
+         string jconfig = fconf.ReadToEnd();
+         fconf.Close();
 
          var config = JsonConvert.DeserializeObject<dynamic>(jconfig);
          try
