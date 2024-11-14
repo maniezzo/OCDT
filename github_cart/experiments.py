@@ -23,18 +23,22 @@ from sklearn import tree
 """## Optimal Classification Tree """
 
 timelimit = 600
+tstart = time.process_time()
 """
 datasets = ['balance-scale', 'breast-cancer', 'car-evaluation', 'hayes-roth', 'house-votes-84', 
             'soybean-small', 'spect', 'tic-tac-toe', 'monks-1', 'monks-2', 'monks-3', 'nath_jones']
 """
-datasets = ['nath_jones']
-alpha = [0, 0.01, 0.1]
-depth = [2, 3, 4, 5]
-seeds = [37, 42, 53]
+datasets = ['monks-1']
+#alpha = [0, 0.01, 0.1]
+alpha = [0.01]
+#depth = [2, 3, 4, 5]
+depth = [5]
+#seeds = [37, 42, 53]
+seeds = [666]
 
 train_ratio = 0.5
-val_ratio = 0.25
-test_ratio = 0.25
+val_ratio   = 0.25
+test_ratio  = 0.25
 
 # create or load table
 res_sk = pd.DataFrame(columns=['instance', 'depth', 'seed', 'train_acc', 'val_acc', 'test_acc', 'train_time'])
@@ -60,6 +64,7 @@ else:
                                      'train_acc', 'val_acc', 'test_acc', 'train_time', 'gap'])
 
 # ---------------------------------------- CART
+print(" -------------------------------------------- strating CART")
 for data in datasets:
     for d in depth:
         for s in seeds:
@@ -84,8 +89,11 @@ for data in datasets:
            res_sk.to_csv('./res/sk.csv', index=False)
            tree_rules = tree.export_text(clf) #,feature_names=list(res_sk.columns)
            print(tree_rules)
+tcart = time.process_time()
+print(f" -------------------------------------------- completing CART, timelimit {timelimit}, cpu {tcart - tstart}")
 
 # ---------------------------------------- optimal classification tree
+print(" -------------------------------------------- strating OCT")
 for data in datasets:
     for d in depth:
         for s in seeds:
@@ -126,9 +134,9 @@ for data in datasets:
                    res_oct.to_csv('./res/oct.csv', index=False)
                    print(data, 'oct-d{}-a{}'.format(d,a),
                           'train acc:', train_acc, 'val acc:', val_acc, 'gap:', octree.optgap)
-                   #print(row)
+                   print(row)
                    rules = octree.getRules_public(clf)
-                
+
                 # mfoct
                 row = res_mfoct[(res_mfoct['instance'] == data) & (res_mfoct['depth'] == d) & 
                                 (res_mfoct['alpha'] == a) & (res_mfoct['seed'] == s)]
@@ -148,7 +156,7 @@ for data in datasets:
                     test_acc = accuracy_score(y_test, mfoct.predict(x_test_enc))
                     row = {'instance':data, 'depth':d, 'alpha':a, 'seed':s, 'train_acc':train_acc, 'val_acc':val_acc,
                            'test_acc':test_acc, 'train_time':train_time, 'gap':mfoct.optgap}
-                    res_mfoct = res_mfoct.append(row, ignore_index=True)
+                    res_mfoct = res_mfoct._append(row, ignore_index=True)
                     res_mfoct.loc[len(res_mfoct)] = row
                     res_mfoct.to_csv('./res/mfoct.csv', index=False)
                     print(data, 'mfoct-d{}-a{}'.format(d,a), 
@@ -178,11 +186,14 @@ for data in datasets:
                 res_boct.to_csv('./res/boct.csv', index=False)
                 print(data, 'boct-d{}'.format(d), 'train acc:', train_acc, 'val acc:', val_acc, 'gap:', boct.optgap)
                 #print(row)
+toct = time.process_time()
+print(f" -------------------------------------------- completing OCT, timelimit {timelimit}, cpu {toct - tcart}")
 
 # ---------------------------------------- Stable Optimal Classification Tree (Maxflow)
-seeds = [11, 23, 34, 45, 56, 67, 78, 89, 93, 5]
+#seeds = [11, 23, 34, 45, 56, 67, 78, 89, 93, 5]
 d = 3
 
+print(" -------------------------------------------- starting SOCT")
 for data in datasets:
     for s in seeds:
         
@@ -274,5 +285,7 @@ for data in datasets:
                 print(data, 'mfoct-d{}-a{}'.format(d,a), 'method:', 'cp',
                       'train acc:', train_acc, 'test acc:', test_acc, 'gap:', mfoct.optgap)
                 #print(row)
+tsoct = time.process_time()
+print(f" -------------------------------------------- completing SOCT, timelimit {timelimit}, cpu {tsoct - toct}")
 
 print("Finito!")
