@@ -1218,12 +1218,18 @@ lend:    return res;
                   Environment.Exit(0);
                   break;
                case "variance":
-                  Console.WriteLine("Split rule not implemented");
-                  Environment.Exit(0);
+                  h=computeVariance(lstNptClass);
+                  if(splitDir=="max" ? h>splith : h<splith)
+                  {  splith=h;
+                     splitd=d;
+                  }
                   break;
                case "gini":
-                  Console.WriteLine("Split rule not implemented");
-                  Environment.Exit(0);
+                  h=computeGiniIndex(lstNptClass);
+                  if(splitDir=="max" ? h>splith : h<splith)
+                  {  splith=h;
+                     splitd=d;
+                  }
                   break;
                default:
                   Console.WriteLine("Split rule not defined");
@@ -1374,8 +1380,7 @@ l0:      if(currNode.lstSons.Count == 1)
 
          sums = new double[lstNptson.Count];
          for(i=0;i<lstNptson.Count;i++)
-         {
-            sums[i] = 0.0;
+         {  sums[i] = 0.0;
             for (j=0;j<nclasses;j++)
                sums[i] += lstNptson[i][j];
             tot += sums[i];
@@ -1385,6 +1390,109 @@ l0:      if(currNode.lstSons.Count == 1)
                h += (sums[i]/tot)*Math.Log(sums[i] / tot);
 
          return -h;
+      }
+
+      // variance at the node
+      private double computeVariance(List<int[]> lstNptson)
+      {  int i,j;
+         double mean, var = 0;
+         double tot = 0;
+         double[] sums;
+
+         sums=new double[lstNptson.Count];
+         for(i=0;i<lstNptson.Count;i++)
+         {
+            sums[i]=0.0;
+            for(j=0;j<nclasses;j++)
+               sums[i]+=lstNptson[i][j];
+            tot+=sums[i];
+         }
+         mean =sums.Average();
+         var  =sums.Select(num => Math.Pow(num-mean,2)).Average();
+         return var;
+      }
+
+      private double computeGiniIndex(List<int[]> lstNptson)
+      {  int i,j,nsum;
+         double mean, var = 0;
+         double tot = 0;
+         double[] sums;
+
+         sums=new double[lstNptson.Count];
+         for(i=0;i<lstNptson.Count;i++)
+         {  sums[i]=0.0;
+            for(j=0;j<nclasses;j++)
+               sums[i]+=lstNptson[i][j];
+            tot+=sums[i];
+         }
+         mean=sums.Average();
+         nsum=sums.Length;
+
+         // Calculate the sum of absolute differences
+         double sumOfDifferences = 0;
+         for(i = 0;i<nsum;i++)
+            for(j = 0;j<nsum;j++)
+               sumOfDifferences+=Math.Abs(sums[i]-sums[j]);
+
+         // Calculate the Gini Index
+         double giniIndex = sumOfDifferences/(2.0*n*n*mean);
+         return giniIndex;
+      }
+
+      // information gain, one level lookahead
+      static double computeInformationGain(int[] features,int[] labels,int[] splitPoints)
+      {  double initialEntropy = CalculateEntropy(labels);
+         var partitions = PartitionData(features,labels,splitPoints);
+
+         // Calculate weighted entropy of all partitions
+         double weightedEntropy = 0;
+         foreach(var partition in partitions)
+         {  double partitionWeight = (double)partition.Count/labels.Length;
+            weightedEntropy+=partitionWeight*CalculateEntropy(partition.ToArray());
+         }
+
+         // Information Gain
+         return initialEntropy-weightedEntropy;
+      }
+
+      static List<List<int>> PartitionData(int[] features,int[] labels,int[] splitPoints)
+      {  var partitions = new List<List<int>>();
+
+         // Initialize lists for each partition
+         foreach(var split in splitPoints)
+            partitions.Add(new List<int>());
+         partitions.Add(new List<int>()); // Add an extra list for values greater than all split points
+
+         // Partition labels based on feature values and split points
+         for(int i = 0;i<features.Length;i++)
+         {  int feature = features[i];
+            int label = labels[i];
+
+            bool added = false;
+            for(int j = 0;j<splitPoints.Length;j++)
+               if(feature<=splitPoints[j])
+               {  partitions[j].Add(label);
+                  added=true;
+                  break;
+               }
+
+            if(!added)
+               partitions[splitPoints.Length].Add(label); // Add to the final partition
+         }
+
+         return partitions;
+      }
+
+      static double CalculateEntropy(int[] labels)
+      {  var labelCounts = labels.GroupBy(x => x).Select(g => g.Count()).ToArray();
+         double entropy = 0;
+
+         foreach(var count in labelCounts)
+         {  double probability = (double)count/labels.Length;
+            entropy-=probability*Math.Log2(probability);
+         }
+
+         return entropy;
       }
 
       // computes the indices that sort each dimension

@@ -78,7 +78,7 @@ def loadPoints():
 def loadNathJones():
     df = pd.read_csv('../data/nath_jones.csv', delimiter=',')
     x, y = df[['CF/TD','NI/TA','CA/CL','CA/NS']], df['class']
-    y = pd.factorize(y)
+    y = pd.factorize(y) # transforms sequences of whatevers into 2-tuples, an array of corresponding distinct integers and an array of distinct values taken by the integers
     return np.array(x), np.array(y, dtype=object)[0]
 
 def loadBalanceScale():

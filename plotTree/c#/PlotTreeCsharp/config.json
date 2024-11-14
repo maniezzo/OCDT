@@ -3,7 +3,7 @@
    "datapath" : "c:\\git\\OCDT\\data\\",
    "LPsolver" : "CPLEX",
    "IPsolver" : "CPLEX",
-   "splitRule": "entropy",
+   "splitRule": "gini",
    "splitDir" : "max",
    "method"   : "heuristic",
    "verbose"  : 0,
