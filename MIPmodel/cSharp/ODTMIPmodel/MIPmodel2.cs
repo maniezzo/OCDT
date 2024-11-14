@@ -418,7 +418,7 @@ l0:            continue;
                lstPos.Add(lstCuts[i].Item2);
             }
          }
-         StreamWriter fout = new StreamWriter(fpath.Replace(".csv", "_cuts.json"));
+         StreamWriter fout = new StreamWriter(fpath.Replace(".csv", "_cuts2.json"));
          fout.WriteLine("{");
          fout.WriteLine($"\"dim\" : [{string.Join(",", lstDim)}],");
          fout.WriteLine($"\"pos\" : [{string.Join(",", lstPos)}]");

@@ -6,7 +6,9 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 
 """## Load Data """
-df = pd.read_csv('../data/points.csv', delimiter=',')
+df = pd.read_csv('../data/points.csv', delimiter=',',usecols=lambda column: column not in [0])
+# Clean the column names by stripping whitespace and newline characters
+df.columns = df.columns.str.replace(r'[\n\r]', '', regex=True)
 x, y = dataset.loadData('points')
 
 """## Set Args"""
@@ -14,19 +16,16 @@ timelimit = 600
 seed = 550
 depth = 0
 
-train_ratio = 0.5
-val_ratio   = 0.25
-test_ratio  = 0.25
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=1-train_ratio, random_state=seed)
-x_val, x_test, y_val, y_test = train_test_split(x_test, y_test, test_size=test_ratio/(test_ratio+val_ratio), random_state=seed)
-
-x_train = x
-y_train = y
-x_test = x
-y_test = y
 """## SK-Learn Decision Tree """
-clf = tree.DecisionTreeClassifier(max_depth=None)
-clf.fit(x_train, y_train)
+clf = tree.DecisionTreeClassifier(criterion='entropy',max_depth=None)
+#clf = tree.DecisionTreeClassifier(
+#    criterion='entropy',
+#    max_depth=None,         # No depth limit, allow deep trees
+#    min_samples_split=2,    # Minimum number of samples required to split a node
+#    min_samples_leaf=1,     # Every leaf must contain at least one sample (this is the default)
+#    class_weight=None       # No class weighting; for pure leaves, this isn't needed directly
+#)
+clf.fit(x, y)
 tree_rules = tree.export_text(clf)  # ,feature_names=list(res_sk.columns)
 print(tree_rules)
 
@@ -47,10 +46,51 @@ else:  # otherwise, just use the indices
 
 print("Features used in the tree:", used_features)
 
-y_train_pred = clf.predict(x_train)
-score_train = accuracy_score(y_train, y_train_pred)
+# Access the tree structure
+tree = clf.tree_
 
-y_test_pred = clf.predict(x_test)
-score_test = accuracy_score(y_test, y_test_pred)
+# Print nodes information with multiple children
+print("Nodes:")
+for i in range(tree.node_count):
+    if tree.children_left[i] != tree.children_right[i]:  # Not a leaf node
+        # Identify the feature and threshold (split conditions)
+        feature_name = df.columns[tree.feature[i]]
+        threshold = tree.threshold[i]
 
-print(f"Finito, score train = {score_train} score test = {score_test}")
+        # Check if it's a multi-way split (non-binary)
+        if tree.children_left[i] == tree.children_right[i]:  # No actual split, just leaves
+            print(f"Node {i} (Leaf Node): Class Distribution = {tree.value[i]}")
+        else:
+            print(f"Node {i}: Feature '{feature_name}' <= {threshold:.3f}")
+            print(
+                f"  Left child: {tree.children_left[i]} (Feature '{df.columns[tree.feature[tree.children_left[i]]]}')")
+            print(
+                f"  Right child: {tree.children_right[i]} (Feature '{df.columns[tree.feature[tree.children_right[i]]]}')")
+            print(f"  Threshold: {threshold:.3f}")
+            # Add further logic here to identify the split
+    else:
+        print(f"Leaf Node {i}: Class Distribution = {tree.value[i]}")
+
+# You can also print the arcs based on children
+print("\nArcs:")
+for i in range(tree.node_count):
+    if tree.children_left[i] != tree.children_right[i]:  # Not a leaf node
+        print(f"Node {i} -> Left Child {tree.children_left[i]}")
+        print(f"Node {i} -> Right Child {tree.children_right[i]}")
+
+
+# Get the leaf nodes each sample ends up in
+leaf_indices = clf.apply(x)
+
+# Create a DataFrame to associate leaf indices with corresponding data points
+df2 = pd.DataFrame(x, columns=df.columns[1:-1])
+df2['Leaf Node'] = leaf_indices
+df2['Class'] = y
+
+# Group by leaf node and print all data points in each leaf
+for leaf_node, group in df2.groupby('Leaf Node'):
+    print(f"Leaf Node {leaf_node}:")
+    print(group.drop(columns='Leaf Node'))  # Drop the 'Leaf Node' column for readability
+    print("\n---\n")
+
+print(f"Finito")
