@@ -3,8 +3,8 @@
    internal class Program
    {
       static void Main(string[] args)
-      {
-         Console.WriteLine("Hello, World!");
+      {  Checker C = new Checker();
+         C.readCuts();
       }
    }
 }
