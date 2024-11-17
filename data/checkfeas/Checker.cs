@@ -42,5 +42,10 @@ namespace Checkfeas
                Console.WriteLine($"dim: {s.dim} pos: {s.pos}");
          }
       }
+
+      public void checkBoundaries()
+      {
+
+      }
    }
 }
