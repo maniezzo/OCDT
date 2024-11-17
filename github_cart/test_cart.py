@@ -40,9 +40,9 @@ print(f"Height of the tree: {tree_height}")
 used_feature_indices = np.unique(clf.tree_.feature[clf.tree_.feature >= 0])
 # Get feature names if they are available
 if hasattr(df, 'columns'):  # df is a DataFrame with column names
-    used_features = df.columns[used_feature_indices]
+   used_features = df.columns[used_feature_indices]
 else:  # otherwise, just use the indices
-    used_features = used_feature_indices
+   used_features = used_feature_indices
 
 print("Features used in the tree:", used_features)
 
@@ -52,31 +52,31 @@ tree = clf.tree_
 # Print nodes information with multiple children
 print("Nodes:")
 for i in range(tree.node_count):
-    if tree.children_left[i] != tree.children_right[i]:  # Not a leaf node
-        # Identify the feature and threshold (split conditions)
-        feature_name = df.columns[tree.feature[i]]
-        threshold = tree.threshold[i]
+   if tree.children_left[i] != tree.children_right[i]:  # Not a leaf node
+      # Identify the feature and threshold (split conditions)
+      feature_name = df.columns[tree.feature[i]]
+      threshold = tree.threshold[i]
 
-        # Check if it's a multi-way split (non-binary)
-        if tree.children_left[i] == tree.children_right[i]:  # No actual split, just leaves
-            print(f"Node {i} (Leaf Node): Class Distribution = {tree.value[i]}")
-        else:
-            print(f"Node {i}: Feature '{feature_name}' <= {threshold:.3f}")
-            print(
-                f"  Left child: {tree.children_left[i]} (Feature '{df.columns[tree.feature[tree.children_left[i]]]}')")
-            print(
-                f"  Right child: {tree.children_right[i]} (Feature '{df.columns[tree.feature[tree.children_right[i]]]}')")
-            print(f"  Threshold: {threshold:.3f}")
-            # Add further logic here to identify the split
-    else:
-        print(f"Leaf Node {i}: Class Distribution = {tree.value[i]}")
+      # Check if it's a multi-way split (non-binary)
+      if tree.children_left[i] == tree.children_right[i]:  # No actual split, just leaves
+         print(f"Node {i} (Leaf Node): Class Distribution = {tree.value[i]}")
+      else:
+         print(f"Node {i}: Feature '{feature_name}' <= {threshold:.3f}")
+         print(
+            f"  Left child: {tree.children_left[i]} (Feature '{df.columns[tree.feature[tree.children_left[i]]]}')")
+         print(
+            f"  Right child: {tree.children_right[i]} (Feature '{df.columns[tree.feature[tree.children_right[i]]]}')")
+         print(f"  Threshold: {threshold:.3f}")
+         # Add further logic here to identify the split
+   else:
+      print(f"Leaf Node {i}: Class Distribution = {tree.value[i]}")
 
 # You can also print the arcs based on children
 print("\nArcs:")
 for i in range(tree.node_count):
-    if tree.children_left[i] != tree.children_right[i]:  # Not a leaf node
-        print(f"Node {i} -> Left Child {tree.children_left[i]}")
-        print(f"Node {i} -> Right Child {tree.children_right[i]}")
+   if tree.children_left[i] != tree.children_right[i]:  # Not a leaf node
+      print(f"Node {i} -> Left Child {tree.children_left[i]}")
+      print(f"Node {i} -> Right Child {tree.children_right[i]}")
 
 
 # Get the leaf nodes each sample ends up in
@@ -89,8 +89,8 @@ df2['Class'] = y
 
 # Group by leaf node and print all data points in each leaf
 for leaf_node, group in df2.groupby('Leaf Node'):
-    print(f"Leaf Node {leaf_node}:")
-    print(group.drop(columns='Leaf Node'))  # Drop the 'Leaf Node' column for readability
-    print("\n---\n")
+   print(f"Leaf Node {leaf_node}:")
+   print(group.drop(columns='Leaf Node'))  # Drop the 'Leaf Node' column for readability
+   print("\n---\n")
 
 print(f"Finito")
