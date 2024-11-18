@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
+using Microsoft.Data.Analysis;
 
 namespace Checkfeas
 {
@@ -44,8 +45,49 @@ namespace Checkfeas
       }
 
       public void checkBoundaries()
-      {
+      {  int i,j;
 
+         // Load the CSV and apply the specified column types
+         var df = DataFrame.LoadCsv("../../../../points.csv");
+         var val = df.Columns[1][30];  // first index column, then row !!!!!
+
+         // dataframe of floats
+         DataFrame dfFloats = new DataFrame();
+
+         foreach(var column in df.Columns)
+         {
+            try
+            {  // Convert the column to float
+               var floatData = column.Cast<float>();
+               // Create a new DataFrameColumn with float values
+               var floatColumn = new PrimitiveDataFrameColumn<float>(column.Name,floatData);
+               dfFloats.Columns.Add(floatColumn);
+            }
+            catch(InvalidCastException)
+            {  Console.WriteLine($"Column '{column.Name}' contains non-convertible data. Skipping.");
+            }
+         }
+         checkSeparation(dfFloats);
+      }
+
+      private void checkSeparation(DataFrame df)
+      {  int d;
+         float pos,val1,val2;
+         bool isSeparated;
+
+         for(int i1 = 0;i1<df.Rows.Count-1;i1++)
+            for(int i2 = i1+1;i2<df.Rows.Count;i2++)
+            {
+               isSeparated=false;
+               foreach(cut c in cuts)
+               {  val1 = (float)df.Columns[c.dim][i1];
+                  val2 = (float)df.Columns[c.dim][i2];
+                  if(val1<c.pos && val2>c.pos ||val1>c.pos && val2<c.pos)
+                  {
+                     isSeparated = true;
+                  }
+               }
+            }
       }
    }
 }
