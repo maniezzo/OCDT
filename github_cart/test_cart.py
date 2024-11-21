@@ -26,7 +26,7 @@ clf = tree.DecisionTreeClassifier(criterion='entropy',max_depth=None)
 #    class_weight=None       # No class weighting; for pure leaves, this isn't needed directly
 #)
 clf.fit(x, y)
-tree_rules = tree.export_text(clf)  # ,feature_names=list(res_sk.columns)
+tree_rules = tree.export_text(clf,feature_names=list(df.columns[1:-1]))
 print(tree_rules)
 
 # Get the number of nodes in the tree

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design.Serialization;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -20,7 +21,8 @@ namespace Checkfeas
       public void readCuts()
       {  int i;
 
-         StreamReader fcuts = new StreamReader("../../../../points_cuts.json");
+         //StreamReader fcuts = new StreamReader("../../../../points_cuts.json");
+         StreamReader fcuts = new StreamReader("../../../../points_cart_cuts.json");
          string jCuts = fcuts.ReadToEnd();
          fcuts.Close();
          JsonNode? node = JsonNode.Parse(jCuts);
@@ -71,23 +73,26 @@ namespace Checkfeas
       }
 
       private void checkSeparation(DataFrame df)
-      {  int d;
+      {  int d,i1,i2;
          float pos,val1,val2;
-         bool isSeparated;
+         bool isSeparated=false;
 
-         for(int i1 = 0;i1<df.Rows.Count-1;i1++)
-            for(int i2 = i1+1;i2<df.Rows.Count;i2++)
-            {
-               isSeparated=false;
+         for(i1 = 0;i1<df.Rows.Count-1;i1++)
+         {  for(i2 = i1+1;i2<df.Rows.Count;i2++)
+            {  isSeparated=false;
                foreach(cut c in cuts)
                {  val1 = (float)df.Columns[c.dim][i1];
                   val2 = (float)df.Columns[c.dim][i2];
                   if(val1<c.pos && val2>c.pos ||val1>c.pos && val2<c.pos)
-                  {
-                     isSeparated = true;
+                  {  isSeparated = true;
+                     break;  // exit foreach
                   }
                }
+               if(isSeparated) break; // exit for i2
             }
+            if(i2<df.Rows.Count && !isSeparated)
+               Console.WriteLine($"OHI! unseparated {i1}-{i2}");
+         }
       }
    }
 }
