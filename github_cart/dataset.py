@@ -15,6 +15,10 @@ def loadData(dataname):
     if dataname == 'nath-jones':
         x, y = loadNathJones()
         return x, y
+    # whouse
+    if dataname == 'whouse':
+        x, y = loadPoints()
+        return x, y
     # points
     if dataname == 'points':
         x, y = loadPoints()
