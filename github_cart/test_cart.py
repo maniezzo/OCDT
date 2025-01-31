@@ -6,15 +6,16 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 
 """## Load Data """
-df = pd.read_csv('../data/points.csv', delimiter=',',usecols=lambda column: column not in [0])
+#df = pd.read_csv('../data/points.csv', delimiter=',',usecols=lambda column: column not in [0])
+df = pd.read_csv('../data/whouse.csv', delimiter=',',usecols=lambda column: column not in [0])
 # Clean the column names by stripping whitespace and newline characters
 df.columns = df.columns.str.replace(r'[\n\r]', '', regex=True)
 x, y = dataset.loadData('points')
 
 """## Set Args"""
 timelimit = 600
-seed = 550
-depth = 0
+seed      = 550
+depth     = 0
 
 """## SK-Learn Decision Tree """
 clf = tree.DecisionTreeClassifier(criterion='entropy',max_depth=None)
