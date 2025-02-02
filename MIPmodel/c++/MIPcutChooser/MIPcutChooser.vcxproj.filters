@@ -32,5 +32,11 @@
     <ClInclude Include="json.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\..\Program Files\IBM\ILOG\CPLEX_Studio2211\cplex\include\ilcplex\cplexs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\..\..\Program Files\IBM\ILOG\CPLEX_Studio2211\cplex\bin\x64_win64\cplex2211.dll" />
   </ItemGroup>
 </Project>

@@ -1,5 +1,5 @@
 \ENCODING=ISO-8859-1
-\Problem name: c:\git\ODT\MIPmodel\cSharp\ODTMIPmodel\bin\Debug\net6.0\nath_jones.lp
+\Problem name: c:\git\OCDT\MIPmodel\cSharp\ODTMIPmodel\bin\Debug\net6.0\nath_jones.lp
 
 Minimize
  Obj: x0 + x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + x11 + x12 + x13

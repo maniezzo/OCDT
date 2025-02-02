@@ -104,13 +104,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>c:\Program Files\IBM\ILOG\CPLEX_Studio221\cplex\include\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>c:\Program Files\IBM\ILOG\CPLEX_Studio2211\cplex\include\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>c:\Program Files\IBM\ILOG\CPLEX_Studio221\cplex\lib\x64_windows_msvc14\stat_mdd</AdditionalLibraryDirectories>
-      <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);cplex2210.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>c:\Program Files\IBM\ILOG\CPLEX_Studio2211\cplex\lib\x64_windows_msvc14\stat_mdd</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);cplex2211.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -137,8 +137,12 @@
     <ClCompile Include="MIPmodel.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\..\..\Program Files\IBM\ILOG\CPLEX_Studio2211\cplex\include\ilcplex\cplexs.h" />
     <ClInclude Include="json.h" />
     <ClInclude Include="MIPmodel.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\..\..\Program Files\IBM\ILOG\CPLEX_Studio2211\cplex\bin\x64_win64\cplex2211.dll" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

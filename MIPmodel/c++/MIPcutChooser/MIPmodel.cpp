@@ -94,7 +94,7 @@ void MIPmodel::cplexModel(string dataFileName)
    }
 
    // reads the problem from file
-   path = "c:\\git\\ODT\\MIPmodel\\cSharp\\ODTMIPmodel\\bin\\Debug\\net6.0\\";
+   path = "c:\\git\\OCDT\\MIPmodel\\cSharp\\ODTMIPmodel\\bin\\Debug\\net6.0\\";
    //path = ".\\";
    if(fReadLpProblem)
    {

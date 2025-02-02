@@ -233,6 +233,7 @@ l0:            continue;
          // da qui modello LP
          Console.WriteLine($"---- Linear programming model with {LPsolver} ----");
          Google.OrTools.LinearSolver.Solver solver = Google.OrTools.LinearSolver.Solver.CreateSolver(LPsolver);
+         solver.EnableOutput();
          if (solver == null)
          {  Console.WriteLine("Could not create linear solver " + LPsolver);
             return;
