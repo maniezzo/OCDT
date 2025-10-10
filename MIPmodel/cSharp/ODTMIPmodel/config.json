@@ -1,6 +1,6 @@
-{ 
-   "datafile" : "whouse", 
-   "datapath" : "c:\\git\\OCDT\\data\\",
-	"LPsolver" : "CPLEX", "commentLPsolver" : "GLOP,PDLP,CLP,CPLEX,GUROBI,SCIP",
-	"IPsolver" : "CPLEX"
+{
+   "datafile": "whouse",
+   "datapath": "c:\\git\\OCDT\\data\\",
+   "LPsolver": "GUROBI", "commentLPsolver": "GLOP,PDLP,CLP,CPLEX,GUROBI,SCIP",
+   "IPsolver": "GUROBI"
 }
