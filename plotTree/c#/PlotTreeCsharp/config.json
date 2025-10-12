@@ -1,5 +1,5 @@
 { 
-   "datafile" : "points", 
+   "datafile" : "whouse", 
    "datapath" : "c:\\git\\OCDT\\data\\",
    "LPsolver" : "CPLEX",
    "IPsolver" : "CPLEX",
