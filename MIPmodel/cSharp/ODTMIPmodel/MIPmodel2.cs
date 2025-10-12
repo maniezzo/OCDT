@@ -144,6 +144,7 @@ namespace ODTMIPmodel
 l0:            continue;
             }
          }
+         Console.WriteLine($"Tot. cuts: {cont}");
 
          // write out cut file
          using (StreamWriter fout = new StreamWriter($"{dataset}_allcuts.json"))
