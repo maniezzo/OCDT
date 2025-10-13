@@ -1,0 +1,3 @@
+{"cond": [("A", ">", 3.1), ("A", "<", 5)], "class": "Class1"}
+{"cond": [("A", ">", 5)], "class": "Class2"}
+{"cond": [("B", ">", 1.0)], "class": "Class3"}
