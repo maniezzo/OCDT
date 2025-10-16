@@ -17,7 +17,7 @@ def build_rule_tree(rules):
     Each node tests a single condition from some rule.
     """
     # If all rules have the same class or only one rule left, return leaf
-    classes = {r['class'] for r in rules}
+    classes = [r['class'] for r in rules]
     if len(classes) == 1 or len(rules) == 1:
         return rules[0]['class']
 
