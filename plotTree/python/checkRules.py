@@ -17,7 +17,7 @@ def load_rules(filepath):
 def record_matches_rule(record, conds):
     """Check if one record matches all conditions in a rule."""
     for attr, op, value in conds:
-        v = record[f"f{attr}"]
+        v = record[f"f{int(attr)+1}"]
         if op == '>':
             if not v > value:
                 print(f"ERROR on {attr}")
